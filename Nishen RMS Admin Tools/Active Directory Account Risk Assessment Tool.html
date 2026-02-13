@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Directory Account Risk Assessment Dashboard created by: Nishen Harichunder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #0078d4;
+      --secondary-color: #106ebe;
+      --background-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-color: #323130;
+      --text-light: #605e5c;
+      --critical: #d13438;
+      --high: #ff8c00;
+      --medium: #fce100;
+      --low: #107c10;
+      --sidebar-width: 320px;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: var(--background-color);
+      color: var(--text-color);
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--card-bg);
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      position: fixed;
+      height: 100vh;
+    }
+    
+    .upload-section {
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .file-upload {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .upload-info {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-top: 10px;
+    }
+    
+    .upload-help {
+      margin-left: 15px;
+      margin-top: 5px;
+      font-size: 0.8rem;
+    }
+    
+    .upload-help li {
+      margin-bottom: 2px;
+    }
+    
+    #upload-status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      padding: 8px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .status-success {
+      background-color: rgba(16, 124, 16, 0.1);
+      color: var(--low);
+      border-left: 3px solid var(--low);
+    }
+    
+    .status-error {
+      background-color: rgba(209, 52, 56, 0.1);
+      color: var(--critical);
+      border-left: 3px solid var(--critical);
+    }
+    
+    .content {
+      flex: 1;
+      padding: 20px;
+      margin-left: var(--sidebar-width);
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 1.5rem;
+    }
+    
+    .date {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      position: relative;
+    }
+    
+    .card-wide {
+      grid-column: span 2;
+    }
+    
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+    
+    .filter-section {
+      margin-bottom: 20px;
+    }
+    
+    .filter-section h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+    
+    .filter-group {
+      margin-bottom: 15px;
+    }
+    
+    .filter-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      background-color: #ffffff;
+    }
+    
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    }
+    
+    .btn:hover {
+      background-color: var(--secondary-color);
+    }
+    
+    .recommendations {
+      margin-top: 30px;
+    }
+    
+    .recommendations h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+    
+    .rec-item {
+      background-color: #f0f8ff;
+      padding: 12px;
+      border-left: 4px solid var(--primary-color);
+      margin-bottom: 10px;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .rec-critical {
+      border-left-color: var(--critical);
+    }
+    
+    .rec-high {
+      border-left-color: var(--high);
+    }
+    
+    .rec-medium {
+      border-left-color: var(--medium);
+    }
+    
+    .risk-indicator {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: white;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+    
+    .risk-critical {
+      background-color: var(--critical);
+    }
+    
+    .risk-high {
+      background-color: var(--high);
+    }
+    
+    .risk-medium {
+      background-color: var(--medium);
+    }
+    
+    .risk-low {
+      background-color: var(--low);
+    }
+    
+    .stat-card {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-item {
+      background-color: var(--card-bg);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .stat-value.critical {
+      color: var(--critical);
+    }
+    
+    .stat-value.high {
+      color: var(--high);
+    }
+    
+    .stat-value.medium {
+      color: var(--medium);
+    }
+    
+    .stat-value.low {
+      color: var(--low);
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    
+    thead {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    th, td {
+      padding: 10px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    tbody tr:hover {
+      background-color: #f0f5fa;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .pagination button {
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      padding: 5px 10px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .pagination button.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    .chart-container {
+      height: 300px;
+      position: relative;
+    }
+    
+    .action-btn {
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    
+    .action-btn:hover {
+      background-color: #106ebe;
+    }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 5px;
+    }
+    
+    @media (max-width: 1200px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .card-wide {
+        grid-column: span 1;
+      }
+      
+      .stat-card {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+      
+      .content {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="header">
+      <h1>Account Security Assessment</h1>
+    </div>
+    
+    <div class="upload-section">
+      <h3>Upload AD Account Data</h3>
+      <div class="file-upload">
+        <input type="file" id="csv-upload" accept=".csv" />
+        <button id="upload-btn" class="btn">Process File</button>
+      </div>
+      <div class="upload-info">
+        <p>Upload your exported AD account CSV file with the following columns:</p>
+        <ul class="upload-help">
+          <li>Username</li>
+          <li>DomainName</li>
+          <li>Status</li>
+          <li>AccountType</li>
+          <li>LastLogon</li>
+          <li>PasswordLastSet</li>
+          <li>PasswordAgeInDays</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="filter-section">
+      <h3>Filter Data</h3>
+      
+      <div class="filter-group">
+        <label for="domain-filter">Domain</label>
+        <select id="domain-filter">
+          <option value="all">All Domains</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="risk-filter">Risk Level</label>
+        <select id="risk-filter">
+          <option value="all">All Risk Levels</option>
+          <option value="Critical">Critical</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="account-type-filter">Account Type</label>
+        <select id="account-type-filter">
+          <option value="all">All Account Types</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Password Age (days)</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="number" id="min-pwd-age" placeholder="Min" min="0">
+          <input type="number" id="max-pwd-age" placeholder="Max">
+        </div>
+      </div>
+      
+      <button id="apply-filters" class="btn">Apply Filters</button>
+      <button id="reset-filters" class="btn" style="background-color: #605e5c; margin-top: 10px;">Reset</button>
+    </div>
+    
+    <div class="recommendations">
+      <h3>Key Recommendations</h3>
+      
+      <div class="rec-item rec-critical">
+        <strong>Critical: Password Policy Enforcement</strong>
+        <p>51.4% of accounts have passwords older than 90 days. Implement stricter password rotation policy with technical controls.</p>
+      </div>
+      
+      <div class="rec-item rec-critical">
+        <strong>Critical: Review Dormant Privileged Accounts</strong>
+        <p>19.8% of accounts haven't logged in for 90+ days. Disable or remove unnecessary privileged accounts.</p>
+      </div>
+      
+      <div class="rec-item rec-high">
+        <strong>High: Implement Just-In-Time Access</strong>
+        <p>Reduce standing privileges by implementing JIT access for administrative tasks.</p>
+      </div>
+      
+      <div class="rec-item rec-medium">
+        <strong>Medium: Account Documentation</strong>
+        <p>Many accounts have incomplete or missing description fields. Improve documentation standards.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="header">
+      <h1>Active Directory Account Risk Assessment</h1>
+      <div class="date">Generated: <span id="generation-date">April 14, 2025</span></div>
+      <div class="author">createdby:Nishen Harichunder</div>
+    </div>
+    
+    <div id="upload-status" class="card" style="margin-bottom: 20px; display: none;">
+      <div id="status-message"></div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-item">
+        <div class="stat-label">Critical Risk</div>
+        <div class="stat-value critical" id="critical-count">507</div>
+        <div class="stat-label" id="critical-percent">44.2%</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-label">High Risk</div>
+        <div class="stat-value high" id="high-count">144</div>
+        <div class="stat-label" id="high-percent">12.6%</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-label">Medium Risk</div>
+        <div class="stat-value medium" id="medium-count">248</div>
+        <div class="stat-label" id="medium-percent">21.6%</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-label">Low Risk</div>
+        <div class="stat-value low" id="low-count">247</div>
+        <div class="stat-label" id="low-percent">21.6%</div>
+      </div>
+    </div>
+    
+    <div class="dashboard">
+      <div class="card">
+        <h2>Risk Distribution</h2>
+        <div class="chart-container">
+          <canvas id="risk-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Password Age Analysis</h2>
+        <div class="chart-container">
+          <canvas id="password-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Account Activity Status</h2>
+        <div class="chart-container">
+          <canvas id="activity-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Account Types Distribution</h2>
+        <div class="chart-container">
+          <canvas id="account-type-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card card-wide">
+        <h2>Domain Analysis</h2>
+        <div class="chart-container">
+          <canvas id="domain-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card card-wide">
+        <h2>Accounts by Risk Category</h2>
+        <div class="table-container">
+          <table id="accounts-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Domain</th>
+                <th>Account Type</th>
+                <th>Last Logon</th>
+                <th>Password Age</th>
+                <th>Risk Level</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Table data will be loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="table-pagination"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Global variables
+    let currentDataFile = null;
+    let isDefaultDataLoaded = false;
+    
+    // Load and process the CSV data
+    async function loadData() {
+      try {
+        // Check if we already have user-uploaded data
+        if (currentDataFile) {
+          processUploadedFile(currentDataFile);
+          return;
+        }
+        
+        try {
+          const response = await window.fs.readFile('elevatedRIGHTS_Enabled_Accounts_20250407.csv', { encoding: 'utf8' });
+          
+          Papa.parse(response, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+              if (results.errors.length > 0 && results.errors[0].code !== "UndetectableDelimiter") {
+                showUploadStatus('Error parsing sample data: ' + results.errors[0].message, 'error');
+                console.error("CSV parsing errors:", results.errors);
+                return;
+              }
+              
+              // Clean up the data
+              const cleanedData = cleanData(results.data);
+              
+              // Calculate risk scores and process data
+              processData(cleanedData);
+              isDefaultDataLoaded = true;
+            }
+          });
+        } catch (error) {
+          // Show error message but don't crash - user can still upload their own file
+          showUploadStatus('Sample data unavailable. Please upload your own CSV file.', 'error');
+          console.error("Error loading sample data:", error);
+        }
+      } catch (error) {
+        console.error("Error in loadData:", error);
+        showUploadStatus('Error initializing dashboard: ' + error.message, 'error');
+      }
+    }
+    
+    // Process uploaded file
+    function processUploadedFile(file) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const csvContent = e.target.result;
+        
+        Papa.parse(csvContent, {
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            if (results.errors.length > 0 && results.errors[0].code !== "UndetectableDelimiter") {
+              showUploadStatus('Error parsing CSV: ' + results.errors[0].message, 'error');
+              console.error("CSV parsing errors:", results.errors);
+              return;
+            }
+            
+            // Check required columns
+            const requiredColumns = ['Username', 'DomainName', 'AccountType', 'LastLogon', 'PasswordLastSet', 'PasswordAgeInDays'];
+            const missingColumns = requiredColumns.filter(col => !results.meta.fields.includes(col));
+            
+            if (missingColumns.length > 0) {
+              showUploadStatus('CSV missing required columns: ' + missingColumns.join(', '), 'error');
+              return;
+            }
+            
+            // Clean up the data
+            const cleanedData = cleanData(results.data);
+            
+            if (cleanedData.length === 0) {
+              showUploadStatus('No valid data found in the CSV file', 'error');
+              return;
+            }
+            
+            // Update the date
+            document.getElementById('generation-date').textContent = new Date().toLocaleDateString();
+            
+            // Calculate risk scores and process data
+            processData(cleanedData);
+            
+            // Show success message
+            showUploadStatus(`Successfully processed ${cleanedData.length} accounts from ${file.name}`, 'success');
+          }
+        });
+      };
+      
+      reader.onerror = function() {
+        showUploadStatus('Error reading file', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // Show upload status message
+    function showUploadStatus(message, type) {
+      const statusElement = document.getElementById('upload-status');
+      const messageElement = document.getElementById('status-message');
+      
+      messageElement.textContent = message;
+      statusElement.style.display = 'block';
+      statusElement.className = type === 'error' ? 'status-error' : 'status-success';
+    }
+    
+    // Clean up data and fix any parsing issues
+    function cleanData(data) {
+      return data.map(row => {
+        // Handle parsing issues for rows with __parsed_extra
+        if (row.__parsed_extra && row.__parsed_extra.length > 0) {
+          // For simplicity, we'll just use the main row data and ignore extras
+          delete row.__parsed_extra;
+        }
+        
+        // Ensure all records have proper data types
+        if (row.LastLogon && typeof row.LastLogon === 'string') {
+          row.LastLogon = new Date(row.LastLogon);
+        }
+        
+        if (row.PasswordLastSet && typeof row.PasswordLastSet === 'string') {
+          row.PasswordLastSet = new Date(row.PasswordLastSet);
+        }
+        
+        return row;
+      });
+    }
+    
+    // Process data and calculate risk scores
+    function processData(data) {
+      // Calculate risk score for each account
+      const dataWithRisk = data.map(row => {
+        let riskScore = 0;
+        
+        // Risk factors:
+        // 1. Password age
+        if (row.PasswordAgeInDays > 180) riskScore += 30;
+        else if (row.PasswordAgeInDays > 90) riskScore += 15;
+        
+        // 2. Account type (higher privileges = higher risk)
+        if (row.AccountType === 'Domain Admin') riskScore += 40;
+        else if (row.AccountType === 'Enterprise Admin') riskScore += 50;
+        else if (row.AccountType === 'Schema Admin') riskScore += 45;
+        else if (row.AccountType && row.AccountType.includes('Admin')) riskScore += 35;
+        
+        // 3. Last logon (inactive accounts)
+        if (row.LastLogon) {
+          const daysSinceLogon = Math.floor((new Date() - new Date(row.LastLogon)) / (1000 * 60 * 60 * 24));
+          if (daysSinceLogon > 180) riskScore += 35;
+          else if (daysSinceLogon > 90) riskScore += 25;
+          else if (daysSinceLogon > 30) riskScore += 10;
+        } else {
+          // Missing last logon data is concerning
+          riskScore += 20;
+        }
+        
+        // Assign risk category based on score
+        let riskLevel;
+        if (riskScore >= 70) riskLevel = 'Critical';
+        else if (riskScore >= 45) riskLevel = 'High';
+        else if (riskScore >= 20) riskLevel = 'Medium';
+        else riskLevel = 'Low';
+        
+        return {
+          ...row,
+          riskScore,
+          riskLevel
+        };
+      });
+      
+      // Store the processed data globally
+      window.accountData = dataWithRisk;
+      
+      // Initialize filters and charts
+      initializeFilters(dataWithRisk);
+      updateDashboard(dataWithRisk);
+    }
+    
+    // Initialize filter dropdowns
+    function initializeFilters(data) {
+      // Populate domain filter
+      const domains = [...new Set(data.map(row => row.DomainName))].filter(Boolean).sort();
+      const domainFilter = document.getElementById('domain-filter');
+      
+      domains.forEach(domain => {
+        const option = document.createElement('option');
+        option.value = domain;
+        option.textContent = domain;
+        domainFilter.appendChild(option);
+      });
+      
+      // Populate account type filter
+      const accountTypes = [...new Set(data.map(row => row.AccountType))].filter(Boolean).sort();
+      const accountTypeFilter = document.getElementById('account-type-filter');
+      
+      accountTypes.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        accountTypeFilter.appendChild(option);
+      });
+      
+      // Set up event listeners for filters
+      document.getElementById('apply-filters').addEventListener('click', applyFilters);
+      document.getElementById('reset-filters').addEventListener('click', resetFilters);
+    }
+    
+    // Apply filters to the data
+    function applyFilters() {
+      const domainFilter = document.getElementById('domain-filter').value;
+      const riskFilter = document.getElementById('risk-filter').value;
+      const accountTypeFilter = document.getElementById('account-type-filter').value;
+      const minPwdAge = document.getElementById('min-pwd-age').value ? parseInt(document.getElementById('min-pwd-age').value) : null;
+      const maxPwdAge = document.getElementById('max-pwd-age').value ? parseInt(document.getElementById('max-pwd-age').value) : null;
+      
+      let filteredData = window.accountData;
+      
+      // Apply domain filter
+      if (domainFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.DomainName === domainFilter);
+      }
+      
+      // Apply risk filter
+      if (riskFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.riskLevel === riskFilter);
+      }
+      
+      // Apply account type filter
+      if (accountTypeFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.AccountType === accountTypeFilter);
+      }
+      
+      // Apply password age filters
+      if (minPwdAge !== null) {
+        filteredData = filteredData.filter(row => row.PasswordAgeInDays >= minPwdAge);
+      }
+      
+      if (maxPwdAge !== null) {
+        filteredData = filteredData.filter(row => row.PasswordAgeInDays <= maxPwdAge);
+      }
+      
+      updateDashboard(filteredData);
+    }
+    
+    // Reset all filters
+    function resetFilters() {
+      document.getElementById('domain-filter').value = 'all';
+      document.getElementById('risk-filter').value = 'all';
+      document.getElementById('account-type-filter').value = 'all';
+      document.getElementById('min-pwd-age').value = '';
+      document.getElementById('max-pwd-age').value = '';
+      
+      updateDashboard(window.accountData);
+    }
+    
+    // Update all dashboard elements with the filtered data
+    function updateDashboard(data) {
+      updateStatistics(data);
+      updateRiskChart(data);
+      updatePasswordChart(data);
+      updateActivityChart(data);
+      updateAccountTypeChart(data);
+      updateDomainChart(data);
+      updateAccountsTable(data);
+    }
+    
+    // Update summary statistics
+    function updateStatistics(data) {
+      const riskCounts = {
+        Critical: data.filter(row => row.riskLevel === 'Critical').length,
+        High: data.filter(row => row.riskLevel === 'High').length,
+        Medium: data.filter(row => row.riskLevel === 'Medium').length,
+        Low: data.filter(row => row.riskLevel === 'Low').length
+      };
+      
+      // Update count displays
+      document.getElementById('critical-count').textContent = riskCounts.Critical;
+      document.getElementById('high-count').textContent = riskCounts.High;
+      document.getElementById('medium-count').textContent = riskCounts.Medium;
+      document.getElementById('low-count').textContent = riskCounts.Low;
+      
+      // Update percentages
+      const total = data.length;
+      document.getElementById('critical-percent').textContent = total ? `${((riskCounts.Critical / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('high-percent').textContent = total ? `${((riskCounts.High / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('medium-percent').textContent = total ? `${((riskCounts.Medium / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('low-percent').textContent = total ? `${((riskCounts.Low / total) * 100).toFixed(1)}%` : '0%';
+    }
+    
+    // Update risk distribution chart
+    function updateRiskChart(data) {
+      const riskCounts = {
+        Critical: data.filter(row => row.riskLevel === 'Critical').length,
+        High: data.filter(row => row.riskLevel === 'High').length,
+        Medium: data.filter(row => row.riskLevel === 'Medium').length,
+        Low: data.filter(row => row.riskLevel === 'Low').length
+      };
+      
+      // Get or create the chart
+      const ctx = document.getElementById('risk-chart').getContext('2d');
+      
+      if (window.riskChart) {
+        window.riskChart.data.datasets[0].data = [
+          riskCounts.Critical,
+          riskCounts.High,
+          riskCounts.Medium,
+          riskCounts.Low
+        ];
+        window.riskChart.update();
+      } else {
+        window.riskChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+              data: [
+                riskCounts.Critical,
+                riskCounts.High,
+                riskCounts.Medium,
+                riskCounts.Low
+              ],
+              backgroundColor: [
+                'rgba(209, 52, 56, 0.8)',
+                'rgba(255, 140, 0, 0.8)',
+                'rgba(252, 225, 0, 0.8)',
+                'rgba(16, 124, 16, 0.8)'
+              ],
+              borderColor: [
+                'rgba(209, 52, 56, 1)',
+                'rgba(255, 140, 0, 1)',
+                'rgba(252, 225, 0, 1)',
+                'rgba(16, 124, 16, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right'
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Update password age chart
+    function updatePasswordChart(data) {
+      // Password age grouping
+      const passwordGroups = {
+        'Under 30 days': 0,
+        '30-90 days': 0,
+        '90-180 days': 0,
+        '180-365 days': 0,
+        'Over 365 days': 0
+      };
+      
+      data.forEach(row => {
+        if (row.PasswordAgeInDays <= 30) {
+          passwordGroups['Under 30 days']++;
+        } else if (row.PasswordAgeInDays <= 90) {
+          passwordGroups['30-90 days']++;
+        } else if (row.PasswordAgeInDays <= 180) {
+          passwordGroups['90-180 days']++;
+        } else if (row.PasswordAgeInDays <= 365) {
+          passwordGroups['180-365 days']++;
+        } else {
+          passwordGroups['Over 365 days']++;
+        }
+      });
+      
+      const ctx = document.getElementById('password-chart').getContext('2d');
+      
+      if (window.passwordChart) {
+        window.passwordChart.data.datasets[0].data = Object.values(passwordGroups);
+        window.passwordChart.update();
+      } else {
+        window.passwordChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: Object.keys(passwordGroups),
+            datasets: [{
+              label: 'Number of Accounts',
+              data: Object.values(passwordGroups),
+              backgroundColor: 'rgba(0, 120, 212, 0.7)',
+              borderColor: 'rgba(0, 120, 212, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Accounts'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Password Age'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Update account activity chart
+    function updateActivityChart(data) {
+      const now = new Date();
+      const activityGroups = {
+        'Active (< 30 days)': 0,
+        'Inactive (30-90 days)': 0,
+        'Stale (> 90 days)': 0,
+        'Never logged in': 0
+      };
+      
+      data.forEach(row => {
+        if (!row.LastLogon) {
+          activityGroups['Never logged in']++;
+        } else {
+          const daysSinceLogon = Math.floor((now - new Date(row.LastLogon)) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceLogon <= 30) {
+            activityGroups['Active (< 30 days)']++;
+          } else if (daysSinceLogon <= 90) {
+            activityGroups['Inactive (30-90 days)']++;
+          } else {
+            activityGroups['Stale (> 90 days)']++;
+          }
+        }
+      });
+      
+      const ctx = document.getElementById('activity-chart').getContext('2d');
+      
+      if (window.activityChart) {
+        window.activityChart.data.datasets[0].data = Object.values(activityGroups);
+        window.activityChart.update();
+      } else {
+        window.activityChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(activityGroups),
+            datasets: [{
+              data: Object.values(activityGroups),
+              backgroundColor: [
+                'rgba(16, 124, 16, 0.8)',
+                'rgba(252, 225, 0, 0.8)',
+                'rgba(209, 52, 56, 0.8)',
+                'rgba(180, 180, 180, 0.8)'
+              ],
+              borderColor: [
+                'rgba(16, 124, 16, 1)',
+                'rgba(252, 225, 0, 1)',
+                'rgba(209, 52, 56, 1)',
+                'rgba(180, 180, 180, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right'
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Update account type chart
+    function updateAccountTypeChart(data) {
+      // Count accounts by type
+      const accountTypes = {};
+      
+      data.forEach(row => {
+        if (row.AccountType) {
+          accountTypes[row.AccountType] = (accountTypes[row.AccountType] || 0) + 1;
+        } else {
+          accountTypes['Unknown'] = (accountTypes['Unknown'] || 0) + 1;
+        }
+      });
+      
+      // Sort by count descending
+      const sortedTypes = Object.entries(accountTypes)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // Top 10 types
+      
+      const labels = sortedTypes.map(entry => entry[0]);
+      const counts = sortedTypes.map(entry => entry[1]);
+      
+      const ctx = document.getElementById('account-type-chart').getContext('2d');
+      
+      if (window.accountTypeChart) {
+        window.accountTypeChart.data.labels = labels;
+        window.accountTypeChart.data.datasets[0].data = counts;
+        window.accountTypeChart.update();
+      } else {
+        window.accountTypeChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Number of Accounts',
+              data: counts,
+              backgroundColor: 'rgba(16, 110, 190, 0.7)',
+              borderColor: 'rgba(16, 110, 190, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Accounts'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Update domain distribution chart
+    function updateDomainChart(data) {
+      // Count accounts by domain
+      const domainCounts = {};
+      
+      data.forEach(row => {
+        if (row.DomainName) {
+          domainCounts[row.DomainName] = (domainCounts[row.DomainName] || 0) + 1;
+        }
+      });
+      
+      // Sort by count and take top 15
+      const sortedDomains = Object.entries(domainCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+      
+      const labels = sortedDomains.map(entry => entry[0]);
+      const counts = sortedDomains.map(entry => entry[1]);
+      
+      // Also count risk levels by domain for the top domains
+      const riskByDomain = {};
+      
+      labels.forEach(domain => {
+        riskByDomain[domain] = {
+          Critical: 0,
+          High: 0,
+          Medium: 0,
+          Low: 0
+        };
+      });
+      
+      data.forEach(row => {
+        if (row.DomainName && labels.includes(row.DomainName)) {
+          riskByDomain[row.DomainName][row.riskLevel]++;
+        }
+      });
+      
+      const criticalData = labels.map(domain => riskByDomain[domain].Critical);
+      const highData = labels.map(domain => riskByDomain[domain].High);
+      const mediumData = labels.map(domain => riskByDomain[domain].Medium);
+      const lowData = labels.map(domain => riskByDomain[domain].Low);
+      
+      const ctx = document.getElementById('domain-chart').getContext('2d');
+      
+      if (window.domainChart) {
+        window.domainChart.data.labels = labels;
+        window.domainChart.data.datasets[0].data = criticalData;
+        window.domainChart.data.datasets[1].data = highData;
+        window.domainChart.data.datasets[2].data = mediumData;
+        window.domainChart.data.datasets[3].data = lowData;
+        window.domainChart.update();
+      } else {
+        window.domainChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Critical',
+                data: criticalData,
+                backgroundColor: 'rgba(209, 52, 56, 0.8)',
+                borderColor: 'rgba(209, 52, 56, 1)',
+                borderWidth: 1
+              },
+              {
+                label: 'High',
+                data: highData,
+                backgroundColor: 'rgba(255, 140, 0, 0.8)',
+                borderColor: 'rgba(255, 140, 0, 1)',
+                borderWidth: 1
+              },
+              {
+                label: 'Medium',
+                data: mediumData,
+                backgroundColor: 'rgba(252, 225, 0, 0.8)',
+                borderColor: 'rgba(252, 225, 0, 1)',
+                borderWidth: 1
+              },
+              {
+                label: 'Low',
+                data: lowData,
+                backgroundColor: 'rgba(16, 124, 16, 0.8)',
+                borderColor: 'rgba(16, 124, 16, 1)',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                stacked: true,
+                title: {
+                  display: true,
+                  text: 'Domain'
+                }
+              },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Accounts'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Table pagination variables
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    
+    // Update accounts table with pagination
+    function updateAccountsTable(data) {
+      const tableBody = document.getElementById('accounts-table').querySelector('tbody');
+      const pagination = document.getElementById('table-pagination');
+      
+      // Clear existing table and pagination
+      tableBody.innerHTML = '';
+      pagination.innerHTML = '';
+      
+      // Sort data by risk level (Critical first)
+      const sortedData = _.sortBy(data, row => {
+        const riskOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
+        return riskOrder[row.riskLevel];
+      });
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+      
+      // Ensure current page is within bounds
+      if (currentPage > totalPages) {
+        currentPage = totalPages || 1;
+      }
+      
+      // Calculate start and end indices for current page
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = Math.min(start + rowsPerPage, sortedData.length);
+      
+      // Populate table with current page data
+      for (let i = start; i < end; i++) {
+        const row = sortedData[i];
+        
+        const tr = document.createElement('tr');
+        
+        // Format date strings
+        const lastLogon = row.LastLogon ? new Date(row.LastLogon).toLocaleDateString() : 'Never';
+        
+        tr.innerHTML = `
+          <td>${row.Username || 'N/A'}</td>
+          <td>${row.DomainName || 'N/A'}</td>
+          <td>${row.AccountType || 'N/A'}</td>
+          <td>${lastLogon}</td>
+          <td>${row.PasswordAgeInDays ? Math.round(row.PasswordAgeInDays) + ' days' : 'N/A'}</td>
+          <td>
+            <span class="risk-indicator risk-${row.riskLevel.toLowerCase()}">${row.riskLevel}</span>
+          </td>
+          <td>
+            <button class="action-btn" onclick="alert('This would open account details for ${row.Username}')">Details</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(tr);
+      }
+      
+      // Create pagination controls
+      if (totalPages > 1) {
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '« Prev';
+        prevButton.disabled = currentPage === 1;
+        prevButton.addEventListener('click', () => {
+          if (currentPage > 1) {
+            currentPage--;
+            updateAccountsTable(data);
+          }
+        });
+        pagination.appendChild(prevButton);
+        
+        // Page buttons
+        const maxButtons = 5;
+        const startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+        const endPage = Math.min(totalPages, startPage + maxButtons - 1);
+        
+        for (let i = startPage; i <= endPage; i++) {
+          const pageButton = document.createElement('button');
+          pageButton.textContent = i;
+          pageButton.className = i === currentPage ? 'active' : '';
+          pageButton.addEventListener('click', () => {
+            currentPage = i;
+            updateAccountsTable(data);
+          });
+          pagination.appendChild(pageButton);
+        }
+        
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Next »';
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.addEventListener('click', () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            updateAccountsTable(data);
+          }
+        });
+        pagination.appendChild(nextButton);
+      }
+      
+      // Display row count information
+      const countInfo = document.createElement('div');
+      countInfo.style.textAlign = 'right';
+      countInfo.style.marginTop = '10px';
+      countInfo.style.fontSize = '0.9rem';
+      countInfo.textContent = `Showing ${start + 1}-${end} of ${sortedData.length} accounts`;
+      pagination.appendChild(countInfo);
+    }
+    
+    // Set up file upload event handlers
+    function setupEventListeners() {
+      const uploadBtn = document.getElementById('upload-btn');
+      const fileInput = document.getElementById('csv-upload');
+      
+      uploadBtn.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            showUploadStatus('Please upload a CSV file', 'error');
+            return;
+          }
+          
+          currentDataFile = file;
+          processUploadedFile(file);
+        }
+      });
+    }
+    
+    // Initialize the dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+      setupEventListeners();
+      loadData();
+    });
+  </script>
+</body>
+</html>

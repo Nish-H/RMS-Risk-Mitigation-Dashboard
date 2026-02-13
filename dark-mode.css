@@ -1,0 +1,17 @@
+/* dark-mode.css */
+.dark .chart-text {
+    fill: #e2e8f0 !important;
+  }
+  
+  .dark .recharts-legend-item-text {
+    color: #e2e8f0 !important;
+  }
+  
+  .dark .recharts-cartesian-axis-tick-value {
+    fill: #94a3b8 !important;
+  }
+  
+  .dark .recharts-tooltip-wrapper {
+    background-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }

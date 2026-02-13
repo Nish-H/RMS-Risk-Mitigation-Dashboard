@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Directory Account Risk Assessment Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #0078d4;
+      --secondary-color: #106ebe;
+      --background-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-color: #323130;
+      --text-light: #605e5c;
+      --critical: #d13438;
+      --high: #ff8c00;
+      --medium: #fce100;
+      --low: #107c10;
+      --sidebar-width: 320px;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: var(--background-color);
+      color: var(--text-color);
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--card-bg);
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      position: fixed;
+      height: 100vh;
+    }
+
+    .created-by {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+      z-index: 1000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 280px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+    }
+
+    .created-by .creator-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      display: block;
+    }
+
+    .created-by .creator-title {
+      font-size: 10px;
+      opacity: 0.9;
+      margin-bottom: 6px;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .created-by .contact-info {
+      font-size: 9px;
+      opacity: 0.8;
+      line-height: 1.3;
+    }
+
+    .created-by .contact-info div {
+      margin-bottom: 1px;
+    }
+    
+    .script-section {
+      margin-bottom: 25px;
+      padding: 15px;
+      background: #f8f9ff;
+      border-radius: 8px;
+      border: 1px solid #e0e8f0;
+    }
+    
+    .script-section h3 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+    
+    .step-instructions {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(0, 120, 212, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid var(--primary-color);
+    }
+    
+    .step-number {
+      display: inline-block;
+      background: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      font-size: 12px;
+      line-height: 20px;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+    
+    .download-btn {
+      background: linear-gradient(45deg, #0078d4, #106ebe);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .download-btn:hover {
+      background: linear-gradient(45deg, #106ebe, #005a9e);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
+    }
+    
+    .script-requirements {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 10px;
+      padding: 8px;
+      background: rgba(255, 193, 7, 0.1);
+      border-radius: 4px;
+      border-left: 3px solid #ffc107;
+    }
+    
+    .upload-section {
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .upload-area {
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      background: #fafafa;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .upload-area:hover {
+      border-color: var(--primary-color);
+      background: rgba(0, 120, 212, 0.05);
+    }
+    
+    .upload-area.dragover {
+      border-color: var(--primary-color);
+      background: rgba(0, 120, 212, 0.1);
+    }
+    
+    .upload-icon {
+      font-size: 2rem;
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+    
+    .upload-text {
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    
+    .upload-info {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-top: 10px;
+    }
+    
+    .upload-help {
+      margin-left: 15px;
+      margin-top: 5px;
+      font-size: 0.8rem;
+    }
+    
+    .upload-help li {
+      margin-bottom: 2px;
+    }
+    
+    #upload-status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      padding: 8px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .status-success {
+      background-color: rgba(16, 124, 16, 0.1);
+      color: var(--low);
+      border-left: 3px solid var(--low);
+    }
+    
+    .status-error {
+      background-color: rgba(209, 52, 56, 0.1);
+      color: var(--critical);
+      border-left: 3px solid var(--critical);
+    }
+    
+    .content {
+      flex: 1;
+      padding: 20px;
+      margin-left: var(--sidebar-width);
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 1.5rem;
+    }
+    
+    .date {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    .filter-section {
+      margin-bottom: 20px;
+    }
+    
+    .filter-section h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+    
+    .filter-group {
+      margin-bottom: 15px;
+    }
+    
+    .filter-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      background-color: #ffffff;
+    }
+    
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    }
+    
+    .btn:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .no-data-message {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+      background: rgba(0, 120, 212, 0.05);
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .no-data-message h3 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .export-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .export-btn {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      width: 100%;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .export-btn:hover {
+      background: linear-gradient(45deg, #218838, #1fa784);
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+      
+      .content {
+        margin-left: 0;
+      }
+
+      .created-by {
+        position: relative;
+        margin: 10px;
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="header">
+      <h1>AD Risk Assessment</h1>
+    </div>
+    
+    <div class="script-section">
+      <h3>🔧 Data Collection Script</h3>
+      
+      <div class="step-instructions">
+        <div><span class="step-number">1</span>Download the PowerShell script below</div>
+      </div>
+      
+      <button class="download-btn" onclick="downloadScript()">
+        📥 Download Get-ADUserReport.ps1
+      </button>
+      
+      <div class="step-instructions">
+        <div><span class="step-number">2</span>Run the script on your Domain Controller</div>
+      </div>
+      
+      <div class="script-requirements">
+        <strong>⚠️ Requirements:</strong><br>
+        • Run as Domain Administrator<br>
+        • Active Directory PowerShell module<br>
+        • Execute on Domain Controller or RSAT-enabled machine
+      </div>
+      
+      <div class="step-instructions">
+        <div><span class="step-number">3</span>Upload the generated CSV report below</div>
+      </div>
+    </div>
+    
+    <div class="upload-section">
+      <h3>📊 Upload Report Data</h3>
+      
+      <div class="upload-area" id="upload-area" onclick="triggerFileInput()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">
+          <strong>Click to select</strong> or drag & drop CSV file
+        </div>
+        <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">
+          Expected file: AD_User_Report_*.csv
+        </div>
+      </div>
+      
+      <input type="file" id="csv-upload" accept=".csv" style="display: none;" />
+      
+      <div class="upload-info">
+        <p>The script generates a CSV with these columns:</p>
+        <ul class="upload-help">
+          <li>Username, DomainName, Status</li>
+          <li>AccountType, LastLogon</li>
+          <li>PasswordLastSet, PasswordAgeInDays</li>
+          <li>Email, Description</li>
+        </ul>
+      </div>
+      
+      <div id="upload-status"></div>
+    </div>
+    
+    <div class="filter-section">
+      <h3>🔍 Filter Data</h3>
+      
+      <div class="filter-group">
+        <label for="domain-filter">Domain</label>
+        <select id="domain-filter">
+          <option value="all">All Domains</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="risk-filter">Risk Level</label>
+        <select id="risk-filter">
+          <option value="all">All Risk Levels</option>
+          <option value="Critical">Critical</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="account-type-filter">Account Type</label>
+        <select id="account-type-filter">
+          <option value="all">All Account Types</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Password Age (days)</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="number" id="min-pwd-age" placeholder="Min" min="0">
+          <input type="number" id="max-pwd-age" placeholder="Max">
+        </div>
+      </div>
+      
+      <button id="apply-filters" class="btn">Apply Filters</button>
+      <button id="reset-filters" class="btn" style="background-color: #605e5c; margin-top: 10px;">Reset</button>
+    </div>
+    
+    <div class="export-section">
+      <h3>💾 Export Results</h3>
+      <button class="export-btn" onclick="exportToPDF()" title="Export dashboard as PDF">
+        📄 Export PDF Report
+      </button>
+      <button class="export-btn" onclick="exportToExcel()" title="Export data to Excel">
+        📊 Export to Excel
+      </button>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="header">
+      <h1>Active Directory Account Risk Assessment Dashboard</h1>
+      <div class="date">Generated: <span id="generation-date">Awaiting Data Upload</span></div>
+    </div>
+
+    <div id="no-data-section" class="no-data-message">
+      <h3>📊 Welcome to AD Risk Assessment</h3>
+      <p>To get started:</p>
+      <ol style="text-align: left; display: inline-block; margin-top: 15px;">
+        <li>Download the PowerShell script from the sidebar</li>
+        <li>Run it on your Domain Controller as Administrator</li>
+        <li>Upload the generated CSV file to analyze security risks</li>
+      </ol>
+      <p style="margin-top: 15px; font-style: italic;">The dashboard will automatically populate with risk metrics, charts, and recommendations once data is uploaded.</p>
+    </div>
+    
+    <div id="dashboard-content" style="display: none;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <div style="font-size: 0.9rem; color: var(--text-light);">Critical Risk</div>
+          <div style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: var(--critical);" id="critical-count">0</div>
+          <div style="font-size: 0.9rem; color: var(--text-light);" id="critical-percent">0%</div>
+        </div>
+        
+        <div style="background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <div style="font-size: 0.9rem; color: var(--text-light);">High Risk</div>
+          <div style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: var(--high);" id="high-count">0</div>
+          <div style="font-size: 0.9rem; color: var(--text-light);" id="high-percent">0%</div>
+        </div>
+        
+        <div style="background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <div style="font-size: 0.9rem; color: var(--text-light);">Medium Risk</div>
+          <div style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: var(--medium);" id="medium-count">0</div>
+          <div style="font-size: 0.9rem; color: var(--text-light);" id="medium-percent">0%</div>
+        </div>
+        
+        <div style="background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <div style="font-size: 0.9rem; color: var(--text-light);">Low Risk</div>
+          <div style="font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: var(--low);" id="low-count">0</div>
+          <div style="font-size: 0.9rem; color: var(--text-light);" id="low-percent">0%</div>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div style="background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 20px;">
+          <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary-color);">Risk Distribution</h2>
+          <div style="height: 300px; position: relative;">
+            <canvas id="risk-chart"></canvas>
+          </div>
+        </div>
+        
+        <div style="background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 20px;">
+          <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary-color);">Password Age Analysis</h2>
+          <div style="height: 300px; position: relative;">
+            <canvas id="password-chart"></canvas>
+          </div>
+        </div>
+        
+        <div style="background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); padding: 20px; grid-column: span 2;">
+          <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary-color);">Accounts by Risk Category</h2>
+          <div style="overflow-x: auto; margin-top: 20px;">
+            <table id="accounts-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+              <thead style="background-color: var(--primary-color); color: white;">
+                <tr>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Username</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Domain</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Account Type</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Last Logon</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Password Age</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Risk Level</th>
+                  <th style="padding: 10px 15px; text-align: left; border-bottom: 1px solid #e0e0e0;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Table data will be loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div id="table-pagination" style="display: flex; justify-content: center; margin-top: 20px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Created by banner -->
+  <div class="created-by">
+    <span class="creator-name">Nishen Harichunder</span>
+    <span class="creator-title">Senior Microsoft Systems Engineer & Solutions Architect 20+ years</span>
+    <div class="contact-info">
+      <div>email: nishen@mail.com</div>
+      <div>mobile: 074 745 1618</div>
+    </div>
+  </div>
+  
+  <script>
+    // Global variables
+    let currentDataFile = null;
+    let accountData = [];
+    
+    // PowerShell script content
+    const powershellScript = `# Get-ADUserReport.ps1
+# PowerShell script to extract user information from Active Directory
+# Creates a CSV report with Username, DomainName, Status, AccountType, LastLogon, PasswordLastSet, and PasswordAgeInDays
+# Author: Nishen Harichunder
+# Date: ${new Date().toLocaleDateString()}
+
+#Requires -Module ActiveDirectory
+#Requires -RunAsAdministrator
+
+[CmdletBinding()]
+param (
+    [Parameter(Mandatory = $false)]
+    [string]$OutputPath = "$($env:USERPROFILE)\\Desktop\\AD_User_Report_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv",
+    
+    [Parameter(Mandatory = $false)]
+    [string]$Domain = $env:USERDOMAIN,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$IncludeDisabledAccounts = $true,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$IncludeServiceAccounts = $true,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$Verbose = $false
+)
+
+function Write-Log {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+        
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("INFO", "WARNING", "ERROR")]
+        [string]$Level = "INFO"
+    )
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    
+    switch ($Level) {
+        "INFO" { Write-Host $logMessage -ForegroundColor Cyan }
+        "WARNING" { Write-Host $logMessage -ForegroundColor Yellow }
+        "ERROR" { Write-Host $logMessage -ForegroundColor Red }
+    }
+}
+
+function Get-AccountType {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Microsoft.ActiveDirectory.Management.ADUser]$ADUser
+    )
+    
+    # Check if it's a service account based on common naming conventions
+    if ($ADUser.SamAccountName -match "svc|service|srv|system|_sa$" -or 
+        $ADUser.Description -match "service account|system account" -or
+        $ADUser.UserPrincipalName -match "svc|service|srv|system") {
+        return "Service Account"
+    }
+    
+    # Check if it's an admin account
+    if ($ADUser.MemberOf -match "Domain Admins|Enterprise Admins|Administrators" -or
+        $ADUser.SamAccountName -match "admin|\\.adm$|_adm$") {
+        return "Admin Account"
+    }
+    
+    # Default to standard user
+    return "User Account"
+}
+
+function Get-LastLogonTimestamp {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Microsoft.ActiveDirectory.Management.ADUser]$ADUser
+    )
+    
+    # Get the most recent logon timestamp from multiple attributes
+    $lastLogon = $ADUser.LastLogonDate
+    $lastLogonTimestamp = $ADUser.lastLogonTimestamp
+    
+    if ($null -ne $lastLogonTimestamp) {
+        $lastLogonTimestamp = [DateTime]::FromFileTime($lastLogonTimestamp)
+        if ($null -eq $lastLogon -or $lastLogonTimestamp -gt $lastLogon) {
+            $lastLogon = $lastLogonTimestamp
+        }
+    }
+    
+    return $lastLogon
+}
+
+# Main script execution
+Clear-Host
+Write-Log "Starting AD User Report Generation"
+Write-Log "Domain: $Domain"
+Write-Log "Output path: $OutputPath"
+
+# Ensure ActiveDirectory module is loaded
+try {
+    Import-Module ActiveDirectory -ErrorAction Stop
+    Write-Log "Successfully loaded Active Directory module"
+}
+catch {
+    Write-Log "Failed to load Active Directory module. Please ensure it is installed." -Level "ERROR"
+    Write-Log "You can install it using: Add-WindowsFeature RSAT-AD-PowerShell" -Level "ERROR"
+    exit 1
+}
+
+# Prepare filter for user accounts
+$filter = "objectClass -eq 'user' -and objectCategory -eq 'person'"
+if (-not $IncludeDisabledAccounts) {
+    $filter += " -and Enabled -eq 'True'"
+}
+
+Write-Log "Retrieving user accounts from Active Directory..."
+try {
+    # Get all user accounts from Active Directory
+    $adUsers = Get-ADUser -Filter $filter -Properties SamAccountName, UserPrincipalName, Enabled, Description, 
+        LastLogon, LastLogonDate, LastLogonTimestamp, PasswordLastSet, MemberOf, CannotChangePassword, 
+        PasswordNeverExpires, AccountExpirationDate, LockedOut
+    
+    Write-Log "Successfully retrieved $($adUsers.Count) user accounts"
+}
+catch {
+    Write-Log "Failed to retrieve user accounts from Active Directory: $_" -Level "ERROR"
+    exit 1
+}
+
+# Process user accounts
+Write-Log "Processing user accounts and generating report..."
+$userReport = @()
+
+$currentDate = Get-Date
+
+foreach ($user in $adUsers) {
+    # Determine account type
+    $accountType = Get-AccountType -ADUser $user
+    
+    # Skip service accounts if not requested
+    if (-not $IncludeServiceAccounts -and $accountType -eq "Service Account") {
+        continue
+    }
+    
+    # Get last logon timestamp
+    $lastLogon = Get-LastLogonTimestamp -ADUser $user
+    
+    # Calculate password age in days
+    $passwordAge = $null
+    if ($user.PasswordLastSet) {
+        $passwordAge = ($currentDate - $user.PasswordLastSet).Days
+    }
+    
+    # Determine account status
+    $status = if ($user.Enabled) { "Enabled" } else { "Disabled" }
+    if ($user.LockedOut) { $status = "Locked" }
+    if ($user.AccountExpirationDate -and $user.AccountExpirationDate -lt $currentDate) { $status = "Expired" }
+    
+    # Create user object
+    $userObject = [PSCustomObject]@{
+        Username = $user.SamAccountName
+        DomainName = $Domain
+        Status = $status
+        AccountType = $accountType
+        LastLogon = if ($lastLogon) { $lastLogon.ToString("yyyy-MM-dd HH:mm:ss") } else { "Never" }
+        PasswordLastSet = if ($user.PasswordLastSet) { $user.PasswordLastSet.ToString("yyyy-MM-dd HH:mm:ss") } else { "Never" }
+        PasswordAgeInDays = $passwordAge
+        PasswordNeverExpires = $user.PasswordNeverExpires
+        CannotChangePassword = $user.CannotChangePassword
+        Email = $user.UserPrincipalName
+        AccountExpirationDate = if ($user.AccountExpirationDate) { $user.AccountExpirationDate.ToString("yyyy-MM-dd") } else { "Never" }
+        Description = $user.Description
+    }
+    
+    # Add to report array
+    $userReport += $userObject
+    
+    # Output progress if verbose
+    if ($Verbose) {
+        Write-Host "Processed user: $($user.SamAccountName)" -ForegroundColor Green
+    }
+}
+
+# Export report to CSV
+try {
+    $userReport | Export-Csv -Path $OutputPath -NoTypeInformation
+    Write-Log "Successfully exported report to $OutputPath"
+}
+catch {
+    Write-Log "Failed to export report to CSV: $_" -Level "ERROR"
+    exit 1
+}
+
+# Summary
+Write-Log "Report Generation Complete"
+Write-Log "Total Active User Accounts: $($userReport.Where({$_.Status -eq 'Enabled' -and $_.AccountType -eq 'User Account'}).Count)"
+Write-Log "Total Admin Accounts: $($userReport.Where({$_.AccountType -eq 'Admin Account'}).Count)"
+Write-Log "Total Service Accounts: $($userReport.Where({$_.AccountType -eq 'Service Account'}).Count)"
+Write-Log "Total Disabled Accounts: $($userReport.Where({$_.Status -eq 'Disabled'}).Count)"
+Write-Log "Total Locked Accounts: $($userReport.Where({$_.Status -eq 'Locked'}).Count)"
+
+Write-Log "Script execution completed successfully" -Level "INFO"`;
+
+    // Download PowerShell script function
+    function downloadScript() {
+      const blob = new Blob([powershellScript], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Get-ADUserReport.ps1';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      showUploadStatus('PowerShell script downloaded successfully! Run it on your Domain Controller as Administrator.', 'success');
+    }
+    
+    // Set up drag and drop functionality
+    function setupDragAndDrop() {
+      const uploadArea = document.getElementById('upload-area');
+      const fileInput = document.getElementById('csv-upload');
+      
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+      
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          const file = files[0];
+          if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+            currentDataFile = file;
+            processUploadedFile(file);
+          } else {
+            showUploadStatus('Please upload a CSV file', 'error');
+          }
+        }
+      });
+      
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+            currentDataFile = file;
+            processUploadedFile(file);
+          } else {
+            showUploadStatus('Please upload a CSV file', 'error');
+          }
+        }
+      });
+    }
+    
+    function triggerFileInput() {
+      document.getElementById('csv-upload').click();
+    }
+    
+    // Process uploaded file
+    function processUploadedFile(file) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const csvContent = e.target.result;
+        
+        Papa.parse(csvContent, {
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            if (results.errors.length > 0 && results.errors[0].code !== "UndetectableDelimiter") {
+              showUploadStatus('Error parsing CSV: ' + results.errors[0].message, 'error');
+              console.error("CSV parsing errors:", results.errors);
+              return;
+            }
+            
+            // Check required columns
+            const requiredColumns = ['Username', 'DomainName', 'AccountType', 'LastLogon', 'PasswordAgeInDays'];
+            const missingColumns = requiredColumns.filter(col => !results.meta.fields.includes(col));
+            
+            if (missingColumns.length > 0) {
+              showUploadStatus('CSV missing required columns: ' + missingColumns.join(', '), 'error');
+              return;
+            }
+            
+            // Clean up the data
+            const cleanedData = cleanData(results.data);
+            
+            if (cleanedData.length === 0) {
+              showUploadStatus('No valid data found in the CSV file', 'error');
+              return;
+            }
+            
+            // Hide no-data section and show dashboard
+            document.getElementById('no-data-section').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+            
+            // Update the date
+            document.getElementById('generation-date').textContent = new Date().toLocaleDateString();
+            
+            // Calculate risk scores and process data
+            processData(cleanedData);
+            
+            // Show success message
+            showUploadStatus(`Successfully processed ${cleanedData.length} accounts from ${file.name}`, 'success');
+          }
+        });
+      };
+      
+      reader.onerror = function() {
+        showUploadStatus('Error reading file', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // Show upload status message
+    function showUploadStatus(message, type) {
+      const statusElement = document.getElementById('upload-status');
+      
+      statusElement.textContent = message;
+      statusElement.style.display = 'block';
+      statusElement.className = type === 'error' ? 'status-error' : 'status-success';
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        statusElement.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Clean up data and fix any parsing issues
+    function cleanData(data) {
+      return data.filter(row => row.Username && row.Username.trim() !== '').map(row => {
+        // Handle parsing issues for rows with __parsed_extra
+        if (row.__parsed_extra && row.__parsed_extra.length > 0) {
+          delete row.__parsed_extra;
+        }
+        
+        // Ensure all records have proper data types
+        if (row.LastLogon && typeof row.LastLogon === 'string' && row.LastLogon !== 'Never') {
+          try {
+            row.LastLogon = new Date(row.LastLogon);
+          } catch (e) {
+            row.LastLogon = null;
+          }
+        }
+        
+        // Ensure PasswordAgeInDays is a number
+        if (row.PasswordAgeInDays && typeof row.PasswordAgeInDays === 'string') {
+          row.PasswordAgeInDays = parseInt(row.PasswordAgeInDays) || 0;
+        }
+        
+        return row;
+      });
+    }
+    
+    // Process data and calculate risk scores
+    function processData(data) {
+      // Calculate risk score for each account
+      const dataWithRisk = data.map(row => {
+        let riskScore = 0;
+        
+        // Risk factors:
+        // 1. Password age
+        if (row.PasswordAgeInDays > 365) riskScore += 35;
+        else if (row.PasswordAgeInDays > 180) riskScore += 25;
+        else if (row.PasswordAgeInDays > 90) riskScore += 15;
+        
+        // 2. Account type (higher privileges = higher risk)
+        if (row.AccountType && row.AccountType.includes('Admin')) riskScore += 30;
+        else if (row.AccountType === 'Service Account') riskScore += 10;
+        
+        // 3. Last logon (inactive accounts)
+        if (row.LastLogon && row.LastLogon !== 'Never') {
+          const daysSinceLogon = Math.floor((new Date() - new Date(row.LastLogon)) / (1000 * 60 * 60 * 24));
+          if (daysSinceLogon > 365) riskScore += 40;
+          else if (daysSinceLogon > 180) riskScore += 30;
+          else if (daysSinceLogon > 90) riskScore += 20;
+        } else {
+          riskScore += 25;
+        }
+        
+        // Assign risk category based on score
+        let riskLevel;
+        if (riskScore >= 70) riskLevel = 'Critical';
+        else if (riskScore >= 45) riskLevel = 'High';
+        else if (riskScore >= 20) riskLevel = 'Medium';
+        else riskLevel = 'Low';
+        
+        return {
+          ...row,
+          riskScore,
+          riskLevel
+        };
+      });
+      
+      // Store the processed data globally
+      accountData = dataWithRisk;
+      
+      // Initialize filters and charts
+      initializeFilters(dataWithRisk);
+      updateDashboard(dataWithRisk);
+    }
+    
+    // Initialize filter dropdowns
+    function initializeFilters(data) {
+      // Populate domain filter
+      const domains = [...new Set(data.map(row => row.DomainName))].filter(Boolean).sort();
+      const domainFilter = document.getElementById('domain-filter');
+      
+      // Clear existing options except "All Domains"
+      while (domainFilter.children.length > 1) {
+        domainFilter.removeChild(domainFilter.lastChild);
+      }
+      
+      domains.forEach(domain => {
+        const option = document.createElement('option');
+        option.value = domain;
+        option.textContent = domain;
+        domainFilter.appendChild(option);
+      });
+      
+      // Populate account type filter
+      const accountTypes = [...new Set(data.map(row => row.AccountType))].filter(Boolean).sort();
+      const accountTypeFilter = document.getElementById('account-type-filter');
+      
+      // Clear existing options except "All Account Types"
+      while (accountTypeFilter.children.length > 1) {
+        accountTypeFilter.removeChild(accountTypeFilter.lastChild);
+      }
+      
+      accountTypes.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        accountTypeFilter.appendChild(option);
+      });
+      
+      // Set up event listeners for filters
+      document.getElementById('apply-filters').addEventListener('click', applyFilters);
+      document.getElementById('reset-filters').addEventListener('click', resetFilters);
+    }
+    
+    // Apply filters to the data
+    function applyFilters() {
+      const domainFilter = document.getElementById('domain-filter').value;
+      const riskFilter = document.getElementById('risk-filter').value;
+      const accountTypeFilter = document.getElementById('account-type-filter').value;
+      const minPwdAge = document.getElementById('min-pwd-age').value ? parseInt(document.getElementById('min-pwd-age').value) : null;
+      const maxPwdAge = document.getElementById('max-pwd-age').value ? parseInt(document.getElementById('max-pwd-age').value) : null;
+      
+      let filteredData = accountData;
+      
+      // Apply domain filter
+      if (domainFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.DomainName === domainFilter);
+      }
+      
+      // Apply risk filter
+      if (riskFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.riskLevel === riskFilter);
+      }
+      
+      // Apply account type filter
+      if (accountTypeFilter !== 'all') {
+        filteredData = filteredData.filter(row => row.AccountType === accountTypeFilter);
+      }
+      
+      // Apply password age filters
+      if (minPwdAge !== null) {
+        filteredData = filteredData.filter(row => row.PasswordAgeInDays >= minPwdAge);
+      }
+      
+      if (maxPwdAge !== null) {
+        filteredData = filteredData.filter(row => row.PasswordAgeInDays <= maxPwdAge);
+      }
+      
+      updateDashboard(filteredData);
+    }
+    
+    // Reset all filters
+    function resetFilters() {
+      document.getElementById('domain-filter').value = 'all';
+      document.getElementById('risk-filter').value = 'all';
+      document.getElementById('account-type-filter').value = 'all';
+      document.getElementById('min-pwd-age').value = '';
+      document.getElementById('max-pwd-age').value = '';
+      
+      updateDashboard(accountData);
+    }
+    
+    // Update all dashboard elements with the filtered data
+    function updateDashboard(data) {
+      updateStatistics(data);
+      updateRiskChart(data);
+      updatePasswordChart(data);
+      updateAccountsTable(data);
+    }
+    
+    // Update summary statistics
+    function updateStatistics(data) {
+      const riskCounts = {
+        Critical: data.filter(row => row.riskLevel === 'Critical').length,
+        High: data.filter(row => row.riskLevel === 'High').length,
+        Medium: data.filter(row => row.riskLevel === 'Medium').length,
+        Low: data.filter(row => row.riskLevel === 'Low').length
+      };
+      
+      // Update count displays
+      document.getElementById('critical-count').textContent = riskCounts.Critical;
+      document.getElementById('high-count').textContent = riskCounts.High;
+      document.getElementById('medium-count').textContent = riskCounts.Medium;
+      document.getElementById('low-count').textContent = riskCounts.Low;
+      
+      // Update percentages
+      const total = data.length;
+      document.getElementById('critical-percent').textContent = total ? `${((riskCounts.Critical / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('high-percent').textContent = total ? `${((riskCounts.High / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('medium-percent').textContent = total ? `${((riskCounts.Medium / total) * 100).toFixed(1)}%` : '0%';
+      document.getElementById('low-percent').textContent = total ? `${((riskCounts.Low / total) * 100).toFixed(1)}%` : '0%';
+    }
+    
+    // Update risk distribution chart
+    function updateRiskChart(data) {
+      const riskCounts = {
+        Critical: data.filter(row => row.riskLevel === 'Critical').length,
+        High: data.filter(row => row.riskLevel === 'High').length,
+        Medium: data.filter(row => row.riskLevel === 'Medium').length,
+        Low: data.filter(row => row.riskLevel === 'Low').length
+      };
+      
+      const ctx = document.getElementById('risk-chart').getContext('2d');
+      
+      if (window.riskChart) {
+        window.riskChart.data.datasets[0].data = [riskCounts.Critical, riskCounts.High, riskCounts.Medium, riskCounts.Low];
+        window.riskChart.update();
+      } else {
+        window.riskChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+              data: [riskCounts.Critical, riskCounts.High, riskCounts.Medium, riskCounts.Low],
+              backgroundColor: ['rgba(209, 52, 56, 0.8)', 'rgba(255, 140, 0, 0.8)', 'rgba(252, 225, 0, 0.8)', 'rgba(16, 124, 16, 0.8)'],
+              borderColor: ['rgba(209, 52, 56, 1)', 'rgba(255, 140, 0, 1)', 'rgba(252, 225, 0, 1)', 'rgba(16, 124, 16, 1)'],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right' },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Update password age chart
+    function updatePasswordChart(data) {
+      const passwordGroups = {
+        'Under 30 days': 0,
+        '30-90 days': 0,
+        '90-180 days': 0,
+        '180-365 days': 0,
+        'Over 365 days': 0
+      };
+      
+      data.forEach(row => {
+        const age = row.PasswordAgeInDays || 0;
+        if (age <= 30) passwordGroups['Under 30 days']++;
+        else if (age <= 90) passwordGroups['30-90 days']++;
+        else if (age <= 180) passwordGroups['90-180 days']++;
+        else if (age <= 365) passwordGroups['180-365 days']++;
+        else passwordGroups['Over 365 days']++;
+      });
+      
+      const ctx = document.getElementById('password-chart').getContext('2d');
+      
+      if (window.passwordChart) {
+        window.passwordChart.data.datasets[0].data = Object.values(passwordGroups);
+        window.passwordChart.update();
+      } else {
+        window.passwordChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: Object.keys(passwordGroups),
+            datasets: [{
+              label: 'Number of Accounts',
+              data: Object.values(passwordGroups),
+              backgroundColor: 'rgba(0, 120, 212, 0.7)',
+              borderColor: 'rgba(0, 120, 212, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'Number of Accounts' } },
+              x: { title: { display: true, text: 'Password Age' } }
+            }
+          }
+        });
+      }
+    }
+    
+    // Table pagination variables
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    
+    // Update accounts table with pagination
+    function updateAccountsTable(data) {
+      const tableBody = document.getElementById('accounts-table').querySelector('tbody');
+      const pagination = document.getElementById('table-pagination');
+      
+      // Clear existing table and pagination
+      tableBody.innerHTML = '';
+      pagination.innerHTML = '';
+      
+      // Sort data by risk level (Critical first)
+      const sortedData = data.sort((a, b) => {
+        const riskOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
+        return riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
+      });
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+      
+      // Ensure current page is within bounds
+      if (currentPage > totalPages) {
+        currentPage = totalPages || 1;
+      }
+      
+      // Calculate start and end indices for current page
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = Math.min(start + rowsPerPage, sortedData.length);
+      
+      // Populate table with current page data
+      for (let i = start; i < end; i++) {
+        const row = sortedData[i];
+        
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #e0e0e0';
+        tr.addEventListener('mouseenter', () => tr.style.backgroundColor = '#f0f5fa');
+        tr.addEventListener('mouseleave', () => tr.style.backgroundColor = '');
+        
+        // Format date strings
+        let lastLogon = 'Never';
+        if (row.LastLogon && row.LastLogon !== 'Never') {
+          try {
+            lastLogon = new Date(row.LastLogon).toLocaleDateString();
+          } catch (e) {
+            lastLogon = row.LastLogon;
+          }
+        }
+        
+        tr.innerHTML = `
+          <td style="padding: 10px 15px;">${row.Username || 'N/A'}</td>
+          <td style="padding: 10px 15px;">${row.DomainName || 'N/A'}</td>
+          <td style="padding: 10px 15px;">${row.AccountType || 'N/A'}</td>
+          <td style="padding: 10px 15px;">${lastLogon}</td>
+          <td style="padding: 10px 15px;">${row.PasswordAgeInDays ? Math.round(row.PasswordAgeInDays) + ' days' : 'N/A'}</td>
+          <td style="padding: 10px 15px;">
+            <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; color: white; font-weight: bold; background-color: ${
+              row.riskLevel === 'Critical' ? 'var(--critical)' : 
+              row.riskLevel === 'High' ? 'var(--high)' : 
+              row.riskLevel === 'Medium' ? 'var(--medium)' : 'var(--low)'
+            };">${row.riskLevel}</span>
+          </td>
+          <td style="padding: 10px 15px;">
+            <button style="background-color: #0078d4; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;" onclick="showAccountDetails('${row.Username}', '${row.DomainName}')">Details</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(tr);
+      }
+      
+      // Create pagination controls
+      if (totalPages > 1) {
+        const createButton = (text, page, isActive = false) => {
+          const button = document.createElement('button');
+          button.textContent = text;
+          button.style.cssText = `
+            background-color: ${isActive ? 'var(--primary-color)' : '#ffffff'};
+            color: ${isActive ? 'white' : 'black'};
+            border: 1px solid #e0e0e0;
+            padding: 5px 10px;
+            margin: 0 2px;
+            cursor: pointer;
+            border-radius: 4px;
+          `;
+          button.addEventListener('click', () => {
+            currentPage = page;
+            updateAccountsTable(data);
+          });
+          return button;
+        };
+        
+        if (currentPage > 1) {
+          pagination.appendChild(createButton('« Prev', currentPage - 1));
+        }
+        
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+          pagination.appendChild(createButton(i.toString(), i, i === currentPage));
+        }
+        
+        if (currentPage < totalPages) {
+          pagination.appendChild(createButton('Next »', currentPage + 1));
+        }
+      }
+      
+      // Display row count information
+      const countInfo = document.createElement('div');
+      countInfo.style.cssText = 'text-align: right; margin-top: 10px; font-size: 0.9rem;';
+      countInfo.textContent = `Showing ${start + 1}-${end} of ${sortedData.length} accounts`;
+      pagination.appendChild(countInfo);
+    }
+    
+    // Show account details
+    function showAccountDetails(username, domain) {
+      const account = accountData.find(acc => acc.Username === username && acc.DomainName === domain);
+      if (account) {
+        let details = `Account Details for ${username}@${domain}\n\n`;
+        details += `Risk Level: ${account.riskLevel}\n`;
+        details += `Risk Score: ${account.riskScore}\n`;
+        details += `Account Type: ${account.AccountType}\n`;
+        details += `Status: ${account.Status || 'Unknown'}\n`;
+        details += `Last Logon: ${account.LastLogon || 'Never'}\n`;
+        details += `Password Age: ${account.PasswordAgeInDays || 'Unknown'} days\n`;
+        details += `Email: ${account.Email || 'N/A'}\n`;
+        details += `Description: ${account.Description || 'N/A'}`;
+        
+        alert(details);
+      }
+    }
+    
+    // Export functions
+    function exportToPDF() {
+      if (accountData.length === 0) {
+        alert('No data to export. Please upload a CSV file first.');
+        return;
+      }
+      
+      let report = `Active Directory Account Risk Assessment Report\n`;
+      report += `Generated: ${new Date().toLocaleDateString()}\n`;
+      report += `Created by: Nishen Harichunder - Senior Microsoft Systems Engineer\n\n`;
+      
+      const riskCounts = {
+        Critical: accountData.filter(row => row.riskLevel === 'Critical').length,
+        High: accountData.filter(row => row.riskLevel === 'High').length,
+        Medium: accountData.filter(row => row.riskLevel === 'Medium').length,
+        Low: accountData.filter(row => row.riskLevel === 'Low').length
+      };
+      
+      report += `RISK SUMMARY:\n`;
+      report += `Critical Risk Accounts: ${riskCounts.Critical}\n`;
+      report += `High Risk Accounts: ${riskCounts.High}\n`;
+      report += `Medium Risk Accounts: ${riskCounts.Medium}\n`;
+      report += `Low Risk Accounts: ${riskCounts.Low}\n`;
+      report += `Total Accounts Analyzed: ${accountData.length}\n\n`;
+      
+      const topRiskAccounts = accountData
+        .filter(acc => acc.riskLevel === 'Critical' || acc.riskLevel === 'High')
+        .sort((a, b) => b.riskScore - a.riskScore)
+        .slice(0, 20);
+      
+      report += `TOP HIGH-RISK ACCOUNTS:\n`;
+      topRiskAccounts.forEach(acc => {
+        report += `${acc.Username}@${acc.DomainName} - ${acc.riskLevel} (${acc.AccountType})\n`;
+      });
+      
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AD_Risk_Assessment_Report_${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      showUploadStatus('Report exported successfully!', 'success');
+    }
+    
+    function exportToExcel() {
+      if (accountData.length === 0) {
+        alert('No data to export. Please upload a CSV file first.');
+        return;
+      }
+      
+      const headers = ['Username', 'DomainName', 'AccountType', 'RiskLevel', 'RiskScore', 'Status', 'LastLogon', 'PasswordAgeInDays', 'Email', 'Description'];
+      const csvContent = [
+        headers.join(','),
+        ...accountData.map(row => [
+          `"${row.Username || ''}"`,
+          `"${row.DomainName || ''}"`,
+          `"${row.AccountType || ''}"`,
+          `"${row.riskLevel || ''}"`,
+          row.riskScore || 0,
+          `"${row.Status || ''}"`,
+          `"${row.LastLogon || 'Never'}"`,
+          row.PasswordAgeInDays || 0,
+          `"${row.Email || ''}"`,
+          `"${row.Description || ''}"`
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AD_Risk_Assessment_Data_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      showUploadStatus('Excel export completed successfully!', 'success');
+    }
+    
+    // Initialize the dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+      setupDragAndDrop();
+      
+      setTimeout(() => {
+        showUploadStatus('Welcome! Download the PowerShell script to get started with your AD risk assessment.', 'success');
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

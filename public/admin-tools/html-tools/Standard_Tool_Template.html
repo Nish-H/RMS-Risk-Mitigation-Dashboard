@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Technology : [TOOL_NAME] V1.0</title>
+    
+    <!-- STANDARD EXTERNAL LIBRARIES -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        /* ===== FIRST TECHNOLOGY STANDARD VARIABLES ===== */
+        :root {
+            --primary-blue: #1f4e79;
+            --secondary-blue: #2c5aa0;
+            --light-blue: #e7f3ff;
+            --accent-orange: #ff6600;
+            --accent-orange-light: #ff8533;
+            --warning-red: #dc3545;
+            --success-green: #28a745;
+            --warning-yellow: #ffc107;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ===== STANDARD PAGE SETUP ===== */
+        @page {
+            margin: 0.5in;
+            size: A4;
+        }
+
+        body {
+            font-family: var(--font-main);
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* ===== STANDARD CONTROL PANEL ===== */
+        .control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--primary-blue);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .control-panel h4 {
+            margin: 0 0 15px 0;
+            color: var(--primary-blue);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .panel-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .panel-section h5 {
+            margin: 0 0 10px 0;
+            color: var(--secondary-blue);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .control-panel button, .control-panel select {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .control-panel button:hover, .control-panel select:hover {
+            background: var(--secondary-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(31, 78, 121, 0.3);
+        }
+
+        /* ===== STANDARD HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #001a33 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 5px solid var(--accent-orange);
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ===== STANDARD MAIN CONTAINER ===== */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ===== STANDARD FORM CONTAINERS ===== */
+        .form-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .form-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== STANDARD SECTION TITLES ===== */
+        .section-title {
+            color: var(--primary-blue);
+            border-bottom: 3px solid var(--accent-orange);
+            padding-bottom: 12px;
+            margin-top: 30px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.5rem;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-orange-light));
+            border-radius: 2px;
+        }
+
+        /* ===== STANDARD SECTION CONTROLS ===== */
+        .section-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 15px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .section-controls:hover {
+            opacity: 1;
+        }
+
+        .section-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .section-controls button:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        /* ===== STANDARD PAGE SECTIONS ===== */
+        .page-section {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+            height: 0;
+            margin: 0;
+            padding: 0;
+            border-top: 1px dashed #ccc;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* ===== STANDARD BUTTONS ===== */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(31, 78, 121, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0d2a4a, var(--primary-blue));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(31, 78, 121, 0.3);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, var(--success-green), #34ce57);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            padding: 15px 30px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+        }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #218838, var(--success-green));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-delete {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--warning-red), #e74c3c);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(220, 53, 69, 0.2);
+        }
+
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #c82333, var(--warning-red));
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        /* ===== STANDARD FORM CONTROLS ===== */
+        .form-control, .form-select, .form-control:focus, .form-select:focus {
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            transition: all 0.3s ease;
+            padding: 12px 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 0.2rem rgba(31, 78, 121, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 8px;
+        }
+
+        .form-label i {
+            margin-right: 8px;
+            color: var(--accent-orange);
+        }
+
+        /* ===== STANDARD EDITABLE CONTENT ===== */
+        .editable {
+            border: 1px dashed transparent;
+            padding: 2px;
+            transition: all 0.2s ease;
+            min-height: 1em;
+        }
+
+        .editable:hover {
+            border: 1px dashed #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .editable:focus {
+            outline: 2px solid #007bff;
+            background-color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        /* ===== STANDARD MODALS ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 40px;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--warning-red);
+            transform: scale(1.1);
+        }
+
+        /* ===== STANDARD AUTO-SAVE INDICATOR ===== */
+        .auto-save-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--success-green);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: none;
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        /* ===== STANDARD FOOTER ===== */
+        .creator-footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            font-size: 14px;
+            color: white;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        /* ===== STANDARD PRINT OPTIMIZATIONS ===== */
+        @media print {
+            body {
+                background: white !important;
+                color: #333 !important;
+                font-size: 10pt !important;
+                line-height: 1.3 !important;
+            }
+            
+            .control-panel, .section-controls {
+                display: none !important;
+            }
+            
+            .main-container {
+                max-width: none;
+                margin: 0 !important;
+                padding: 0.5in !important;
+            }
+            
+            .form-container {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                background: white !important;
+                margin-bottom: 15pt !important;
+            }
+            
+            .page-section {
+                page-break-inside: avoid;
+                margin-bottom: 15pt !important;
+            }
+            
+            .editable {
+                border: none !important;
+            }
+            
+            .editable:hover {
+                border: none !important;
+                background-color: transparent !important;
+            }
+            
+            h1 {
+                font-size: 14pt !important;
+                margin-bottom: 10pt !important;
+            }
+            
+            h2 {
+                font-size: 12pt !important;
+                margin-top: 15pt !important;
+                margin-bottom: 8pt !important;
+            }
+        }
+
+        /* ===== STANDARD RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .control-panel {
+                position: relative;
+                margin-bottom: 20px;
+                width: 100%;
+                top: 0;
+                right: 0;
+            }
+            
+            .main-container {
+                padding: 0 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* ===== STANDARD ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* ===== EDIT MODE INDICATORS ===== */
+        .edit-mode .editable {
+            border: 1px dashed #007bff;
+            position: relative;
+        }
+
+        .edit-mode .editable::before {
+            content: "✎";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* ===== CUSTOM TOOL STYLES (Add tool-specific styles here) ===== */
+        /* [CUSTOM_STYLES_PLACEHOLDER] */
+    </style>
+</head>
+<body>
+    <!-- Auto Save Indicator -->
+    <div class="auto-save-indicator" id="autoSaveIndicator">
+        <i class="bi bi-check-circle"></i> Auto-saved
+    </div>
+
+    <!-- Standard Control Panel -->
+    <div class="control-panel" id="controlPanel">
+        <h4><i class="bi bi-gear-fill"></i> Tool Controls</h4>
+        
+        <div class="panel-section">
+            <h5>Document</h5>
+            <button onclick="toggleEditMode()">
+                <i class="bi bi-pencil"></i> Toggle Edit Mode
+            </button>
+            <button onclick="saveDocument()">
+                <i class="bi bi-save"></i> Save Document
+            </button>
+            <button onclick="loadDocument()">
+                <i class="bi bi-folder2-open"></i> Load Document
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Sections</h5>
+            <button onclick="addSection('standard')">
+                <i class="bi bi-plus-circle"></i> Add Section
+            </button>
+            <button onclick="insertPageBreak()">
+                <i class="bi bi-distribute-vertical"></i> Page Break
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Export</h5>
+            <button onclick="exportToPDF()">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </button>
+            <button onclick="exportToWord()">
+                <i class="bi bi-file-earmark-word"></i> Export Word
+            </button>
+            <button onclick="previewDocument()">
+                <i class="bi bi-eye"></i> Preview
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Themes</h5>
+            <select onchange="applyTheme(this.value)">
+                <option value="default">Default Theme</option>
+                <option value="corporate">Corporate Theme</option>
+                <option value="technical">Technical Theme</option>
+            </select>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Help</h5>
+            <button onclick="showHelp()">
+                <i class="bi bi-question-circle"></i> How to Use
+            </button>
+        </div>
+    </div>
+
+    <!-- Standard Header -->
+    <div class="header text-center">
+        <div class="main-container">
+            <h1><i class="bi bi-gear-fill"></i> First Technology : [TOOL_NAME] V1.0</h1>
+            <p class="lead">Professional [TOOL_DESCRIPTION] Tool</p>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-container">
+        <!-- Example Section -->
+        <div class="page-section">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            
+            <div class="form-container">
+                <h2 class="section-title">
+                    <i class="bi bi-file-text"></i> Example Section
+                </h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="exampleField1" class="form-label">
+                                <i class="bi bi-input-cursor"></i> Example Field:
+                            </label>
+                            <input type="text" class="form-control" id="exampleField1" placeholder="Enter value...">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="exampleField2" class="form-label">
+                                <i class="bi bi-calendar"></i> Date Field:
+                            </label>
+                            <input type="date" class="form-control" id="exampleField2">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="exampleTextarea" class="form-label">
+                        <i class="bi bi-textarea"></i> Description:
+                    </label>
+                    <textarea class="form-control editable" id="exampleTextarea" rows="4" contenteditable="true" placeholder="Enter detailed description..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add more sections here as needed -->
+        
+        <!-- Standard Footer -->
+        <div class="creator-footer">
+            <p><strong><i class="bi bi-person-check"></i> Tool Built with First Technology Standards</strong></p>
+            <p>Standardized Architecture | Professional Design | Enterprise Ready</p>
+            <p>Framework by: <strong>Senior Microsoft Systems Engineer</strong></p>
+            <p>Original Concept: <strong>Nishen Harichunder</strong> - L4 Engineer</p>
+            <p>Email: <a href="mailto:Nishenh@ftechkzn.co.za" style="color: var(--accent-orange);">Nishenh@ftechkzn.co.za</a></p>
+            <p><small>V1.0 - Built with standardized framework for consistency and quality</small></p>
+        </div>
+    </div>
+
+    <!-- Standard Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('helpModal')">&times;</span>
+            <h2 style="color: var(--primary-blue); border-bottom: 3px solid var(--accent-orange); padding-bottom: 10px;">
+                <i class="bi bi-info-circle"></i> How to Use [TOOL_NAME]
+            </h2>
+            
+            <h4 style="color: var(--primary-blue); margin-top: 25px;"><i class="bi bi-1-circle"></i> Getting Started</h4>
+            <ul>
+                <li>Use the Control Panel on the right for quick access to all functions</li>
+                <li>All content with the edit icon (✎) can be modified when in edit mode</li>
+                <li>Use section controls (↑↓×) to manage document structure</li>
+                <li>Auto-save keeps your work safe every 30 seconds</li>
+            </ul>
+            
+            <h4 style="color: var(--primary-blue); margin-top: 25px;"><i class="bi bi-2-circle"></i> Standard Features</h4>
+            <ul>
+                <li><strong>Professional Design:</strong> Consistent with First Technology branding</li>
+                <li><strong>Export Options:</strong> PDF and Word document generation</li>
+                <li><strong>Section Management:</strong> Add, move, and organize content sections</li>
+                <li><strong>Theme Support:</strong> Switch between corporate themes</li>
+                <li><strong>Responsive Design:</strong> Works on all devices</li>
+            </ul>
+            
+            <h4 style="color: var(--primary-blue); margin-top: 25px;"><i class="bi bi-3-circle"></i> Advanced Features</h4>
+            <ul>
+                <li><strong>Auto-Save:</strong> Automatic preservation of your work</li>
+                <li><strong>Keyboard Shortcuts:</strong> Ctrl+S (Save), Ctrl+P (PDF), Ctrl+H (Help)</li>
+                <li><strong>Print Optimization:</strong> Perfect formatting for physical documents</li>
+                <li><strong>Data Import/Export:</strong> Save and load your work as JSON files</li>
+            </ul>
+            
+            <div class="text-center mt-4">
+                <button class="btn btn-primary" onclick="closeModal('helpModal')">
+                    <i class="bi bi-check"></i> Got It
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Standard JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        /* ===== FIRST TECHNOLOGY STANDARD JAVASCRIPT FRAMEWORK ===== */
+        
+        // Global Variables
+        let editMode = false;
+        let sectionCount = 0;
+        let autoSaveInterval;
+
+        // Standard Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeStandardFeatures();
+            setupEventListeners();
+            startAutoSave();
+            loadFromLocalStorage();
+        });
+
+        /* ===== STANDARD INITIALIZATION FUNCTIONS ===== */
+        function initializeStandardFeatures() {
+            // Set today's date for any date fields
+            const dateFields = document.querySelectorAll('input[type="date"]');
+            const today = new Date().toISOString().split('T')[0];
+            dateFields.forEach(field => {
+                if (!field.value) field.value = today;
+            });
+            
+            // Initialize section controls
+            updateSectionControls();
+        }
+
+        function setupEventListeners() {
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveDocument();
+                }
+                
+                if (e.ctrlKey && e.key === 'p') {
+                    e.preventDefault();
+                    exportToPDF();
+                }
+                
+                if (e.ctrlKey && e.key === 'h') {
+                    e.preventDefault();
+                    showHelp();
+                }
+                
+                if (e.ctrlKey && e.key === 'e') {
+                    e.preventDefault();
+                    toggleEditMode();
+                }
+            });
+
+            // Modal close on outside click
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal-overlay')) {
+                    event.target.style.display = 'none';
+                }
+            });
+
+            // Visual feedback for editable content
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('editable')) {
+                    e.target.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        e.target.style.backgroundColor = '';
+                    }, 1000);
+                }
+            });
+        }
+
+        /* ===== STANDARD EDIT MODE FUNCTIONS ===== */
+        function toggleEditMode() {
+            editMode = !editMode;
+            const body = document.body;
+            const editables = document.querySelectorAll('.editable');
+            
+            if (editMode) {
+                body.classList.add('edit-mode');
+                editables.forEach(el => {
+                    el.contentEditable = 'true';
+                });
+            } else {
+                body.classList.remove('edit-mode');
+                editables.forEach(el => {
+                    el.contentEditable = 'false';
+                });
+            }
+            
+            updateEditModeButton();
+        }
+
+        function updateEditModeButton() {
+            const editButton = document.querySelector('[onclick="toggleEditMode()"]');
+            if (editButton) {
+                if (editMode) {
+                    editButton.innerHTML = '<i class="bi bi-x-circle"></i> Exit Edit Mode';
+                    editButton.style.background = 'var(--warning-red)';
+                } else {
+                    editButton.innerHTML = '<i class="bi bi-pencil"></i> Toggle Edit Mode';
+                    editButton.style.background = 'var(--primary-blue)';
+                }
+            }
+        }
+
+        /* ===== STANDARD SECTION MANAGEMENT ===== */
+        function addSection(sectionType) {
+            sectionCount++;
+            const newSection = document.createElement('div');
+            newSection.className = 'page-section fade-in';
+            newSection.innerHTML = createSectionHTML(sectionType, sectionCount);
+            
+            // Insert before footer
+            const footer = document.querySelector('.creator-footer');
+            footer.parentNode.insertBefore(newSection, footer);
+            
+            // Scroll to new section
+            newSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createSectionHTML(sectionType, id) {
+            const sections = {
+                'standard': {
+                    title: `New Section ${id}`,
+                    content: `
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-textarea"></i> Content:
+                            </label>
+                            <textarea class="form-control editable" rows="4" contenteditable="false" placeholder="Enter content here..."></textarea>
+                        </div>
+                    `
+                }
+            };
+
+            return `
+                <div class="section-controls">
+                    <button onclick="moveSectionUp(this)">↑</button>
+                    <button onclick="moveSectionDown(this)">↓</button>
+                    <button onclick="removeSection(this)">×</button>
+                </div>
+                <div class="form-container">
+                    <h2 class="section-title editable" contenteditable="false">
+                        <i class="bi bi-file-text"></i> ${sections[sectionType].title}
+                    </h2>
+                    ${sections[sectionType].content}
+                </div>
+            `;
+        }
+
+        function moveSectionUp(button) {
+            const section = button.closest('.page-section');
+            if (section.previousElementSibling && section.previousElementSibling.classList.contains('page-section')) {
+                section.parentNode.insertBefore(section, section.previousElementSibling);
+            }
+        }
+
+        function moveSectionDown(button) {
+            const section = button.closest('.page-section');
+            if (section.nextElementSibling && section.nextElementSibling.classList.contains('page-section')) {
+                section.parentNode.insertBefore(section.nextElementSibling, section);
+            }
+        }
+
+        function removeSection(button) {
+            const section = button.closest('.page-section');
+            if (confirm('Are you sure you want to remove this section?')) {
+                section.remove();
+            }
+        }
+
+        function insertPageBreak() {
+            const breakEl = document.createElement('div');
+            breakEl.className = 'page-break';
+            
+            const sections = document.querySelectorAll('.page-section');
+            const lastSection = sections[sections.length - 1];
+            
+            if (lastSection) {
+                lastSection.insertAdjacentElement('afterend', breakEl);
+            }
+        }
+
+        function updateSectionControls() {
+            const sections = document.querySelectorAll('.page-section');
+            sections.forEach((section, index) => {
+                const controls = section.querySelector('.section-controls');
+                if (controls) {
+                    const upButton = controls.querySelector('button[onclick*="moveSectionUp"]');
+                    const downButton = controls.querySelector('button[onclick*="moveSectionDown"]');
+                    
+                    if (upButton) upButton.style.opacity = index === 0 ? '0.3' : '1';
+                    if (downButton) downButton.style.opacity = index === sections.length - 1 ? '0.3' : '1';
+                }
+            });
+        }
+
+        /* ===== STANDARD AUTO-SAVE FUNCTIONS ===== */
+        function startAutoSave() {
+            autoSaveInterval = setInterval(() => {
+                saveToLocalStorage();
+                showAutoSaveIndicator();
+            }, 30000); // Auto-save every 30 seconds
+        }
+
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.style.display = 'block';
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 2000);
+        }
+
+        function saveToLocalStorage() {
+            try {
+                const documentData = collectDocumentData();
+                localStorage.setItem('standard_tool_data', JSON.stringify(documentData));
+            } catch (e) {
+                console.log('LocalStorage not available');
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('standard_tool_data');
+                if (saved) {
+                    const documentData = JSON.parse(saved);
+                    loadDocumentData(documentData);
+                }
+            } catch (e) {
+                console.log('Error loading saved data');
+            }
+        }
+
+        /* ===== STANDARD DATA COLLECTION ===== */
+        function collectDocumentData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                fields: {},
+                editableContent: {}
+            };
+
+            // Collect form fields
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                if (input.id) {
+                    data.fields[input.id] = input.value;
+                }
+            });
+
+            // Collect editable content
+            const editables = document.querySelectorAll('.editable');
+            editables.forEach((el, index) => {
+                data.editableContent[`editable_${index}`] = el.innerHTML;
+            });
+
+            return data;
+        }
+
+        function loadDocumentData(data) {
+            if (!data) return;
+
+            // Load form fields
+            Object.keys(data.fields || {}).forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.value = data.fields[fieldId];
+                }
+            });
+
+            // Load editable content
+            const editables = document.querySelectorAll('.editable');
+            editables.forEach((el, index) => {
+                const savedContent = data.editableContent[`editable_${index}`];
+                if (savedContent) {
+                    el.innerHTML = savedContent;
+                }
+            });
+        }
+
+        /* ===== STANDARD EXPORT FUNCTIONS ===== */
+        function exportToPDF() {
+            const documentData = collectDocumentData();
+            
+            // Create temporary div for PDF generation
+            const exportDiv = document.createElement('div');
+            exportDiv.style.cssText = `
+                padding: 40px;
+                background-color: white;
+                font-family: var(--font-main);
+                line-height: 1.6;
+                color: #333;
+            `;
+            
+            exportDiv.innerHTML = generateExportHTML(documentData);
+            document.body.appendChild(exportDiv);
+            
+            // Generate PDF
+            html2pdf().set({
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `FirstTech_Document_${new Date().toISOString().split('T')[0]}.pdf`,
+                html2canvas: { 
+                    scale: 2,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            }).from(exportDiv).save().then(() => {
+                document.body.removeChild(exportDiv);
+                alert('PDF exported successfully!');
+            }).catch(error => {
+                console.error('PDF export failed:', error);
+                document.body.removeChild(exportDiv);
+                alert('PDF export failed. Please try again.');
+            });
+        }
+
+        function exportToWord() {
+            const documentData = collectDocumentData();
+            
+            let htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>First Technology Document</title>
+                    <style>
+                        body { 
+                            font-family: 'Segoe UI', Arial, sans-serif; 
+                            font-size: 10pt; 
+                            line-height: 1.3; 
+                            margin: 0.5in; 
+                        }
+                        h1 { 
+                            font-size: 14pt; 
+                            color: #1f4e79; 
+                            border-bottom: 2px solid #ff6600; 
+                            padding-bottom: 8px; 
+                        }
+                        h2 { 
+                            font-size: 12pt; 
+                            color: #2c5aa0; 
+                            margin-top: 15px; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${generateExportHTML(documentData)}
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob([htmlContent], {
+                type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            });
+            
+            saveAs(blob, `FirstTech_Document_${new Date().toISOString().split('T')[0]}.doc`);
+            alert('Word document exported successfully!');
+        }
+
+        function generateExportHTML(data) {
+            const mainContainer = document.querySelector('.main-container');
+            let html = mainContainer.innerHTML;
+            
+            // Clean up HTML for export
+            html = html.replace(/<div class="section-controls">.*?<\/div>/gs, '');
+            html = html.replace(/contenteditable="[^"]*"/g, '');
+            html = html.replace(/class="editable[^"]*"/g, '');
+            
+            return `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #1f4e79;">First Technology Professional Document</h1>
+                    <p style="color: #666;">Generated on ${new Date().toLocaleDateString()}</p>
+                </div>
+                ${html}
+                <div style="margin-top: 50px; text-align: center; padding: 30px; background: #f8f9fa; border-radius: 8px;">
+                    <p><strong>Document generated with First Technology Standard Framework</strong></p>
+                    <p>Professional Quality | Enterprise Ready | Standardized Architecture</p>
+                </div>
+            `;
+        }
+
+        /* ===== STANDARD SAVE/LOAD FUNCTIONS ===== */
+        function saveDocument() {
+            const documentData = collectDocumentData();
+            const blob = new Blob([JSON.stringify(documentData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FirstTech_Document_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Document saved successfully!');
+        }
+
+        function loadDocument() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const documentData = JSON.parse(event.target.result);
+                        loadDocumentData(documentData);
+                        alert('Document loaded successfully!');
+                    } catch (error) {
+                        alert('Error loading document: Invalid file format');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        /* ===== STANDARD THEME FUNCTIONS ===== */
+        function applyTheme(themeName) {
+            const themes = {
+                'default': {
+                    primaryColor: '#1f4e79',
+                    secondaryColor: '#2c5aa0',
+                    accentColor: '#ff6600'
+                },
+                'corporate': {
+                    primaryColor: '#4a6baf',
+                    secondaryColor: '#6c8ae4',
+                    accentColor: '#ff8533'
+                },
+                'technical': {
+                    primaryColor: '#3e768f',
+                    secondaryColor: '#5aa3cc',
+                    accentColor: '#ff9500'
+                }
+            };
+
+            const theme = themes[themeName];
+            if (theme) {
+                document.documentElement.style.setProperty('--primary-blue', theme.primaryColor);
+                document.documentElement.style.setProperty('--secondary-blue', theme.secondaryColor);
+                document.documentElement.style.setProperty('--accent-orange', theme.accentColor);
+            }
+        }
+
+        /* ===== STANDARD PREVIEW FUNCTION ===== */
+        function previewDocument() {
+            const documentData = collectDocumentData();
+            
+            const previewModal = document.createElement('div');
+            previewModal.className = 'modal-overlay';
+            previewModal.style.display = 'block';
+            
+            previewModal.innerHTML = `
+                <div class="modal-content" style="max-width: 1200px;">
+                    <span class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2 style="color: var(--primary-blue); border-bottom: 3px solid var(--accent-orange); padding-bottom: 8px;">
+                        <i class="bi bi-eye"></i> Document Preview
+                    </h2>
+                    <div style="max-height: 70vh; overflow-y: auto;">
+                        ${generateExportHTML(documentData)}
+                    </div>
+                    <div class="text-center mt-4">
+                        <button class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="bi bi-check"></i> Looks Good
+                        </button>
+                        <button class="btn btn-primary" onclick="exportToPDF(); this.parentElement.parentElement.parentElement.remove();">
+                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(previewModal);
+        }
+
+        /* ===== STANDARD MODAL FUNCTIONS ===== */
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        /* ===== CUSTOM TOOL FUNCTIONS (Add tool-specific functions here) ===== */
+        /* [CUSTOM_FUNCTIONS_PLACEHOLDER] */
+    </script>
+</body>
+</html>

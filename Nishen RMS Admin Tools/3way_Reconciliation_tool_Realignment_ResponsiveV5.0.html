@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS 3-Way Device Reconciliation Analysis Tool - RMS Assessment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+                margin-bottom: 8px;
+            }
+            
+            .header p {
+                font-size: 1em;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                padding: 15px 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+                margin-bottom: 5px;
+            }
+            
+            .header p {
+                font-size: 0.9em;
+            }
+        }
+        
+        .creator-info {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 0.75em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: right;
+            line-height: 1.4;
+            opacity: 0.95;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .creator-info {
+                position: static;
+                text-align: center;
+                margin-bottom: 20px;
+                font-size: 0.8em;
+                display: inline-block;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .creator-info {
+                font-size: 0.7em;
+                padding: 6px 10px;
+            }
+        }
+        
+        .creator-info .name {
+            font-weight: 700;
+            margin-bottom: 3px;
+            font-size: 1.1em;
+        }
+        
+        .creator-info .title {
+            font-size: 0.9em;
+            margin-bottom: 3px;
+            color: #e8f4ff;
+        }
+        
+        .creator-info .email {
+            font-size: 0.8em;
+            font-style: italic;
+            color: #d0e7ff;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .content {
+                padding: 15px;
+            }
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 1024px) {
+            .input-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+        
+        .input-group {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #0078d4;
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .input-group {
+                padding: 15px;
+            }
+        }
+        
+        .input-group.av {
+            border-left-color: #28a745;
+        }
+        
+        .input-group h3 {
+            color: #323130;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .input-group h6 {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+        
+        .input-group textarea {
+            width: 100%;
+            height: 180px;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .input-group textarea {
+                height: 150px;
+                font-size: 13px;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .input-group textarea {
+                height: 120px;
+                font-size: 12px;
+                padding: 10px;
+            }
+        }
+        
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+        
+        .analyze-btn {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto 40px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 120, 212, 0.3);
+        }
+        
+        .results-section {
+            display: none;
+        }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            text-align: center;
+            padding: 25px;
+            border-radius: 15px;
+        }
+        
+        .stats-card.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .stats-card.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+        }
+        
+        .stats-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stats-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .results-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #0078d4;
+        }
+        
+        @media (max-width: 768px) {
+            .results-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .results-card {
+                padding: 15px;
+            }
+        }
+        
+        .results-card.missing-ncentral {
+            border-top-color: #dc3545;
+        }
+        
+        .results-card.missing-ad {
+            border-top-color: #fd7e14;
+        }
+        
+        .results-card.missing-av {
+            border-top-color: #28a745;
+        }
+        
+        .results-card.all-systems {
+            border-top-color: #20c997;
+        }
+        
+        .results-card h3 {
+            color: #323130;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        
+        .server-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        @media (max-width: 768px) {
+            .server-list {
+                max-height: 200px;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .server-list {
+                max-height: 150px;
+                padding: 10px;
+            }
+        }
+        
+        .server-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid #ff4757;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        @media (max-width: 768px) {
+            .server-item {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .server-item {
+                font-size: 12px;
+                padding: 5px 8px;
+            }
+        }
+        
+        .server-item.success {
+            border-left-color: #28a745;
+        }
+        
+        .server-item.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .export-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 480px) {
+            .export-section {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .export-btn {
+                width: 100%;
+                max-width: 200px;
+                justify-content: center;
+            }
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(40, 167, 69, 0.3);
+        }
+        
+        .export-btn.pdf {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .export-btn.pdf:hover {
+            box-shadow: 0 8px 16px rgba(220, 53, 69, 0.3);
+        }
+        
+        .excel-formula {
+            background: #2d4a22;
+            color: #90ee90;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            font-family: 'Consolas', monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .excel-formula {
+                padding: 20px;
+                margin-top: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .excel-formula {
+                padding: 15px;
+                margin-top: 15px;
+            }
+        }
+        
+        .excel-formula h3 {
+            color: #90ee90;
+            margin-bottom: 15px;
+        }
+        
+        .formula-code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            word-break: break-all;
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .formula-code {
+                font-size: 12px;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .formula-code {
+                font-size: 11px;
+                padding: 10px;
+            }
+        }
+        
+        .copy-btn {
+            background: #90ee90;
+            color: #2d4a22;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #7dd87d;
+            transform: translateY(-1px);
+        }
+        
+        .recommendations {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .recommendations {
+                padding: 20px;
+                margin-top: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .recommendations {
+                padding: 15px;
+                margin-top: 15px;
+            }
+        }
+        
+        .recommendations h3 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .matrix-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .matrix-section h3 {
+            color: #323130;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            text-align: center;
+        }
+        
+        .coverage-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .coverage-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #6c757d;
+            text-align: center;
+        }
+        
+        .coverage-item.full {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .coverage-item.partial {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        
+        .coverage-item.critical {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .coverage-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .coverage-count {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .coverage-desc {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="creator-info">
+                <div class="name">Created by: Nishen Harichunder</div>
+                <div class="title">RMS L4 Engineer</div>
+                <div class="email">nishenh@ftechkzn.co.za</div>
+            </div>
+            <h1>🖥️ RMS 3-Way Device Reconciliation Analysis</h1>
+            <p>Comprehensive Device Monitoring & Security Compliance Assessment</p>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <div class="input-group">
+                    <h3>📊 Ncentral Monitoring List</h3>
+					<h6>(Copy & paste your monitored devices)</h6>
+                    <textarea id="ncentralList" placeholder="Paste your Ncentral monitored devices here, one per line..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <h3>🔍 Active Directory List</h3>
+					<h6>(Paste your domain-joined devices)</h6>
+                    <textarea id="adList" placeholder="Paste your Active Directory devices here, one per line..."></textarea>
+                </div>
+                
+                <div class="input-group av">
+                    <h3>🛡️ Antivirus Protected List</h3>
+					<h6>(Paste your AV protected devices)</h6>
+                    <textarea id="avList" placeholder="Paste your Antivirus protected devices here, one per line..."></textarea>
+                </div>
+            </div>
+            
+            <button class="analyze-btn" onclick="performAnalysis()">🔍 Perform 3-Way Reconciliation Analysis</button>
+            
+            <div class="results-section" id="resultsSection">
+                <div class="stats-overview">
+                    <div class="stats-card">
+                        <div class="stats-number" id="totalDevices">0</div>
+                        <div class="stats-label">Total Unique Devices</div>
+                    </div>
+                    <div class="stats-card success">
+                        <div class="stats-number" id="fullyCovered">0</div>
+                        <div class="stats-label">Fully Protected (All 3)</div>
+                    </div>
+                    <div class="stats-card warning">
+                        <div class="stats-number" id="partiallyCovered">0</div>
+                        <div class="stats-label">Partially Protected</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number" id="criticalGaps">0</div>
+                        <div class="stats-label">Critical Gaps</div>
+                    </div>
+                </div>
+                
+                <div class="matrix-section">
+                    <h3>📈 Device Coverage Matrix</h3>
+                    <div class="coverage-matrix" id="coverageMatrix"></div>
+                </div>
+                
+                <div class="results-grid" id="resultsGrid"></div>
+                
+                <div class="export-section">
+                    <button class="export-btn" onclick="exportToCSV()">
+                        📊 Export Detailed CSV
+                    </button>
+                    <button class="export-btn pdf" onclick="exportToPDF()">
+                        📄 Export Executive Report
+                    </button>
+                </div>
+                
+                <div class="excel-formula">
+                    <h3>📋 Advanced Excel Formulas for 3-Way Analysis</h3>
+                    <p>Use these formulas to create your own 3-way reconciliation matrix:</p>
+                    
+                    <h4 style="margin-top: 20px;">Coverage Status Formula:</h4>
+                    <div class="formula-code" id="excelFormula">
+=IF(AND(NOT(ISERROR(VLOOKUP(A2,NCentralList,1,FALSE))),NOT(ISERROR(VLOOKUP(A2,ADList,1,FALSE))),NOT(ISERROR(VLOOKUP(A2,AVList,1,FALSE)))),"FULLY COVERED",IF(OR(NOT(ISERROR(VLOOKUP(A2,NCentralList,1,FALSE))),NOT(ISERROR(VLOOKUP(A2,ADList,1,FALSE))),NOT(ISERROR(VLOOKUP(A2,AVList,1,FALSE)))),"PARTIAL COVERAGE","NOT FOUND"))
+                    </div>
+                    <button class="copy-btn" onclick="copyFormula()">📋 Copy Excel Formula</button>
+                    
+                    <h4 style="margin-top: 20px;">PowerShell 3-Way Analysis Script:</h4>
+                    <div class="formula-code" id="powershellScript">
+# RMS 3-Way Device Reconciliation Script
+$NCentralDevices = Get-Content "NCentralDevices.txt" | ForEach-Object { $_.Trim().ToUpper() }
+$ADDevices = Get-Content "ADDevices.txt" | ForEach-Object { $_.Trim().ToUpper() }
+$AVDevices = Get-Content "AVDevices.txt" | ForEach-Object { $_.Trim().ToUpper() }
+
+$AllDevices = ($NCentralDevices + $ADDevices + $AVDevices) | Sort-Object -Unique
+
+$Results = @()
+foreach ($Device in $AllDevices) {
+    $InNCentral = $Device -in $NCentralDevices
+    $InAD = $Device -in $ADDevices
+    $InAV = $Device -in $AVDevices
+    
+    $CoverageStatus = if ($InNCentral -and $InAD -and $InAV) { "FULLY COVERED" }
+                     elseif ($InNCentral -or $InAD -or $InAV) { "PARTIAL COVERAGE" }
+                     else { "NOT FOUND" }
+    
+    $Results += [PSCustomObject]@{
+        DeviceName = $Device
+        NCentral = $InNCentral
+        ActiveDirectory = $InAD
+        Antivirus = $InAV
+        CoverageStatus = $CoverageStatus
+    }
+}
+
+$Results | Export-Csv "3Way_Device_Analysis.csv" -NoTypeInformation
+Write-Host "Analysis complete. Total devices analyzed: $($AllDevices.Count)" -ForegroundColor Green
+                    </div>
+                    <button class="copy-btn" onclick="copyPowerShell()">📋 Copy PowerShell Script</button>
+                </div>
+                
+                <div class="recommendations">
+                    <h3>🎯 Senior Systems Engineer Recommendations</h3>
+                    <div class="recommendation-item">
+                        <strong>Critical Priority:</strong> Devices missing from monitoring (Ncentral) represent immediate blind spots for incident response and performance management.
+                    </div>
+                    <div class="recommendation-item">
+                        <strong>Security Risk:</strong> Non-domain devices with AV protection may indicate shadow IT or BYOD scenarios requiring policy review.
+                    </div>
+                    <div class="recommendation-item">
+                        <strong>Compliance Gap:</strong> Domain-joined devices without AV protection violate security baselines and regulatory requirements.
+                    </div>
+                    <div class="recommendation-item">
+                        <strong>Process Enhancement:</strong> Implement automated discovery and enrollment workflows to maintain continuous compliance across all three systems.
+                    </div>
+                    <div class="recommendation-item">
+                        <strong>Risk Assessment:</strong> Prioritize Domain Controllers, SQL Servers, and file servers for immediate full-stack protection coverage.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store analysis results
+        let analysisResults = {
+            allDevices: [],
+            deviceMatrix: {},
+            fullyCovered: [],
+            partiallyCovered: [],
+            criticalGaps: [],
+            missingFromNCentral: [],
+            missingFromAD: [],
+            missingFromAV: [],
+            ncentralOnly: [],
+            adOnly: [],
+            avOnly: []
+        };
+
+        function performAnalysis() {
+            const ncentralText = document.getElementById('ncentralList').value.trim();
+            const adText = document.getElementById('adList').value.trim();
+            const avText = document.getElementById('avList').value.trim();
+            
+            if (!ncentralText && !adText && !avText) {
+                alert('Please provide at least one device list to perform the analysis.');
+                return;
+            }
+            
+            // Parse device lists
+            const ncentralDevices = ncentralText ? ncentralText.split('\n')
+                .map(s => s.trim().toUpperCase())
+                .filter(s => s.length > 0) : [];
+            
+            const adDevices = adText ? adText.split('\n')
+                .map(s => s.trim().toUpperCase())
+                .filter(s => s.length > 0) : [];
+                
+            const avDevices = avText ? avText.split('\n')
+                .map(s => s.trim().toUpperCase())
+                .filter(s => s.length > 0) : [];
+            
+            // Get all unique devices
+            const allDevices = [...new Set([...ncentralDevices, ...adDevices, ...avDevices])];
+            
+            // Create device matrix
+            const deviceMatrix = {};
+            const fullyCovered = [];
+            const partiallyCovered = [];
+            const criticalGaps = [];
+            const missingFromNCentral = [];
+            const missingFromAD = [];
+            const missingFromAV = [];
+            
+            allDevices.forEach(device => {
+                const inNCentral = ncentralDevices.includes(device);
+                const inAD = adDevices.includes(device);
+                const inAV = avDevices.includes(device);
+                
+                deviceMatrix[device] = {
+                    ncentral: inNCentral,
+                    ad: inAD,
+                    av: inAV,
+                    coverageCount: (inNCentral ? 1 : 0) + (inAD ? 1 : 0) + (inAV ? 1 : 0)
+                };
+                
+                // Categorize devices
+                if (inNCentral && inAD && inAV) {
+                    fullyCovered.push(device);
+                } else if (deviceMatrix[device].coverageCount >= 1) {
+                    partiallyCovered.push(device);
+                } else {
+                    criticalGaps.push(device);
+                }
+                
+                // Track missing from each system
+                if (!inNCentral) missingFromNCentral.push(device);
+                if (!inAD) missingFromAD.push(device);
+                if (!inAV) missingFromAV.push(device);
+            });
+            
+            // Store results globally
+            analysisResults = {
+                allDevices,
+                deviceMatrix,
+                fullyCovered,
+                partiallyCovered,
+                criticalGaps,
+                missingFromNCentral,
+                missingFromAD,
+                missingFromAV,
+                ncentralDevices,
+                adDevices,
+                avDevices
+            };
+            
+            // Update statistics
+            document.getElementById('totalDevices').textContent = allDevices.length;
+            document.getElementById('fullyCovered').textContent = fullyCovered.length;
+            document.getElementById('partiallyCovered').textContent = partiallyCovered.length;
+            document.getElementById('criticalGaps').textContent = criticalGaps.length;
+            
+            // Generate coverage matrix
+            generateCoverageMatrix();
+            
+            // Generate results grid
+            generateResultsGrid();
+            
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateCoverageMatrix() {
+            const matrixContainer = document.getElementById('coverageMatrix');
+            
+            // Calculate coverage combinations
+            const combinations = {
+                'All Three Systems': { devices: analysisResults.fullyCovered, class: 'full' },
+                'NCentral + AD Only': { devices: [], class: 'partial' },
+                'NCentral + AV Only': { devices: [], class: 'partial' },
+                'AD + AV Only': { devices: [], class: 'partial' },
+                'NCentral Only': { devices: [], class: 'critical' },
+                'AD Only': { devices: [], class: 'critical' },
+                'AV Only': { devices: [], class: 'critical' }
+            };
+            
+            // Populate combinations
+            analysisResults.allDevices.forEach(device => {
+                const matrix = analysisResults.deviceMatrix[device];
+                if (matrix.ncentral && matrix.ad && !matrix.av) {
+                    combinations['NCentral + AD Only'].devices.push(device);
+                } else if (matrix.ncentral && !matrix.ad && matrix.av) {
+                    combinations['NCentral + AV Only'].devices.push(device);
+                } else if (!matrix.ncentral && matrix.ad && matrix.av) {
+                    combinations['AD + AV Only'].devices.push(device);
+                } else if (matrix.ncentral && !matrix.ad && !matrix.av) {
+                    combinations['NCentral Only'].devices.push(device);
+                } else if (!matrix.ncentral && matrix.ad && !matrix.av) {
+                    combinations['AD Only'].devices.push(device);
+                } else if (!matrix.ncentral && !matrix.ad && matrix.av) {
+                    combinations['AV Only'].devices.push(device);
+                }
+            });
+            
+            let matrixHTML = '';
+            Object.entries(combinations).forEach(([name, data]) => {
+                matrixHTML += `
+                    <div class="coverage-item ${data.class}">
+                        <div class="coverage-title">${name}</div>
+                        <div class="coverage-count">${data.devices.length}</div>
+                        <div class="coverage-desc">${getDescriptionForCombination(name)}</div>
+                    </div>
+                `;
+            });
+            
+            matrixContainer.innerHTML = matrixHTML;
+        }
+        
+        function getDescriptionForCombination(name) {
+            const descriptions = {
+                'All Three Systems': 'Fully protected and monitored',
+                'NCentral + AD Only': 'Missing antivirus protection',
+                'NCentral + AV Only': 'Non-domain workstations',
+                'AD + AV Only': 'Not being monitored',
+                'NCentral Only': 'Critical security gaps',
+                'AD Only': 'No monitoring or AV protection',
+                'AV Only': 'Standalone protected devices'
+            };
+            return descriptions[name] || '';
+        }
+        
+        function generateResultsGrid() {
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            const cards = [
+                {
+                    title: '⚠️ Missing from Ncentral Monitoring',
+                    devices: analysisResults.missingFromNCentral,
+                    class: 'missing-ncentral',
+                    color: '#dc3545'
+                },
+                {
+                    title: '🔍 Missing from Active Directory',
+                    devices: analysisResults.missingFromAD,
+                    class: 'missing-ad',
+                    color: '#fd7e14'
+                },
+                {
+                    title: '🛡️ Missing Antivirus Protection',
+                    devices: analysisResults.missingFromAV,
+                    class: 'missing-av',
+                    color: '#28a745'
+                },
+                {
+                    title: '✅ Fully Protected Devices',
+                    devices: analysisResults.fullyCovered,
+                    class: 'all-systems',
+                    color: '#20c997'
+                }
+            ];
+            
+            let gridHTML = '';
+            cards.forEach(card => {
+                gridHTML += `
+                    <div class="results-card ${card.class}">
+                        <h3>${card.title}</h3>
+                        <div class="server-list">
+                            ${card.devices.length > 0 
+                                ? card.devices.map(device => `
+                                    <div class="server-item" style="border-left-color: ${card.color};">
+                                        ${device}
+                                        <span style="float: right; font-size: 0.8em; color: #666;">
+                                            ${getCoverageStatus(device)}
+                                        </span>
+                                    </div>
+                                `).join('')
+                                : `<div style="text-align: center; color: #28a745; font-weight: bold;">
+                                    ${card.class === 'all-systems' ? '🎉 Great job! All devices are fully covered.' : '✅ No gaps found in this category!'}
+                                   </div>`
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsGrid.innerHTML = gridHTML;
+        }
+        
+        function getCoverageStatus(device) {
+            const matrix = analysisResults.deviceMatrix[device];
+            const status = [];
+            if (matrix.ncentral) status.push('MON');
+            if (matrix.ad) status.push('AD');
+            if (matrix.av) status.push('AV');
+            return status.join(' | ') || 'NONE';
+        }
+        
+        function exportToCSV() {
+            if (!analysisResults.allDevices.length) {
+                alert('Please perform an analysis first before exporting.');
+                return;
+            }
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // Add headers
+            csvContent += "Device Name,In NCentral,In Active Directory,In Antivirus,Coverage Status,Risk Level,Analysis Date\n";
+            
+            // Add device data
+            analysisResults.allDevices.forEach(device => {
+                const matrix = analysisResults.deviceMatrix[device];
+                const coverageStatus = matrix.ncentral && matrix.ad && matrix.av ? 'FULLY COVERED' :
+                                     matrix.coverageCount >= 1 ? 'PARTIAL COVERAGE' : 'NO COVERAGE';
+                const riskLevel = matrix.coverageCount === 3 ? 'LOW' :
+                                 matrix.coverageCount >= 1 ? 'MEDIUM' : 'HIGH';
+                
+                csvContent += `"${device}","${matrix.ncentral}","${matrix.ad}","${matrix.av}","${coverageStatus}","${riskLevel}","${new Date().toLocaleDateString()}"\n`;
+            });
+            
+            // Create and download file
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `RMS_3Way_Reconciliation_${timestamp}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ CSV Downloaded!';
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            }, 2000);
+        }
+        
+        function exportToPDF() {
+            if (!analysisResults.allDevices.length) {
+                alert('Please perform an analysis first before exporting.');
+                return;
+            }
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const complianceRate = Math.round((analysisResults.fullyCovered.length / analysisResults.allDevices.length) * 100);
+            
+            // Create a new window with the report content
+            const reportWindow = window.open('', '_blank');
+            
+            const reportContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>RMS 3-Way Device Reconciliation Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                        .header { text-align: center; border-bottom: 3px solid #0078d4; padding-bottom: 20px; margin-bottom: 30px; }
+                        .header h1 { color: #0078d4; margin: 0; font-size: 2em; }
+                        .header p { margin: 5px 0; color: #666; }
+                        .executive-summary { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; }
+                        .executive-summary h2 { color: #dc3545; margin-top: 0; }
+                        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+                        .stat-box { background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #0078d4; }
+                        .stat-number { font-size: 2em; font-weight: bold; color: #0078d4; }
+                        .stat-label { color: #666; font-size: 0.9em; }
+                        .section { margin-bottom: 30px; page-break-inside: avoid; }
+                        .section h3 { color: #0078d4; border-bottom: 2px solid #0078d4; padding-bottom: 8px; }
+                        .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+                        .device-section { background: #f8f9fa; padding: 20px; border-radius: 8px; }
+                        .device-section h4 { margin-top: 0; color: #323130; }
+                        .device-list { max-height: 200px; overflow-y: auto; }
+                        .device-item { background: white; padding: 8px 12px; margin: 5px 0; border-left: 4px solid #dc3545; font-family: monospace; font-size: 0.9em; }
+                        .device-item.success { border-left-color: #28a745; }
+                        .device-item.warning { border-left-color: #ffc107; }
+                        .critical-findings { background: #f8d7da; border: 2px solid #dc3545; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                        .critical-findings h3 { color: #721c24; margin-top: 0; }
+                        .recommendations { background: #d1ecf1; border: 2px solid #bee5eb; padding: 20px; border-radius: 10px; }
+                        .recommendations h3 { color: #0c5460; margin-top: 0; }
+                        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; font-size: 0.9em; color: #666; }
+                        .risk-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0; }
+                        .risk-item { padding: 15px; border-radius: 8px; text-align: center; }
+                        .risk-high { background: #f8d7da; color: #721c24; }
+                        .risk-medium { background: #fff3cd; color: #856404; }
+                        .risk-low { background: #d4edda; color: #155724; }
+                        @media print { .no-print { display: none; } body { margin: 10px; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🖥️ RMS 3-Way Device Reconciliation Report</h1>
+                        <p><strong>Executive Summary Report</strong></p>
+                        <p>Analysis Date: ${new Date().toLocaleDateString()} | Generated by: RMS L4 Engineering</p>
+                    </div>
+                    
+                    <div class="executive-summary">
+                        <h2>📊 Executive Summary</h2>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-number">${analysisResults.allDevices.length}</div>
+                                <div class="stat-label">Total Unique Devices</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number">${analysisResults.fullyCovered.length}</div>
+                                <div class="stat-label">Fully Protected</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number">${complianceRate}%</div>
+                                <div class="stat-label">Compliance Rate</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number">${analysisResults.criticalGaps.length + analysisResults.partiallyCovered.length}</div>
+                                <div class="stat-label">Devices At Risk</div>
+                            </div>
+                        </div>
+                        <p><strong>Overall Assessment:</strong> ${complianceRate >= 90 ? 'Excellent' : complianceRate >= 75 ? 'Good' : complianceRate >= 50 ? 'Needs Improvement' : 'Critical Action Required'} - ${complianceRate}% of devices have full protection coverage across monitoring, domain management, and antivirus systems.</p>
+                    </div>
+                    
+                    ${analysisResults.missingFromNCentral.length + analysisResults.missingFromAV.length > 0 ? `
+                    <div class="critical-findings">
+                        <h3>🚨 Critical Security Findings</h3>
+                        <div class="risk-matrix">
+                            <div class="risk-item risk-high">
+                                <strong>${analysisResults.missingFromNCentral.length}</strong><br>
+                                Missing Monitoring
+                            </div>
+                            <div class="risk-item risk-high">
+                                <strong>${analysisResults.missingFromAV.length}</strong><br>
+                                No Antivirus Protection
+                            </div>
+                            <div class="risk-item risk-medium">
+                                <strong>${analysisResults.missingFromAD.length}</strong><br>
+                                Non-Domain Devices
+                            </div>
+                        </div>
+                        <p><strong>Immediate Action Required:</strong> ${analysisResults.missingFromNCentral.length} devices lack monitoring coverage and ${analysisResults.missingFromAV.length} devices are unprotected by antivirus systems.</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="section">
+                        <h3>📈 Detailed Coverage Analysis</h3>
+                        <div class="device-grid">
+                            <div class="device-section">
+                                <h4>⚠️ Missing Ncentral Monitoring (${analysisResults.missingFromNCentral.length})</h4>
+                                <div class="device-list">
+                                    ${analysisResults.missingFromNCentral.slice(0, 20).map(device => `
+                                        <div class="device-item">${device} - ${getCoverageStatus(device)}</div>
+                                    `).join('')}
+                                    ${analysisResults.missingFromNCentral.length > 20 ? `<div style="text-align: center; padding: 10px; font-style: italic;">... and ${analysisResults.missingFromNCentral.length - 20} more devices</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="device-section">
+                                <h4>🛡️ Missing Antivirus Protection (${analysisResults.missingFromAV.length})</h4>
+                                <div class="device-list">
+                                    ${analysisResults.missingFromAV.slice(0, 20).map(device => `
+                                        <div class="device-item">${device} - ${getCoverageStatus(device)}</div>
+                                    `).join('')}
+                                    ${analysisResults.missingFromAV.length > 20 ? `<div style="text-align: center; padding: 10px; font-style: italic;">... and ${analysisResults.missingFromAV.length - 20} more devices</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="device-section">
+                                <h4>🔍 Non-Domain Devices (${analysisResults.missingFromAD.length})</h4>
+                                <div class="device-list">
+                                    ${analysisResults.missingFromAD.slice(0, 20).map(device => `
+                                        <div class="device-item warning">${device} - ${getCoverageStatus(device)}</div>
+                                    `).join('')}
+                                    ${analysisResults.missingFromAD.length > 20 ? `<div style="text-align: center; padding: 10px; font-style: italic;">... and ${analysisResults.missingFromAD.length - 20} more devices</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="device-section">
+                                <h4>✅ Fully Protected Devices (${analysisResults.fullyCovered.length})</h4>
+                                <div class="device-list">
+                                    ${analysisResults.fullyCovered.slice(0, 20).map(device => `
+                                        <div class="device-item success">${device} - MON | AD | AV</div>
+                                    `).join('')}
+                                    ${analysisResults.fullyCovered.length > 20 ? `<div style="text-align: center; padding: 10px; font-style: italic;">... and ${analysisResults.fullyCovered.length - 20} more devices</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations">
+                        <h3>🎯 Senior Systems Engineer Recommendations</h3>
+                        <ul>
+                            <li><strong>Priority 1 - Monitoring Gaps:</strong> Immediately onboard ${analysisResults.missingFromNCentral.length} devices to Ncentral for proactive monitoring and incident response.</li>
+                            <li><strong>Priority 2 - Security Gaps:</strong> Deploy antivirus protection to ${analysisResults.missingFromAV.length} unprotected devices to prevent malware infections.</li>
+                            <li><strong>Priority 3 - Governance:</strong> Review ${analysisResults.missingFromAD.length} non-domain devices for compliance with organizational policies.</li>
+                            <li><strong>Process Improvement:</strong> Implement automated device discovery and enrollment workflows to maintain ${complianceRate >= 95 ? 'current high' : 'improved'} compliance levels.</li>
+                            <li><strong>Risk Mitigation:</strong> Establish regular reconciliation reviews (monthly recommended) to prevent coverage gaps.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer">
+                        <p><strong>RMS 3-Way Device Reconciliation Report</strong></p>
+                        <p>Created by: Nishen Harichunder - RMS L4 Engineer | Email: nishenh@ftechkzn.co.za</p>
+                        <p>This report provides comprehensive analysis of device coverage across monitoring, domain management, and antivirus systems.</p>
+                    </div>
+                    
+                    <div class="no-print" style="text-align: center; margin: 30px 0;">
+                        <button onclick="window.print();" style="background: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-weight: bold; margin-right: 10px;">🖨️ Print Report</button>
+                        <button onclick="window.close();" style="background: #6c757d; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-weight: bold;">❌ Close</button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            reportWindow.document.write(reportContent);
+            reportWindow.document.close();
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Executive Report Ready!';
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            }, 2000);
+        }
+        
+        function copyFormula() {
+            const formula = document.getElementById('excelFormula').textContent;
+            navigator.clipboard.writeText(formula).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#90ee90';
+                }, 2000);
+            });
+        }
+        
+        function copyPowerShell() {
+            const script = document.getElementById('powershellScript').textContent;
+            navigator.clipboard.writeText(script).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#90ee90';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

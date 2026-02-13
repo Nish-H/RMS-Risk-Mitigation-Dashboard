@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nishen's Admin Tool & Script Viewer</title>
+
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/darcula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/powershell/powershell.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- CodeMirror Search Addons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/dialog/dialog.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/search/jump-to-line.min.js"></script>
+
+    <!-- CodeMirror Fold Addons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/fold/foldgutter.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/fold/foldcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/fold/foldgutter.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/fold/brace-fold.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/fold/comment-fold.js"></script>
+
+    <!-- xterm.js Terminal -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+
+    <!-- Split.js for Resizable Panes -->
+    <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+
+
+
+
+    <style>
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: var(--editor-font-size);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --editor-font-size: 0.875rem;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --hover-bg: #334155;
+            --border-color: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        :root.light-theme {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #9ca3af;
+            --success-color: #16a34a;
+            --warning-color: #f97316;
+            --danger-color: #dc2626;
+            --dark-bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --hover-bg: #f9fafb;
+            --border-color: #e5e7eb;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--dark-bg);
+            padding: 1rem 2rem 0;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .tab {
+            padding: 0.75rem 2rem;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 0.5rem 0.5rem 0 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .tab:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tab.active::before {
+            transform: translateX(0);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 2rem;
+            gap: 1.5rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            gap: 1.5rem;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .gutter {
+            background-color: var(--border-color);
+            background-repeat: no-repeat;
+            background-position: 50%;
+        }
+
+        .gutter.gutter-horizontal {
+            cursor: col-resize;
+        }
+
+        .gutter.gutter-horizontal:hover {
+            background-color: var(--primary-color);
+        }
+
+        .drag-over {
+            border: 4px dashed var(--primary-color) !important;
+            border-radius: 1rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 350px;
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar:hover {
+            box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--dark-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        .content-search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .content-search-box input {
+            padding: 0.5rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        /* File Tree */
+        .file-tree {
+            margin-top: 1rem;
+        }
+
+        .tree-item {
+            padding: 0.625rem 0.875rem;
+            margin: 0.25rem 0;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .tree-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--primary-color);
+            border-radius: 0 0.25rem 0.25rem 0;
+            transform: scaleY(0);
+            transition: transform 0.2s ease;
+        }
+
+        .tree-item:hover {
+            background: var(--hover-bg);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tree-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .tree-item.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .tree-item.folder {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .tree-item.file {
+            color: var(--text-secondary);
+            padding-left: 2rem;
+        }
+
+        .tree-children {
+            margin-left: 1rem;
+            border-left: 2px solid var(--border-color);
+            padding-left: 0.5rem;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+            overflow: auto;
+            position: relative;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .content-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Preview Frame */
+        .preview-container {
+            width: 100%;
+            height: calc(100vh - 300px);
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .preview-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2rem;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-bottom: 1px solid #d1d5db;
+            z-index: 10;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            margin-top: 2rem;
+        }
+
+        .html-preview-container,
+        .html-editor-codemirror {
+            width: 100%;
+            height: 100%;
+            display: flex; /* Use flex to make CodeMirror fill height */
+            flex-direction: column;
+        }
+
+        .html-editor-codemirror .CodeMirror {
+            height: 100% !important;
+        }
+
+        /* Code Editor */
+        .code-editor {
+            width: 100%;
+            height: calc(100vh - 300px);
+            background: #1e1e1e;
+            border-radius: 0.5rem;
+            overflow: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Editor Tabs */
+        .editor-tabs {
+            display: flex;
+            background: var(--dark-bg);
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+            padding-top: 0.5rem;
+            padding-left: 1rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .editor-tab {
+            padding: 0.5rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .editor-tab:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .editor-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            position: relative;
+            z-index: 1;
+        }
+
+        .editor-tab .close-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .editor-tab.active .close-tab {
+            color: white;
+        }
+
+        .editor-tab .close-tab:hover {
+            color: var(--danger-color);
+        }
+
+        .editor-tab-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border-bottom-left-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+            overflow: hidden;
+            height: calc(100% - 40px); /* Adjust based on editor-tabs height */
+        }
+
+        .editor-tab-content {
+            display: none;
+            height: 100%;
+            width: 100%;
+            padding: 1.5rem;
+            overflow: auto;
+        }
+
+        .editor-tab-content.active {
+            display: block;
+        }
+
+
+        .code-editor textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: inherit;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            resize: none;
+        }
+
+        .code-editor textarea:focus {
+            outline: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+        .status-badge.info {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+        }
+
+        /* Tooltip */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-5px);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+        }
+
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* File Icon */
+        .file-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+            border-radius: 0.5rem;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 0.5rem;
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb-item {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-secondary);
+        }
+
+        /* Stats Card */
+        .stats-card {
+            background: var(--dark-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+
+            .tabs {
+                padding: 1rem 1rem 0;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🛠️ Nishen's Admin Tool & Script Viewer</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="openSettings()" data-tooltip="Settings">
+                        <span>⚙️ Settings</span>
+                    </button>
+                    <button class="btn btn-success" onclick="refreshAll()" data-tooltip="Refresh all data">
+                        <span>🔄 Refresh</span>
+                    </button>
+                    <span id="status-indicator"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('html-tools')">
+                📄 HTML Tools
+            </button>
+            <button class="tab" onclick="switchTab('admin-scripts')">
+                ⚙️ Admin Scripts
+            </button>
+            <button class="tab" onclick="switchTab('markdown-viewer')">
+                📄 Markdown Viewer
+            </button>
+            <button class="tab" onclick="switchTab('command-snippets')">
+                ⚡ Command Snippets
+            </button>
+            <button class="tab" onclick="switchTab('image-viewer')">
+                🖼️ Image Viewer
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- HTML Tools Tab -->
+            <div id="html-tools" class="tab-content active">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>HTML Tools</h2>
+                        <button class="btn btn-primary" onclick="selectHtmlFolder()" style="width: 100%;">
+                            📁 Select Folder
+                        </button>
+                    </div>
+
+                    <div class="stats-card" id="html-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="html-file-count">0</div>
+                                <div class="stat-label">Files</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="html-folder-count">0</div>
+                                <div class="stat-label">Folders</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" id="html-search" placeholder="Search tools..." onkeyup="filterFiles('html')">
+                    </div>
+
+                    <div id="html-breadcrumb" class="breadcrumb"></div>
+                    <div class="file-tree" id="html-tree"></div>
+                </div>
+
+                <div class="content-area">
+                    <div class="content-header">
+                        <h2 id="html-content-title">Select a file</h2>
+                        <div class="content-search-box">
+                            <input type="text" id="html-content-search" placeholder="Search in file...">
+                            <button class="btn btn-primary" onclick="searchInEditor('html')" data-tooltip="Find text">🔍</button>
+                        </div>
+                        <div class="content-actions">
+                            <button class="btn btn-warning" id="edit-html-btn" onclick="toggleHtmlEditorMode()" data-tooltip="Toggle Edit/Preview">
+                                ✏️ Edit
+                            </button>
+                            <button class="btn btn-secondary" onclick="saveHtml()" data-tooltip="Save Changes">
+                                💾 Save
+                            </button>
+                            <button class="btn btn-secondary" onclick="openInNewTab('html')" data-tooltip="Open in new tab">
+                                🔗 Open
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-tabs" id="html-editor-tabs">
+                        <!-- Tab buttons will be rendered here -->
+                    </div>
+                    <div class="editor-tab-content-wrapper" id="html-editor-content-wrapper">
+                        <div id="html-default-empty-state" class="empty-state editor-tab-content active">
+                            <div class="empty-state-icon">📄</div>
+                            <h3>No file selected</h3>
+                            <p>Select an HTML file from the sidebar to preview it here</p>
+                        </div>
+                        <!-- Individual tab contents will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Scripts Tab -->
+            <div id="admin-scripts" class="tab-content">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Admin Scripts</h2>
+                        <button class="btn btn-primary" onclick="selectScriptFolder()" style="width: 100%;">
+                            📁 Select Folder
+                        </button>
+                    </div>
+
+                    <div class="stats-card" id="script-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="script-file-count">0</div>
+                                <div class="stat-label">Scripts</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="script-folder-count">0</div>
+                                <div class="stat-label">Folders</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" id="script-search" placeholder="Search scripts..." onkeyup="filterFiles('script')">
+                    </div>
+
+                    <div id="script-breadcrumb" class="breadcrumb"></div>
+                    <div class="file-tree" id="script-tree"></div>
+                </div>
+
+                <div class="content-area">
+                    <div class="content-header">
+                        <h2 id="script-content-title">Select a script</h2>
+                        <div class="content-search-box">
+                            <input type="text" id="script-content-search" placeholder="Search in file...">
+                            <button class="btn btn-primary" onclick="searchInEditor('script')" data-tooltip="Find text">🔍</button>
+                        </div>
+                        <div class="content-actions">
+                            <button class="btn btn-success" onclick="runScript()" data-tooltip="Execute PowerShell script">
+                                ▶️ Run
+                            </button>
+                            <button class="btn btn-warning" onclick="editScript()" data-tooltip="Edit script">
+                                ✏️ Edit
+                            </button>
+                            <button class="btn btn-secondary" onclick="saveScript()" data-tooltip="Save changes">
+                                💾 Save
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-tabs" id="script-editor-tabs">
+                        <!-- Tab buttons will be rendered here -->
+                    </div>
+                    <div class="editor-tab-content-wrapper" id="script-editor-content-wrapper">
+                        <div id="script-default-empty-state" class="empty-state editor-tab-content active">
+                            <div class="empty-state-icon">⚙️</div>
+                            <h3>No script selected</h3>
+                            <p>Select a PowerShell script from the sidebar to view it here</p>
+                        </div>
+                        <!-- Individual tab contents will be rendered here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Markdown Viewer Tab -->
+            <div id="markdown-viewer" class="tab-content">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Markdown Files</h2>
+                        <button class="btn btn-primary" onclick="selectMarkdownFolder()" style="width: 100%;">
+                            📁 Select Folder
+                        </button>
+                    </div>
+
+                    <div class="stats-card" id="markdown-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="markdown-file-count">0</div>
+                                <div class="stat-label">Files</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="markdown-folder-count">0</div>
+                                <div class="stat-label">Folders</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" id="markdown-search" placeholder="Search files..." onkeyup="filterFiles('markdown')">
+                    </div>
+
+                    <div id="markdown-breadcrumb" class="breadcrumb"></div>
+                    <div class="file-tree" id="markdown-tree"></div>
+                </div>
+
+                <div class="content-area">
+                    <div class="content-header">
+                        <h2 id="markdown-content-title">Select a file</h2>
+                        <div class="content-search-box">
+                            <input type="text" id="markdown-content-search" placeholder="Search in file...">
+                            <button class="btn btn-primary" onclick="searchInEditor('markdown')" data-tooltip="Find text">🔍</button>
+                        </div>
+                        <div class="content-actions">
+                            <button class="btn btn-secondary" onclick="saveMarkdown()" data-tooltip="Save Changes">
+                                💾 Save
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-tabs" id="markdown-editor-tabs">
+                        <!-- Tab buttons will be rendered here -->
+                    </div>
+                    <div class="editor-tab-content-wrapper" id="markdown-editor-content-wrapper">
+                        <div id="markdown-default-empty-state" class="empty-state editor-tab-content active">
+                            <div class="empty-state-icon">📄</div>
+                            <h3>No file selected</h3>
+                            <p>Select a Markdown file from the sidebar to view it here</p>
+                        </div>
+                        <!-- Individual tab contents will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Command Snippets Tab -->
+            <div id="command-snippets" class="tab-content">
+                <div class="content-area" style="width: 100%;">
+                    <div class="content-header">
+                        <h2>Command Snippets</h2>
+                    </div>
+                    <div id="command-form">
+                        <input type="text" id="command-title" placeholder="Title for your command..." class="search-box-input" style="width:100%">
+                        <textarea id="command-text" placeholder="Paste your command here..." rows="3" class="search-box-input" style="width:100%"></textarea>
+                        <button class="btn btn-primary" onclick="addCommand()">Save Snippet</button>
+                    </div>
+                    <div id="command-list" style="margin-top: 2rem;">
+                        <!-- Saved commands will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Viewer Tab -->
+            <div id="image-viewer" class="tab-content">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Image Files</h2>
+                        <button class="btn btn-primary" onclick="selectImageFolder()" style="width: 100%;">
+                            📁 Select Folder
+                        </button>
+                    </div>
+
+                    <div class="stats-card" id="image-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="image-file-count">0</div>
+                                <div class="stat-label">Files</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="image-folder-count">0</div>
+                                <div class="stat-label">Folders</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" id="image-search" placeholder="Search files..." onkeyup="filterFiles('image')">
+                    </div>
+
+                    <div id="image-breadcrumb" class="breadcrumb"></div>
+                    <div class="file-tree" id="image-tree"></div>
+                </div>
+
+                <div class="content-area">
+                    <div class="content-header">
+                        <h2 id="image-content-title">Select an image</h2>
+                    </div>
+                    <div id="image-preview-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <img id="image-preview" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+        <div style="background-color: var(--card-bg); margin: 15% auto; padding: 20px; border: 1px solid var(--border-color); width: 80%; max-width: 500px; border-radius: 1rem; box-shadow: var(--shadow-xl);">
+            <h2 style="margin-bottom: 1.5rem;">Settings</h2>
+            
+            <div style="margin-bottom: 1rem;">
+                <label for="theme-select" style="display: block; margin-bottom: 0.5rem;">Theme</label>
+                <select id="theme-select" class="btn-secondary" style="width: 100%;">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="font-size-input" style="display: block; margin-bottom: 0.5rem;">Editor Font Size</label>
+                <input type="number" id="font-size-input" min="8" max="24" step="1" class="btn-secondary" style="width: 100%;">
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                <input type="checkbox" id="autosave-toggle" style="margin-right: 0.5rem;">
+                <label for="autosave-toggle">Enable Auto-save</label>
+            </div>
+
+            <button class="btn btn-primary" onclick="closeSettings()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let htmlFolderHandle = null;
+        let scriptFolderHandle = null;
+        let currentHtmlFile = null;
+        let currentScriptFile = null;
+        let htmlFiles = [];
+        let scriptFiles = [];
+        let autoRefreshInterval = null;
+
+        let openHtmlTabs = []; // { id: 'uniqueId', name: 'fileName', path: 'filePath', fileHandle: fileHandle, editorInstance: null, type: 'html', isHtmlPreview: true/false, rawContent: '' }
+        let activeHtmlTabId = null;
+
+        let openScriptTabs = []; // { id: 'uniqueId', name: 'fileName', path: 'filePath', fileHandle: fileHandle, editorInstance: null, type: 'script' }
+        let activeScriptTabId = null;
+
+        let markdownFolderHandle = null;
+        let markdownFiles = [];
+        let openMarkdownTabs = [];
+        let activeMarkdownTabId = null;
+
+        let imageFolderHandle = null;
+        let imageFiles = [];
+
+        let terminal = null;
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Tool & Script Manager initialized');
+            showStatus('Ready', 'success');
+
+            // Initialize splits for the default active tab
+            const htmlTab = document.getElementById('html-tools');
+            Split(['#html-tools .sidebar', '#html-tools .content-area'], {
+                sizes: [25, 75],
+                minSize: 200,
+                gutterSize: 8,
+                cursor: 'col-resize'
+            });
+            htmlTab.classList.add('split-initialized');
+
+            // --- Drag and Drop ---
+            const body = document.body;
+            body.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                body.classList.add('drag-over');
+            });
+
+            body.addEventListener('dragleave', (event) => {
+                body.classList.remove('drag-over');
+            });
+
+            body.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                body.classList.remove('drag-over');
+
+                const items = event.dataTransfer.items;
+                if (items && items.length > 0) {
+                    const handle = await items[0].getAsFileSystemHandle();
+                    if (handle.kind === 'directory') {
+                        const activeTabEl = document.querySelector('.tab.active');
+                        const activeTabName = activeTabEl.getAttribute('onclick').match(/'([^']+)'/)[1];
+
+                        if (activeTabName === 'html-tools') {
+                            htmlFolderHandle = handle;
+                            await loadHtmlFiles();
+                            showStatus('HTML folder dropped and loaded', 'success');
+                        } else if (activeTabName === 'admin-scripts') {
+                            scriptFolderHandle = handle;
+                            await loadScriptFiles();
+                            showStatus('Scripts folder dropped and loaded', 'success');
+                        } else if (activeTabName === 'markdown-viewer') {
+                            markdownFolderHandle = handle;
+                            await loadMarkdownFiles();
+                            showStatus('Markdown folder dropped and loaded', 'success');
+                        } else if (activeTabName === 'image-viewer') {
+                            imageFolderHandle = handle;
+                            await loadImageFiles();
+                            showStatus('Image folder dropped and loaded', 'success');
+                        }
+                    } else {
+                        showStatus('Please drop a folder, not a file.', 'error');
+                    }
+                }
+            });
+
+            loadSettings();
+            loadCommands();
+        });
+
+        // Tab Switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            const newTabContent = document.getElementById(tabName);
+            newTabContent.classList.add('active');
+
+            // Initialize Split.js for the new tab if it hasn't been already
+            if (newTabContent.classList.contains('split-initialized')) return;
+
+            if (tabName === 'html-tools' || tabName === 'admin-scripts' || tabName === 'markdown-viewer' || tabName === 'image-viewer') {
+                Split([`#${tabName} .sidebar`, `#${tabName} .content-area`], {
+                    sizes: [25, 75],
+                    minSize: 200,
+                    gutterSize: 8,
+                    cursor: 'col-resize'
+                });
+                newTabContent.classList.add('split-initialized');
+            }
+
+            if (tabName === 'terminal' && !terminal) {
+                initializeTerminal();
+            }
+        }
+
+        // Status Indicator
+        function showStatus(message, type = 'info') {
+            const indicator = document.getElementById('status-indicator');
+            indicator.innerHTML = `<span class="status-badge ${type}">${message}</span>`;
+
+            setTimeout(() => {
+                indicator.innerHTML = '';
+            }, 3000);
+        }
+
+        // --- Tab Management Functions ---
+        function generateUniqueId() {
+            return 'tab_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function addTab(type, file) {
+            const tabId = generateUniqueId();
+            const tabName = file.name;
+            const tabContainer = document.getElementById(`${type}-editor-tabs`);
+            const contentContainer = document.getElementById(`${type}-editor-content-wrapper`);
+            const defaultEmptyState = document.getElementById(`${type}-default-empty-state`);
+
+            if (defaultEmptyState && defaultEmptyState.classList.contains('active')) {
+                defaultEmptyState.classList.remove('active');
+            }
+
+            const newTab = {
+                id: tabId,
+                name: tabName,
+                path: file.path,
+                fileHandle: file.handle,
+                editorInstance: null, // For CodeMirror
+                type: type,
+                isHtmlPreview: type === 'html' ? true : false, // To differentiate between raw html editor and iframe preview
+                rawContent: '' // To store content for HTML editor
+            };
+
+            const tabButton = document.createElement('div');
+            tabButton.className = 'editor-tab';
+            tabButton.id = `tab-btn-${tabId}`;
+            tabButton.innerHTML = `
+                <span>${tabName}</span>
+                <button class="close-tab" onclick="removeTab(event, '${type}', '${tabId}')">✕</button>
+            `;
+            tabButton.onclick = (event) => {
+                // Prevent switching tab when clicking close button
+                if (!event.target.classList.contains('close-tab')) {
+                    switchToTab(type, tabId);
+                }
+            };
+            tabContainer.appendChild(tabButton);
+
+            const tabContent = document.createElement('div');
+            tabContent.className = 'editor-tab-content';
+            tabContent.id = `tab-content-${tabId}`;
+            contentContainer.appendChild(tabContent);
+
+            let openTabs;
+            if (type === 'html') {
+                openTabs = openHtmlTabs;
+            } else if (type === 'script') {
+                openTabs = openScriptTabs;
+            } else {
+                openTabs = openMarkdownTabs;
+            }
+            openTabs.push(newTab);
+
+            switchToTab(type, tabId);
+
+            // Load content into the new tab
+            try {
+                const fileData = await file.handle.getFile();
+                const content = await fileData.text();
+
+                if (type === 'html') {
+                    newTab.rawContent = content; // Store raw HTML content
+                    
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'html-preview-container'; // New class for styling
+                    previewDiv.id = `html-preview-${tabId}`;
+                    previewDiv.innerHTML = `<iframe srcdoc="${content.replace(/"/g, '&quot;')}"></iframe>`;
+                    tabContent.appendChild(previewDiv);
+
+                    const editorDiv = document.createElement('div');
+                    editorDiv.className = 'html-editor-codemirror'; // New class for styling
+                    editorDiv.id = `html-editor-${tabId}`;
+                    editorDiv.style.display = 'none'; // Hidden by default
+                    tabContent.appendChild(editorDiv);
+
+                    newTab.editorInstance = CodeMirror(editorDiv, {
+                        value: content,
+                        mode: 'htmlmixed',
+                        theme: 'darcula',
+                        lineNumbers: true,
+                        lineWrapping: true,
+                        foldGutter: true,
+                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+                    });
+
+                } else if (type === 'script') {
+                    let mode = 'powershell';
+                    const options = {
+                        value: content,
+                        theme: 'darcula',
+                        lineNumbers: true,
+                        readOnly: true
+                    };
+                    if (file.name.endsWith('.json')) {
+                        mode = {name: 'javascript', json: true};
+                        options.gutters = ["CodeMirror-linenumbers", "CodeMirror-foldgutter"];
+                        options.foldGutter = true;
+                    }
+                    options.mode = mode;
+                    newTab.editorInstance = CodeMirror(tabContent, options);
+                } else if (type === 'markdown') {
+                    tabContent.innerHTML = '<div style="display: flex; height: 100%;"><div id="md-editor-' + tabId + '" style="width: 50%;"></div><div id="md-preview-' + tabId + '" style="width: 50%; padding-left: 1rem; border-left: 1px solid var(--border-color); overflow-y: auto;"></div></div>';
+                    const editorDiv = document.getElementById('md-editor-' + tabId);
+                    const previewDiv = document.getElementById('md-preview-' + tabId);
+                    
+                    newTab.editorInstance = CodeMirror(editorDiv, {
+                        value: content,
+                        mode: 'markdown',
+                        theme: 'darcula',
+                        lineNumbers: true,
+                    });
+                    
+                    previewDiv.innerHTML = marked(content);
+
+                    newTab.editorInstance.on('change', (editor) => {
+                        previewDiv.innerHTML = marked(editor.getValue());
+                    });
+                }
+                showStatus(`${tabName} loaded`, 'success');
+            } catch (err) {
+                console.error(`Error loading ${tabName}:`, err);
+                tabContent.innerHTML = `<p class="empty-state">Error loading ${tabName}</p>`;
+                showStatus(`Error loading ${tabName}`, 'error');
+            }
+        }
+
+        function removeTab(event, type, tabId) {
+            event.stopPropagation(); // Prevent tab switch when clicking close button
+
+            const tabButton = document.getElementById(`tab-btn-${tabId}`);
+            const tabContent = document.getElementById(`tab-content-${tabId}`);
+            if (tabButton) tabButton.remove();
+            if (tabContent) tabContent.remove();
+
+            let openTabs;
+            if (type === 'html') {
+                openTabs = openHtmlTabs;
+            } else if (type === 'script') {
+                openTabs = openScriptTabs;
+            } else {
+                openTabs = openMarkdownTabs;
+            }
+
+            let tabIndex = openTabs.findIndex(tab => tab.id === tabId);
+            if (tabIndex !== -1) {
+                openTabs.splice(tabIndex, 1);
+            }
+
+            if ((type === 'html' && activeHtmlTabId === tabId) || (type === 'script' && activeScriptTabId === tabId) || (type === 'markdown' && activeMarkdownTabId === tabId)) {
+                // If the closed tab was active, switch to another tab or empty state
+                if (openTabs.length > 0) {
+                    switchToTab(type, openTabs[Math.max(0, tabIndex - 1)].id);
+                } else {
+                    const defaultEmptyState = document.getElementById(`${type}-default-empty-state`);
+                    const titleEl = document.getElementById(`${type}-content-title`);
+                    if (defaultEmptyState) {
+                        document.querySelectorAll(`#${type}-editor-content-wrapper .editor-tab-content`).forEach(content => content.classList.remove('active'));
+                        defaultEmptyState.classList.add('active');
+                    }
+                    if (titleEl) {
+                        titleEl.textContent = 'Select a file';
+                    }
+                    if (type === 'html') activeHtmlTabId = null;
+                    else if (type === 'script') activeScriptTabId = null;
+                    else if (type === 'markdown') activeMarkdownTabId = null;
+                }
+            }
+            showStatus('Tab closed', 'info');
+        }
+
+        function switchToTab(type, tabId) {
+            // Deactivate all tab buttons and content
+            document.querySelectorAll(`#${type}-editor-tabs .editor-tab`).forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll(`#${type}-editor-content-wrapper .editor-tab-content`).forEach(content => content.classList.remove('active'));
+
+            // Activate selected tab button and content
+            const newActiveTabButton = document.getElementById(`tab-btn-${tabId}`);
+            const newActiveTabContent = document.getElementById(`tab-content-${tabId}`);
+            if (newActiveTabButton) newActiveTabButton.classList.add('active');
+            if (newActiveTabContent) newActiveTabContent.classList.add('active');
+
+            // Update active tab ID and title
+            let openTabs;
+            if (type === 'html') {
+                openTabs = openHtmlTabs;
+                activeHtmlTabId = tabId;
+            } else if (type === 'script') {
+                openTabs = openScriptTabs;
+                activeScriptTabId = tabId;
+            } else {
+                openTabs = openMarkdownTabs;
+                activeMarkdownTabId = tabId;
+            }
+            
+            const activeTab = openTabs.find(tab => tab.id === tabId);
+            const titleEl = document.getElementById(`${type}-content-title`);
+
+            if (activeTab) {
+                titleEl.textContent = activeTab.name;
+
+                // Refresh CodeMirror instance if it exists
+                if (activeTab.editorInstance) {
+                    activeTab.editorInstance.refresh();
+                }
+            } else {
+                titleEl.textContent = 'Select a file';
+            }
+        }
+
+        // File System Access API - HTML Tools
+        async function selectHtmlFolder() {
+            try {
+                htmlFolderHandle = await window.showDirectoryPicker();
+                await loadHtmlFiles();
+                showStatus('HTML Tools folder loaded', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showStatus('Error loading folder', 'error');
+                    console.error(err);
+                }
+            }
+        }
+
+        // File System Access API - Scripts
+        async function selectScriptFolder() {
+            try {
+                scriptFolderHandle = await window.showDirectoryPicker();
+                await loadScriptFiles();
+                showStatus('Scripts folder loaded', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showStatus('Error loading folder', 'error');
+                    console.error(err);
+                }
+            }
+        }
+        // File System Access API - Markdown
+        async function selectMarkdownFolder() {
+            try {
+                markdownFolderHandle = await window.showDirectoryPicker();
+                await loadMarkdownFiles();
+                showStatus('Markdown folder loaded', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showStatus('Error loading folder', 'error');
+                    console.error(err);
+                }
+            }
+        }
+
+        // File System Access API - Images
+        async function selectImageFolder() {
+            try {
+                imageFolderHandle = await window.showDirectoryPicker();
+                await loadImageFiles();
+                showStatus('Image folder loaded', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showStatus('Error loading folder', 'error');
+                    console.error(err);
+                }
+            }
+        }
+
+        // Load HTML Files
+        async function loadHtmlFiles() {
+            if (!htmlFolderHandle) return;
+
+            htmlFiles = [];
+            const treeContainer = document.getElementById('html-tree');
+            treeContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                await traverseDirectory(htmlFolderHandle, '', 'html', /\.(html|htm)$/i);
+                renderFileTree('html');
+                updateStats('html');
+            } catch (err) {
+                console.error('Error loading HTML files:', err);
+                treeContainer.innerHTML = '<p>Error loading files</p>';
+            }
+        }
+
+        // Load Script Files
+        async function loadScriptFiles() {
+            if (!scriptFolderHandle) return;
+
+            scriptFiles = [];
+            const treeContainer = document.getElementById('script-tree');
+            treeContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                await traverseDirectory(scriptFolderHandle, '', 'script', /\.(ps1|psm1|psd1|json)$/i);
+                renderFileTree('script');
+                updateStats('script');
+            } catch (err) {
+                console.error('Error loading script files:', err);
+                treeContainer.innerHTML = '<p>Error loading files</p>';
+            }
+        }
+        // Load Markdown Files
+        async function loadMarkdownFiles() {
+            if (!markdownFolderHandle) return;
+
+            markdownFiles = [];
+            const treeContainer = document.getElementById('markdown-tree');
+            treeContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                await traverseDirectory(markdownFolderHandle, '', 'markdown', /\.md$/i);
+                renderFileTree('markdown');
+                updateStats('markdown');
+            } catch (err) {
+                console.error('Error loading markdown files:', err);
+                treeContainer.innerHTML = '<p>Error loading files</p>';
+            }
+        }
+
+        // Load Image Files
+        async function loadImageFiles() {
+            if (!imageFolderHandle) return;
+
+            imageFiles = [];
+            const treeContainer = document.getElementById('image-tree');
+            treeContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                await traverseDirectory(imageFolderHandle, '', 'image', /\.(png|jpg|jpeg|gif|svg|bmp|webp)$/i);
+                renderFileTree('image');
+                updateStats('image');
+            } catch (err) {
+                console.error('Error loading image files:', err);
+                treeContainer.innerHTML = '<p>Error loading files</p>';
+            }
+        }
+
+        // Traverse Directory Recursively
+        async function traverseDirectory(dirHandle, path, type, fileRegex) {
+            const entries = [];
+
+            for await (const entry of dirHandle.values()) {
+                const fullPath = path ? `${path}/${entry.name}` : entry.name;
+
+                if (entry.kind === 'directory') {
+                    entries.push({
+                        name: entry.name,
+                        path: fullPath,
+                        type: 'folder',
+                        handle: entry
+                    });
+
+                    // Recursively traverse subdirectories
+                    await traverseDirectory(entry, fullPath, type, fileRegex);
+                } else if (entry.kind === 'file') {
+                    if (fileRegex.test(entry.name)) {
+                        entries.push({
+                            name: entry.name,
+                            path: fullPath,
+                            type: 'file',
+                            handle: entry
+                        });
+                    }
+                }
+            }
+
+            // Add to appropriate array
+            if (type === 'html') {
+                htmlFiles.push(...entries);
+            } else if (type === 'script') {
+                scriptFiles.push(...entries);
+            } else if (type === 'markdown') {
+                markdownFiles.push(...entries);
+            } else if (type === 'image') {
+                imageFiles.push(...entries);
+            }
+        }
+
+        // Render File Tree
+        function renderFileTree(type) {
+            let files;
+            if (type === 'html') {
+                files = htmlFiles;
+            } else if (type === 'script') {
+                files = scriptFiles;
+            } else if (type === 'markdown') {
+                files = markdownFiles;
+            } else {
+                files = imageFiles;
+            }
+            const container = document.getElementById(`${type}-tree`);
+
+            if (files.length === 0) {
+                container.innerHTML = '<p class="empty-state">No files found</p>';
+                return;
+            }
+
+            // Build tree structure
+            const tree = buildTree(files);
+            container.innerHTML = renderTreeNode(tree, type);
+        }
+
+        // Build Tree Structure
+        function buildTree(files) {
+            const tree = { children: {} };
+
+            files.forEach(file => {
+                const parts = file.path.split('/');
+                let current = tree;
+
+                parts.forEach((part, index) => {
+                    if (!current.children[part]) {
+                        current.children[part] = {
+                            name: part,
+                            type: index === parts.length - 1 ? file.type : 'folder',
+                            handle: file.handle,
+                            path: file.path,
+                            children: {}
+                        };
+                    }
+                    current = current.children[part];
+                });
+            });
+
+            return tree;
+        }
+
+        // Render Tree Node
+        function renderTreeNode(node, type, level = 0) {
+            let html = '';
+
+            Object.values(node.children).sort((a, b) => {
+                if (a.type === 'folder' && b.type !== 'folder') return -1;
+                if (a.type !== 'folder' && b.type === 'folder') return 1;
+                return a.name.localeCompare(b.name);
+            }).forEach(child => {
+                let icon;
+                if (child.type === 'folder') {
+                    icon = '📁';
+                } else if (type === 'html') {
+                    icon = '📄';
+                } else if (type === 'script') {
+                    if (child.name.endsWith('.json')) {
+                        icon = '📙';
+                    } else {
+                        icon = '⚙️';
+                    }
+                } else if (type === 'markdown') {
+                    icon = '📄';
+                } else if (type === 'image') {
+                    icon = '🖼️';
+                }
+
+                const itemClass = child.type === 'folder' ? 'tree-item folder' : 'tree-item file';
+
+                html += `<div class="${itemClass}" onclick="selectFile('${type}', '${child.path}')" style="margin-left: ${level * 20}px">
+                    <span class="file-icon">${icon}</span>
+                    <span>${child.name}</span>
+                </div>`;
+
+                if (child.type === 'folder' && Object.keys(child.children).length > 0) {
+                    html += renderTreeNode(child, type, level + 1);
+                }
+            });
+
+            return html;
+        }
+
+        // Select File
+        async function selectFile(type, path) {
+            // Remove active class from all items
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Add active class to selected item
+            event.currentTarget.classList.add('active');
+            
+            let files;
+            if (type === 'html') {
+                files = htmlFiles;
+            } else if (type === 'script') {
+                files = scriptFiles;
+            } else if (type === 'markdown') {
+                files = markdownFiles;
+            } else {
+                files = imageFiles;
+            }
+            
+            const file = files.find(f => f.path === path && f.type === 'file');
+
+            if (!file) return;
+
+            if (type === 'image') {
+                const imagePreview = document.getElementById('image-preview');
+                const imageContentTitle = document.getElementById('image-content-title');
+                
+                try {
+                    const fileData = await file.handle.getFile();
+                    const url = URL.createObjectURL(fileData);
+                    imagePreview.src = url;
+                    imageContentTitle.textContent = file.name;
+                } catch (err) {
+                    console.error('Error loading image:', err);
+                    imageContentTitle.textContent = 'Error loading image';
+                    imagePreview.src = '';
+                }
+                return;
+            }
+
+            let openTabs;
+            if (type === 'html') {
+                openTabs = openHtmlTabs;
+            } else if (type === 'script') {
+                openTabs = openScriptTabs;
+            } else {
+                openTabs = openMarkdownTabs;
+            }
+            const existingTab = openTabs.find(tab => tab.path === file.path);
+
+            if (existingTab) {
+                switchToTab(type, existingTab.id);
+            } else {
+                addTab(type, file);
+            }
+        }
+
+        // Preview HTML File (now called by addTab for rendering)
+        async function previewHtmlFile(tabContentElement, file) {
+            try {
+                const fileData = await file.handle.getFile();
+                const content = await fileData.text();
+                tabContentElement.innerHTML = `<div class="preview-container"><iframe srcdoc="${content.replace(/"/g, '&quot;')}"></iframe></div>`;
+                return content; // Return content for potential editing
+            } catch (err) {
+                console.error('Error loading HTML file for preview:', err);
+                tabContentElement.innerHTML = '<p class="empty-state">Error loading file</p>';
+                return '';
+            }
+        }
+
+        // Preview Script File (now called by addTab for rendering)
+        async function previewScriptFile(tabContentElement, file) {
+            try {
+                const fileData = await file.handle.getFile();
+                const content = await fileData.text();
+                const editorInstance = CodeMirror(tabContentElement, {
+                    value: content,
+                    mode: 'powershell',
+                    theme: 'darcula',
+                    lineNumbers: true,
+                    readOnly: true
+                });
+                return editorInstance;
+            } catch (err) {
+                console.error('Error loading script file for preview:', err);
+                tabContentElement.innerHTML = '<p class="empty-state">Error loading script</p>';
+                return null;
+            }
+        }
+
+        // Filter Files
+        function filterFiles(type) {
+            const searchInput = document.getElementById(`${type}-search`);
+            const searchTerm = searchInput.value.toLowerCase();
+            const items = document.querySelectorAll(`#${type}-tree .tree-item`);
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        }
+
+        // Update Stats
+        function updateStats(type) {
+            let files;
+            if (type === 'html') {
+                files = htmlFiles;
+            } else if (type === 'script') {
+                files = scriptFiles;
+            } else if (type === 'markdown') {
+                files = markdownFiles;
+            } else {
+                files = imageFiles;
+            }
+            const fileCount = files.filter(f => f.type === 'file').length;
+            const folderCount = files.filter(f => f.type === 'folder').length;
+
+            document.getElementById(`${type}-file-count`).textContent = fileCount;
+            document.getElementById(`${type}-folder-count`).textContent = folderCount;
+        }
+
+        // Open in New Tab - This function will need to be re-evaluated for tabbed interface
+        function openInNewTab(type) {
+            let activeTab;
+            if (type === 'html') {
+                activeTab = openHtmlTabs.find(tab => tab.id === activeHtmlTabId);
+            } else {
+                activeTab = openScriptTabs.find(tab => tab.id === activeScriptTabId);
+            }
+
+            if (!activeTab || !activeTab.fileHandle) {
+                showStatus('No file selected', 'error');
+                return;
+            }
+
+            // For security reasons, we can't directly open local files
+            // This would require additional implementation
+            showStatus('Feature requires file URL access', 'info');
+        }
+
+        // Search in content
+        function searchInEditor(type) {
+            let activeTabId;
+            let openTabs;
+            let editorInstance;
+
+            if (type === 'html') {
+                activeTabId = activeHtmlTabId;
+                openTabs = openHtmlTabs;
+            } else if (type === 'script') {
+                activeTabId = activeScriptTabId;
+                openTabs = openScriptTabs;
+            } else if (type === 'markdown') {
+                activeTabId = activeMarkdownTabId;
+                openTabs = openMarkdownTabs;
+            }
+
+            if (!activeTabId) {
+                showStatus('No file open to search in.', 'error');
+                return;
+            }
+
+            const activeTab = openTabs.find(tab => tab.id === activeTabId);
+            if (!activeTab || !activeTab.editorInstance) {
+                showStatus('File is not in an editable format to search.', 'error');
+                return;
+            }
+
+            const query = document.getElementById(`${type}-content-search`).value;
+            if (!query) {
+                showStatus('Please enter a search term.', 'info');
+                return;
+            }
+            
+            activeTab.editorInstance.execCommand("find");
+        }
+
+        // Run Script - Needs to work with active script tab
+        async function runScript() {
+            const activeTabId = activeScriptTabId;
+            if (!activeTabId) {
+                showStatus('No script selected', 'error');
+                return;
+            }
+
+            const activeTab = openScriptTabs.find(tab => tab.id === activeTabId);
+            if (!activeTab) {
+                showStatus('Active script tab not found', 'error');
+                return;
+            }
+            
+            try {
+                const scriptPath = activeTab.path;
+                const scriptContent = activeTab.editorInstance.getValue(); // Get content from CodeMirror
+
+                const choice = await showExecutionDialog();
+
+                if (choice === 'window') {
+                    await createAndDownloadBatchFile(scriptPath, scriptContent, false);
+                } else if (choice === 'admin') {
+                    await createAndDownloadBatchFile(scriptPath, scriptContent, true);
+                } else if (choice === 'clipboard') {
+                    await copyExecutionCommandToClipboard(scriptPath);
+                } else if (choice === 'inline') {
+                    await executeScriptInline(scriptContent);
+                }
+
+            } catch (err) {
+                console.error('Error running script:', err);
+                showStatus('Error preparing script execution', 'error');
+            }
+        }
+
+        // Show execution dialog
+        function showExecutionDialog() {
+            return new Promise((resolve) => {
+                const dialog = document.createElement('div');
+                dialog.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    animation: fadeIn 0.3s ease;
+                `;
+
+                dialog.innerHTML = `
+                    <div style="background: var(--card-bg); padding: 2rem; border-radius: 1rem; max-width: 500px; box-shadow: var(--shadow-xl);">
+                        <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">How do you want to run this script?</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <button class="btn btn-success" onclick="selectOption('window')" style="width: 100%; justify-content: flex-start;">
+                                🪟 Run in PowerShell Window
+                                <div style="font-size: 0.75rem; font-weight: normal; margin-top: 0.25rem;">Opens PowerShell window and executes script</div>
+                            </button>
+                            <button class="btn btn-warning" onclick="selectOption('admin')" style="width: 100%; justify-content: flex-start;">
+                                🛡️ Run as Administrator
+                                <div style="font-size: 0.75rem; font-weight: normal; margin-top: 0.25rem;">Executes with elevated privileges (UAC prompt)</div>
+                            </button>
+                            <button class="btn btn-primary" onclick="selectOption('clipboard')" style="width: 100%; justify-content: flex-start;">
+                                📋 Copy Command to Clipboard
+                                <div style="font-size: 0.75rem; font-weight: normal; margin-top: 0.25rem;">Copy PowerShell command, paste in terminal</div>
+                            </button>
+                            <button class="btn btn-secondary" onclick="selectOption('inline')" style="width: 100%; justify-content: flex-start;">
+                                ⚡ Quick Execute (Inline)
+                                <div style="font-size: 0.75rem; font-weight: normal; margin-top: 0.25rem;">Creates and runs batch file automatically</div>
+                            </button>
+                            <button class="btn btn-secondary" onclick="selectOption('cancel')" style="width: 100%;">
+                                ❌ Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(dialog);
+
+                window.selectOption = (option) => {
+                    document.body.removeChild(dialog);
+                    delete window.selectOption;
+                    resolve(option === 'cancel' ? null : option);
+                };
+            });
+        }
+
+        // Create and download batch file (remains largely the same, but uses currentScriptFile.path)
+        async function createAndDownloadBatchFile(scriptPath, scriptContent, asAdmin) {
+            const activeTab = openScriptTabs.find(tab => tab.id === activeScriptTabId);
+            if (!activeTab) return;
+
+            const scriptName = activeTab.name;
+            const batchFileName = scriptName.replace(/\.(ps1|psm1|psd1)$/i, '') + '_runner.bat';
+
+            let batchContent;
+
+            if (asAdmin) {
+                // Create batch file that requests admin privileges
+                batchContent = `@echo off
+:: Request Administrator Privileges
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if '%errorlevel%' NEQ '0' (
+    echo Requesting administrative privileges...
+    goto UACPrompt
+) else ( goto gotAdmin )
+
+:UACPrompt
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    exit /B
+
+:gotAdmin
+    if exist "%temp%\\getadmin.vbs" ( del "%temp%\\getadmin.vbs" )
+    pushd "%CD%"
+    CD /D "%~dp0"
+
+echo ====================================
+echo Running PowerShell Script as Admin
+echo ====================================
+echo.
+
+powershell.exe -ExecutionPolicy Bypass -File "${scriptPath}"
+
+echo.
+echo ====================================
+echo Script execution completed
+echo ====================================
+pause
+`;
+            } else {
+                // Create simple batch file
+                batchContent = `@echo off
+echo ====================================
+echo Running PowerShell Script
+echo ====================================
+echo.
+
+powershell.exe -ExecutionPolicy Bypass -File "${scriptPath}"
+
+echo.
+echo ====================================
+echo Script execution completed
+echo ====================================
+pause
+`;
+            }
+
+            // Create blob and download
+            const blob = new Blob([batchContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = batchFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus(`Batch file downloaded: ${batchFileName}`, 'success');
+        }
+
+        // Copy execution command to clipboard (remains largely the same, but uses currentScriptFile.path)
+        async function copyExecutionCommandToClipboard(scriptPath) {
+            const command = `powershell.exe -ExecutionPolicy Bypass -File "${scriptPath}"`;
+
+            try {
+                await navigator.clipboard.writeText(command);
+                showStatus('Command copied to clipboard! Paste in PowerShell terminal', 'success');
+            } catch (err) {
+                // Fallback method
+                const textArea = document.createElement('textarea');
+                textArea.value = command;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('Command copied to clipboard!', 'success');
+            }
+        }
+
+        // Execute script inline
+        async function executeScriptInline(scriptContent) {
+            // Create temporary batch file with embedded PowerShell
+            const batchContent = `@echo off
+echo Running PowerShell Script...
+powershell.exe -ExecutionPolicy Bypass -Command "${scriptContent.replace(/"/g, '\\"').replace(/\n/g, '; ')}"
+echo.
+echo Script completed
+timeout /t 3
+`;
+
+            const blob = new Blob([batchContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'execute_script.bat';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('Execution file downloaded - double-click to run', 'success');
+        }
+
+        // Edit Script
+        function editScript() {
+            const activeTab = openScriptTabs.find(tab => tab.id === activeScriptTabId);
+            if (!activeTab || !activeTab.editorInstance) {
+                showStatus('No script loaded', 'error');
+                return;
+            }
+            activeTab.editorInstance.setOption('readOnly', false);
+            showStatus('Edit mode enabled', 'success');
+        }
+
+        // Save Script
+        async function saveScript() {
+            const activeTab = openScriptTabs.find(tab => tab.id === activeScriptTabId);
+            if (!activeTab || !activeTab.editorInstance) {
+                showStatus('No script to save', 'error');
+                return;
+            }
+
+            if (activeTab.editorInstance.isReadOnly()) {
+                showStatus('Enable edit mode first', 'info');
+                return;
+            }
+
+            try {
+                const writable = await activeTab.fileHandle.createWritable();
+                await writable.write(activeTab.editorInstance.getValue());
+                await writable.close();
+
+                activeTab.editorInstance.setOption('readOnly', true);
+                showStatus('Script saved successfully', 'success');
+            } catch (err) {
+                console.error('Error saving script:', err);
+                showStatus('Error saving script', 'error');
+            }
+        }
+
+        // Edit HTML
+        function editHtml() {
+            const activeTab = openHtmlTabs.find(tab => tab.id === activeHtmlTabId);
+            if (!activeTab) {
+                showStatus('No file selected', 'error');
+                return;
+            }
+
+            if (!activeTab.isHtmlPreview) {
+                showStatus('Already in edit mode', 'info');
+                return;
+            }
+
+            const tabContent = document.getElementById(`tab-content-${activeTab.id}`);
+            tabContent.innerHTML = ''; // Clear the iframe preview
+
+            activeTab.editorInstance = CodeMirror(tabContent, {
+                value: activeTab.rawContent,
+                mode: 'htmlmixed',
+                theme: 'darcula',
+                lineNumbers: true
+            });
+            activeTab.isHtmlPreview = false;
+            showStatus('Edit mode enabled', 'success');
+        }
+
+        // Save HTML
+        async function saveHtml() {
+            const activeTab = openHtmlTabs.find(tab => tab.id === activeHtmlTabId);
+            if (!activeTab || activeTab.isHtmlPreview || !activeTab.editorInstance) {
+                showStatus('Not in edit mode or no file to save', 'error');
+                return;
+            }
+
+            try {
+                const newContent = activeTab.editorInstance.getValue();
+                const writable = await activeTab.fileHandle.createWritable();
+                await writable.write(newContent);
+                await writable.close();
+
+                activeTab.rawContent = newContent;
+                
+                // Switch back to preview
+                const tabContent = document.getElementById(`tab-content-${activeTab.id}`);
+                tabContent.innerHTML = `<div class="preview-container"><iframe srcdoc="${newContent.replace(/"/g, '&quot;')}"></iframe></div>`;
+                activeTab.isHtmlPreview = true;
+                activeTab.editorInstance = null;
+                document.getElementById('edit-html-btn').innerHTML = '✏️ Edit';
+
+                showStatus('HTML saved successfully', 'success');
+            } catch (err) {
+                console.error('Error saving HTML:', err);
+                showStatus('Error saving HTML', 'error');
+            }
+        }
+
+        // Toggle HTML Editor Mode
+        function toggleHtmlEditorMode() {
+            const activeTab = openHtmlTabs.find(tab => tab.id === activeHtmlTabId);
+            if (!activeTab) {
+                showStatus('No HTML file selected', 'error');
+                return;
+            }
+
+            const tabContent = document.getElementById(`tab-content-${activeTab.id}`);
+            const editButton = document.getElementById('edit-html-btn');
+
+            if (activeTab.isHtmlPreview) { // Currently showing preview, switch to editor
+                if (!activeTab.rawContent) {
+                    showStatus('No content to edit', 'error');
+                    return;
+                }
+
+                tabContent.innerHTML = ''; // Clear the iframe preview
+                activeTab.editorInstance = CodeMirror(tabContent, {
+                    value: activeTab.rawContent,
+                    mode: 'htmlmixed',
+                    theme: 'darcula',
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    foldGutter: true,
+                    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+                });
+                activeTab.isHtmlPreview = false;
+                editButton.innerHTML = '👁️ Preview';
+                showStatus('Switched to editor mode', 'info');
+            } else { // Currently showing editor, switch to preview
+                const newContent = activeTab.editorInstance.getValue();
+                activeTab.rawContent = newContent; // Update raw content
+                tabContent.innerHTML = `<div class="preview-container"><iframe srcdoc="${newContent.replace(/"/g, '&quot;')}"></iframe></div>`;
+                activeTab.isHtmlPreview = true;
+                activeTab.editorInstance = null;
+                editButton.innerHTML = '✏️ Edit';
+                showStatus('Switched to preview mode', 'info');
+            }
+        }
+
+        // Refresh All
+        async function refreshAll() {
+            showStatus('Refreshing...', 'info');
+
+            if (htmlFolderHandle) {
+                await loadHtmlFiles();
+            }
+
+            if (scriptFolderHandle) {
+                await loadScriptFiles();
+            }
+            if (markdownFolderHandle) {
+                await loadMarkdownFiles();
+            }
+
+            showStatus('Refreshed successfully', 'success');
+        }
+
+        // Save Markdown - Works with active markdown tab
+        async function saveMarkdown() {
+            const activeTab = openMarkdownTabs.find(tab => tab.id === activeMarkdownTabId);
+            if (!activeTab || !activeTab.editorInstance || !activeTab.fileHandle) {
+                showStatus('No markdown file to save or active', 'error');
+                return;
+            }
+
+            try {
+                const writable = await activeTab.fileHandle.createWritable();
+                await writable.write(activeTab.editorInstance.getValue());
+                await writable.close();
+
+                showStatus('Markdown saved successfully', 'success');
+            } catch (err) {
+                console.error('Error saving markdown:', err);
+                showStatus('Error saving markdown', 'error');
+            }
+        }
+
+        // Auto-refresh functions removed as per user request.
+
+        // --- Settings Functions ---
+        function openSettings() {
+            document.getElementById('settings-modal').style.display = 'block';
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        document.getElementById('theme-select').addEventListener('change', (event) => {
+            if (event.target.value === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+            saveSettings();
+        });
+
+        document.getElementById('font-size-input').addEventListener('input', (event) => {
+            document.documentElement.style.setProperty('--editor-font-size', `${event.target.value}px`);
+            saveSettings();
+        });
+
+        document.getElementById('autosave-toggle').addEventListener('change', (event) => {
+            saveSettings();
+        });
+
+        function saveSettings() {
+            const settings = {
+                theme: document.getElementById('theme-select').value,
+                fontSize: document.getElementById('font-size-input').value,
+                autoSave: document.getElementById('autosave-toggle').checked
+            };
+            localStorage.setItem('toolManagerSettings', JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('toolManagerSettings'));
+            if (settings) {
+                // Theme
+                document.getElementById('theme-select').value = settings.theme;
+                if (settings.theme === 'light') {
+                    document.body.classList.add('light-theme');
+                } else {
+                    document.body.classList.remove('light-theme');
+                }
+
+                // Font Size
+                document.getElementById('font-size-input').value = settings.fontSize;
+                document.documentElement.style.setProperty('--editor-font-size', `${settings.fontSize}px`);
+
+                // Auto-save
+                document.getElementById('autosave-toggle').checked = settings.autoSave;
+            }
+        }
+        
+        // --- Command Snippets Functions ---
+        let commandSnippets = [];
+
+        function loadCommands() {
+            const savedCommands = localStorage.getItem('commandSnippets');
+            if (savedCommands) {
+                commandSnippets = JSON.parse(savedCommands);
+                renderCommands();
+            }
+        }
+
+        function renderCommands() {
+            const commandList = document.getElementById('command-list');
+            commandList.innerHTML = '';
+            commandSnippets.forEach((snippet, index) => {
+                const snippetEl = document.createElement('div');
+                snippetEl.className = 'command-snippet';
+                snippetEl.innerHTML = `
+                    <div class="snippet-header">
+                        <h3>${snippet.title}</h3>
+                        <div class="snippet-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="copyCommand(${index})">📋 Copy</button>
+                            <button class="btn btn-sm btn-warning" onclick="editCommand(${index})">✏️ Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCommand(${index})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                    <pre><code>${snippet.command}</code></pre>
+                `;
+                commandList.appendChild(snippetEl);
+            });
+        }
+
+        function addCommand() {
+            const titleInput = document.getElementById('command-title');
+            const commandInput = document.getElementById('command-text');
+            const title = titleInput.value.trim();
+            const command = commandInput.value.trim();
+
+            if (!title || !command) {
+                showStatus('Title and command are required.', 'error');
+                return;
+            }
+
+            commandSnippets.push({ title, command });
+            localStorage.setItem('commandSnippets', JSON.stringify(commandSnippets));
+            renderCommands();
+
+            titleInput.value = '';
+            commandInput.value = '';
+            showStatus('Command snippet saved!', 'success');
+        }
+
+        function copyCommand(index) {
+            const command = commandSnippets[index].command;
+            navigator.clipboard.writeText(command).then(() => {
+                showStatus('Command copied to clipboard!', 'success');
+            }).catch(err => {
+                showStatus('Failed to copy command.', 'error');
+                console.error('Copy error:', err);
+            });
+        }
+
+        function editCommand(index) {
+            const snippet = commandSnippets[index];
+            const snippetEl = document.querySelectorAll('.command-snippet')[index];
+            snippetEl.innerHTML = `
+                <div class="snippet-header">
+                    <input type="text" id="edit-title-${index}" value="${snippet.title}" class="search-box-input" style="width:100%">
+                </div>
+                <textarea id="edit-command-${index}" rows="3" class="search-box-input" style="width:100%">${snippet.command}</textarea>
+                <div class="snippet-actions">
+                    <button class="btn btn-sm btn-success" onclick="saveEditedCommand(${index})">💾 Save</button>
+                </div>
+            `;
+        }
+
+        function saveEditedCommand(index) {
+            const newTitle = document.getElementById(`edit-title-${index}`).value.trim();
+            const newCommand = document.getElementById(`edit-command-${index}`).value.trim();
+
+            if (!newTitle || !newCommand) {
+                showStatus('Title and command are required.', 'error');
+                return;
+            }
+
+            commandSnippets[index] = { title: newTitle, command: newCommand };
+            localStorage.setItem('commandSnippets', JSON.stringify(commandSnippets));
+            renderCommands();
+            showStatus('Command snippet updated!', 'success');
+        }
+
+        function deleteCommand(index) {
+            if (confirm('Are you sure you want to delete this snippet?')) {
+                commandSnippets.splice(index, 1);
+                localStorage.setItem('commandSnippets', JSON.stringify(commandSnippets));
+                renderCommands();
+                showStatus('Command snippet deleted.', 'info');
+            }
+        }
+    </script>
+</body>
+</html>

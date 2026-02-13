@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<!-- saved from url=(0067)file:///C:/RiskDashboard/nishens_proposal_generator_tool_fixed.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal Generator Tool</title>
+    
+    <!-- Include libraries for export functionality -->
+    <script src="./Proposal Generator Tool_files/html2pdf.bundle.min.js.download"></script>
+    <script src="./Proposal Generator Tool_files/FileSaver.min.js.download"></script>
+    
+    <style>
+        :root {
+            --primary-blue: #1f4e79;
+            --secondary-blue: #2c5aa0;
+            --light-blue: #e7f3ff;
+            --warning-red: #dc3545;
+            --success-green: #28a745;
+            --warning-yellow: #ffc107;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Print and Page Settings */
+        @page {
+            margin: 0.5in;
+            size: A4;
+        }
+
+        body {
+            font-family: var(--font-main);
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        /* Compact mode styles */
+        body.compact-mode {
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+
+        body.compact-mode h1 {
+            font-size: 14pt;
+            margin-bottom: 10px;
+        }
+
+        body.compact-mode h2 {
+            font-size: 12pt;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        body.compact-mode p, 
+        body.compact-mode li {
+            margin: 5px 0;
+        }
+
+        body.compact-mode table {
+            font-size: 9pt;
+        }
+
+        body.compact-mode .page-section {
+            margin-bottom: 15px;
+        }
+
+        /* Editable Content Styling */
+        .editable {
+            border: 1px dashed transparent;
+            padding: 2px;
+            transition: all 0.2s ease;
+            min-height: 1em;
+        }
+
+        .editable:hover {
+            border: 1px dashed #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .editable:focus {
+            outline: 2px solid #007bff;
+            background-color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 220px;
+        }
+
+        .control-panel h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary-blue);
+            font-size: 14px;
+        }
+
+        .panel-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .panel-section h5 {
+            margin: 0 0 8px 0;
+            color: var(--secondary-blue);
+            font-size: 12px;
+        }
+
+        .control-panel button, .control-panel select {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-edit {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background-color: #218838;
+        }
+
+        .btn-export {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-export:hover {
+            background-color: #0d2a4a;
+        }
+
+        .btn-save {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .btn-save:hover {
+            background-color: #e0a800;
+        }
+
+        .btn-add {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-break {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-break:hover {
+            background-color: #138496;
+        }
+
+        .btn-compact {
+            background-color: #6610f2;
+            color: white;
+        }
+
+        .btn-compact:hover {
+            background-color: #560bd0;
+        }
+
+        .panel-footer {
+            font-size: 10px;
+            color: #666;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Document Structure */
+        .document-container {
+            max-width: 8.5in;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 0.75in;
+        }
+
+        /* Section Controls */
+        .section-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .section-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .section-controls button:hover {
+            background: #e9ecef;
+        }
+
+        /* Page Break Controls */
+        .page-section {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+            height: 0;
+            margin: 0;
+            padding: 0;
+            border-top: 1px dashed #ccc;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* Header Styling */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            page-break-after: avoid;
+        }
+
+        .company-logo {
+            font-size: 28pt;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .proposal-title {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .client-name {
+            font-size: 18pt;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Heading Styles */
+        h1 {
+            font-size: 18pt;
+            color: var(--primary-blue);
+            border-bottom: 2px solid var(--primary-blue);
+            padding-bottom: 8px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        h2 {
+            font-size: 15pt;
+            color: var(--secondary-blue);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        h3 {
+            font-size: 13pt;
+            color: var(--primary-blue);
+            margin-top: 20px;
+            margin-bottom: 12px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* Special Boxes */
+        .confidentiality-box {
+            background-color: #fff5f5;
+            border: 2px solid var(--warning-red);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            page-break-inside: avoid;
+        }
+
+        .bluf-box {
+            background-color: #fff3cd;
+            border: 2px solid var(--warning-yellow);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: bold;
+            page-break-inside: avoid;
+        }
+
+        .highlight-box {
+            background-color: var(--light-blue);
+            border-left: 6px solid var(--secondary-blue);
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .warning-box {
+            background-color: #fff5f5;
+            border-left: 6px solid var(--warning-red);
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .success-box {
+            background-color: #f0fff4;
+            border-left: 6px solid var(--success-green);
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        /* Risk Level Styling */
+        .risk-critical {
+            color: var(--warning-red);
+            font-weight: bold;
+        }
+
+        .risk-high {
+            color: #fd7e14;
+            font-weight: bold;
+        }
+
+        .benefit-achieved {
+            color: var(--success-green);
+            font-weight: bold;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+            page-break-inside: avoid;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-blue);
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .document-control-table th {
+            background-color: #e9ecef;
+            color: #333;
+            width: 25%;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        li {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .metric-value {
+            font-size: 24pt;
+            font-weight: bold;
+            color: var(--primary-blue);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Contact Info */
+        .contact-info {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+
+        .contact-info h2 {
+            color: white;
+            margin-top: 0;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .contact-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .contact-info li {
+            margin: 10px 0;
+            font-size: 12pt;
+        }
+
+        /* Print Optimizations */
+        @media print {
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                padding: 0;
+                font-size: 10pt !important;
+                line-height: 1.3 !important;
+            }
+            
+            .control-panel, .section-controls {
+                display: none !important;
+            }
+            
+            .document-container {
+                box-shadow: none;
+                padding: 0.5in !important;
+                max-width: none;
+                margin: 0 !important;
+            }
+            
+            .page-section {
+                page-break-inside: avoid;
+                margin-bottom: 15pt !important;
+            }
+            
+            h1 {
+                font-size: 14pt !important;
+                margin-bottom: 10pt !important;
+            }
+            
+            .editable {
+                border: none !important;
+            }
+            
+            .editable:hover {
+                border: none !important;
+                background-color: transparent !important;
+            }
+            
+            .page-break {
+                border-top: none;
+            }
+            
+            /* Prevent widows/orphans */
+            h1, h2, h3, h4 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            
+            p, li {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            table {
+                page-break-inside: auto;
+            }
+            
+            tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+
+        /* Hide control panel during export */
+        .exporting .control-panel {
+            display: none !important;
+        }
+
+        /* Edit mode indicators */
+        .edit-mode .editable {
+            border: 1px dashed #007bff;
+            position: relative;
+        }
+
+        .edit-mode .editable::before {
+            content: "✎";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="edit-mode">
+    <!-- Control Panel -->
+    <div class="control-panel" id="controlPanel">
+        <h4>Proposal Generator</h4>
+        
+        <div class="panel-section">
+            <h5>Editing</h5>
+            <button class="btn-edit" onclick="toggleEditMode()" style="background-color: rgb(220, 53, 69);">Exit Edit Mode</button>
+            <button class="btn-save" onclick="saveChanges()" style="background-color: rgb(255, 193, 7);">Save Changes</button>
+            <button class="btn-compact" onclick="toggleCompactMode()">Toggle Compact View</button>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Sections</h5>
+            <button class="btn-add" onclick="addSection(&#39;standard&#39;)">Add Standard Section</button>
+            <button class="btn-add" onclick="addSection(&#39;risk&#39;)">Add Risk Analysis</button>
+            <button class="btn-add" onclick="addSection(&#39;timeline&#39;)">Add Timeline</button>
+            <button class="btn-break" onclick="insertPageBreak()">Insert Page Break</button>
+        </div>
+        
+        <div class="panel-section">
+            <h5>Export</h5>
+            <button class="btn-export" onclick="exportToPDF()">Export to PDF</button>
+            <button class="btn-export" onclick="exportToWord()">Export to Word</button>
+            <select onchange="applyTemplate(this.value)">
+                <option value="legal">Legal Theme</option>
+                <option value="corporate">Corporate Theme</option>
+                <option value="technical">Technical Theme</option>
+            </select>
+        </div>
+        
+        <div class="panel-footer">
+            <small>Ctrl+S: Save | Ctrl+E: Edit Mode | Ctrl+P: PDF Export</small>
+        </div>
+    </div>
+
+    <div class="document-container" id="documentContainer">
+        
+        <!-- Header Section -->
+        <div class="page-section header">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <div class="company-logo editable" contenteditable="true" style=""><img src="data:image/png;base64,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" alt=""></div>
+            <div class="proposal-title editable" contenteditable="true">
+                ManageEngine ADAudit Plus<br>Security Assessment &amp; Implementation Proposal
+            </div>
+            <div class="client-name editable" contenteditable="true">Prepared for: Ashtons Legal</div>
+        </div>
+
+        <!-- Confidentiality Section -->
+        <div class="page-section">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <div class="confidentiality-box">
+                <h3>STATEMENT OF CONFIDENTIALITY</h3>
+                <p class="editable" contenteditable="true">
+                    This document is proprietary to First Technology. First Technology submits this document to <span class="editable" contenteditable="true">Ashtons Legal</span> with the understanding that it will be held in strict confidence and will not be disclosed or used, in whole or in part, for any purpose other than the evaluation of First Technology's qualifications, without the prior written consent of First Technology.
+                </p>
+                
+                <p class="editable" contenteditable="true">
+                    By receipt of this document, the recipient agrees to keep and that its officers, employees, and agents shall keep permanently confidential and, not without the prior written consent of First Technology, disclose to any third party the information contained herein or made available in connection with any further investigation of the First Technology proposal outlined herein.
+                </p>
+            </div>
+
+            <h3>COPYRIGHT NOTICE</h3>
+            <p class="editable" contenteditable="true">© 2024 First Technology. Trademarks and brands are the property of their respective owners.</p>
+            <p class="editable" contenteditable="true">
+                Copyright in the whole and every part of this document belongs to First Technology (the "Owner") and it may not be used, sold, transferred, copied, or reproduced in whole or in part in any manner or form or in or on any media to any person other than in accordance with the terms of the Owner's Agreement or otherwise without the prior written consent of the Owner.
+            </p>
+
+            <h3>DOCUMENT CONTROL</h3>
+            <table class="document-control-table no-break">
+                <tbody><tr><th>Customer Name:</th><td class="editable" contenteditable="true">Ashtons Legal</td></tr>
+                <tr><th>Proposal Requested By:</th><td class="editable" contenteditable="true">Senior Partners</td></tr>
+                <tr><th>Document Name:</th><td class="editable" contenteditable="true">ManageEngine ADAudit Plus Security Assessment &amp; Implementation Proposal</td></tr>
+                <tr><th>Author/s:</th><td class="editable" contenteditable="true">Nishen Harichunder (L4 Senior Server Engineer)</td></tr>
+            </tbody></table>
+        </div>
+
+        <!-- Executive Summary Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Executive Summary</h1>
+            
+            <p class="editable" contenteditable="true">
+                In today's rapidly evolving cyber threat landscape, comprehensive auditing and monitoring of Active Directory environments has become a critical security necessity for legal firms handling sensitive client data. This proposal outlines the implementation of ManageEngine ADAudit Plus for <span class="editable" contenteditable="true">Ashtons Legal's</span> Microsoft infrastructure, providing real-time visibility, threat detection, and compliance capabilities essential for protecting confidential legal information and maintaining client trust.
+            </p>
+
+            <div class="bluf-box no-break">
+                <strong>Bottom Line Up Front (BLUF)</strong><br>
+                <span class="risk-critical">Risk Level: CRITICAL</span> - <span class="editable" contenteditable="true">As a legal firm, Ashtons Legal faces heightened cybersecurity risks due to valuable client data and attorney-client privileged information. Without proper AD auditing, the firm faces significant security blind spots that could lead to undetected breaches, regulatory violations, and potential loss of client confidentiality. ADAudit Plus provides immediate threat detection capabilities with ROI through reduced security incidents and automated compliance reporting essential for legal industry requirements.</span>
+            </div>
+        </div>
+
+        <!-- Infrastructure Assessment Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Current Infrastructure Assessment - Ashtons Legal</h1>
+
+            <h2>Environment Scope</h2>
+            <ul class="no-break">
+                <li><strong>5 Domain Controllers</strong> (Mixed 2016/2019 - Primary licensing component)
+                    <ul>
+                        <li class="editable" contenteditable="true">ALAZ-DC01, ALPH-DC01, ALCA-DC01, ALIP-DC01, ALNO-DC01</li>
+                    </ul>
+                </li>
+                <li><strong>1 File Server</strong> - <span class="editable" contenteditable="true">ALAZ-FS01</span> (Server 2016 - File auditing add-on required)</li>
+                <li><strong>SQL Servers</strong> (Optional - Windows server auditing add-on)</li>
+                <li><strong>Application Servers</strong> (Optional - Windows server auditing add-on)</li>
+                <li><strong>File Share Permissions &amp; Change Control</strong> (Critical for legal document security)</li>
+            </ul>
+
+            <h2>Legal Industry-Specific Risk Analysis</h2>
+            <table class="no-break">
+                <thead>
+                    <tr>
+                        <th>Risk Category</th>
+                        <th>Current Risk Level</th>
+                        <th>Impact on Legal Practice</th>
+                        <th>Regulatory Concern</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="editable" contenteditable="true">ALAZ-FS01 monitoring, server auditing</td>
+                        <td class="risk-critical">CRITICAL</td>
+                        <td class="editable" contenteditable="true">Week 7-8</td>
+                        <td class="editable" contenteditable="true">Alert configuration and staff training</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Custom alerts, trained staff</td>
+                        <td class="risk-critical">CRITICAL</td>
+                        <td class="editable" contenteditable="true">Week 9-10</td>
+                        <td class="editable" contenteditable="true">Advanced threat detection and UBA tuning</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Optimized detection, behavioral analytics</td>
+                        <td class="risk-high">HIGH</td>
+                        <td class="editable" contenteditable="true">100% visibility</td>
+                        <td class="editable" contenteditable="true">Real-time threat detection</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Compliance reporting</td>
+                        <td class="risk-high">HIGH</td>
+                        <td class="editable" contenteditable="true">Security incident response time</td>
+                        <td class="editable" contenteditable="true">5 Domain Controller licenses</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legal Industry Security Risks Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Legal Industry Security Risks</h1>
+
+            <h2>Why ADAudit Plus is Essential for Legal Firms</h2>
+
+            <h3>Legal Industry Threat Landscape</h3>
+            <ul class="no-break">
+                <li><strong class="editable" contenteditable="true">1 File Server license</strong> to be targeted by cybercriminals due to valuable client data</li>
+                <li><strong class="editable" contenteditable="true">Windows Server licenses (quantity based on final server count)</strong> £3.2 million including regulatory fines and client compensation</li>
+                <li><strong class="editable" contenteditable="true">Professional features including advanced analytics and UBA</strong> involve compromised credentials and insider threats</li>
+                <li><strong class="editable" contenteditable="true"><br></strong> mandate comprehensive audit trails for client data access</li>
+            </ul>
+
+            <h3>Critical Security Gaps Without Proper AD Auditing</h3>
+            <ol class="no-break">
+                <li><strong class="editable" contenteditable="true">Implementation guidance and best practices</strong> (ALAZ-DC01, ALPH-DC01, ALCA-DC01, ALIP-DC01, ALNO-DC01)</li>
+                <li><strong class="editable" contenteditable="true"><br></strong> on ALAZ-FS01</li>
+                <li><strong class="editable" contenteditable="true"><br></strong> that could compromise client confidentiality</li>
+                <li><strong class="editable" contenteditable="true">Ashtons Legal's current environment represents a <span class="risk-critical">CRITICAL-RISK</span> security posture with limited visibility into:</strong> required for SRA and ICO inspections</li>
+            </ol>
+
+            <div class="warning-box no-break">
+                <strong>Ashtons Legal's current environment represents a <span class="risk-critical">CRITICAL-RISK</span> security posture with limited visibility into:</strong>
+                <ul>
+                    <li>🔴 Zero visibility into partner and staff access to client files</li>
+                    <li>🔴 No detection of unauthorized document access or copying</li>
+                    <li>🔴 Manual compliance reporting taking weeks for SRA audits</li>
+                    <li>🔴 Reactive security posture with no early warning systems</li>
+                    <li>🔴 Limited forensic capabilities for investigating data breaches</li>
+                    <li>🔴 No monitoring of privileged legal assistant account activities</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ADAudit Plus Benefits Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>ADAudit Plus Core Benefits &amp; Capabilities</h1>
+
+            <h2>🔍 Real-Time Threat Detection</h2>
+            <p><strong class="editable" contenteditable="true">Partner and staff activities across 5 domain controllers (ALAZ-DC01, ALPH-DC01, ALCA-DC01, ALIP-DC01, ALNO-DC01)</strong> including:</p>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">Client file access patterns and document handling on ALAZ-FS01</li>
+                <li class="editable" contenteditable="true">Privileged account activities that could compromise client confidentiality</li>
+                <li class="editable" contenteditable="true">Compliance audit trails required for SRA and ICO inspections</li>
+                <li class="editable" contenteditable="true">Day 1</li>
+                <li class="editable" contenteditable="true">Week 1</li>
+            </ul>
+
+            <h2>📊 Comprehensive Monitoring Coverage</h2>
+
+            <h3>Active Directory Auditing</h3>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">Month 1</li>
+                <li class="editable" contenteditable="true">Quarter 1</li>
+                <li class="editable" contenteditable="true">
+                In today's threat landscape, legal firms without comprehensive AD auditing are operating with critical security blindspots that could compromise client confidentiality and regulatory compliance. The implementation of ManageEngine ADAudit Plus provides immediate risk reduction through real-time monitoring, automated threat detection, and streamlined compliance capabilities specifically essential for legal practices.
+            </li>
+                <li class="editable" contenteditable="true">My professional recommendation as a Senior Microsoft Systems Engineer</li>
+                <li class="editable" contenteditable="true">Deploy ADAudit Plus immediately to address current security gaps and establish a proactive security posture. For legal firms like Ashtons Legal, the solution's rapid ROI through incident prevention, client data protection, and automated compliance reporting makes this a critical business investment, not just a security enhancement.</li>
+            </ul>
+
+            <h3>ALAZ-FS01 File Server Monitoring (Critical Priority)</h3>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">Immediate Priority</li>
+                <li class="editable" contenteditable="true">Phase 2 Consideration</li>
+                <li class="editable" contenteditable="true">Professional Edition</li>
+                <li class="editable" contenteditable="true">Complete legal document access auditing (read, write, delete, modify)</li>
+                <li class="editable" contenteditable="true">Client file access tracking with user attribution</li>
+                <li class="editable" contenteditable="true">NTFS and share permission change monitoring</li>
+            </ul>
+
+            <div class="highlight-box no-break">
+                <p class="editable" contenteditable="true">Failed access attempt detection for security incidents</p>
+            </div>
+        </div>
+
+        <!-- ROI Analysis Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Return on Investment Analysis</h1>
+
+            <h2>Cost Avoidance for Legal Firms</h2>
+            <table class="no-break">
+                <thead>
+                    <tr>
+                        <th>Security Incident Type</th>
+                        <th>Average Cost (Legal Industry)</th>
+                        <th>Annual Probability</th>
+                        <th>Risk Mitigation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="editable" contenteditable="true">+1-925-924-9500</td>
+                        <td class="editable" contenteditable="true">support@adauditplus.com</td>
+                        <td class="editable" contenteditable="true">www.adauditplus.com</td>
+                        <td class="editable" contenteditable="true">This Implementation covers functionality as previously discussed in meetings and contained in the relevant documentation. Any additional requirements, functionality, or changes will be charged for in addition to this proposal at the standard hourly rates.</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Anything not specifically itemised in this proposal may be deemed to be excluded.</td>
+                        <td class="editable" contenteditable="true">This assessment is based on current legal industry best practices and 20+ years of Microsoft infrastructure security experience. Implementation of comprehensive AD auditing is no longer optional for legal firms handling sensitive client data and facing increasing regulatory scrutiny.</td>
+                        <td class="editable" contenteditable="true">Multiple locations with distributed DCs</td>
+                        <td class="editable" contenteditable="true">Mixed Server 2016/2019 environment</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">ALAZ-FS01 file server containing client documents</td>
+                        <td class="editable" contenteditable="true">Client data protection and regulatory compliance</td>
+                        <td class="editable" contenteditable="true">SRA, GDPR, ISO 27001, Professional Conduct Rules</td>
+                        <td class="editable" contenteditable="true">✓ 5 Domain Controller licenses (all sites)</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">✓ 1 File Server license (ALAZ-FS01)</td>
+                        <td class="editable" contenteditable="true">✓ Professional Edition features</td>
+                        <td class="editable" contenteditable="true">✓ Legal compliance reporting modules</td>
+                        <td class="editable" contenteditable="true">○ SQL Server monitoring (if database auditing required)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Operational Efficiency Gains</h2>
+            <div class="metrics-grid no-break">
+                <div class="metric-card">
+                    <span class="metric-value editable" contenteditable="true">○ Application server monitoring (based on security needs)</span>
+                    <div class="editable" contenteditable="true">○ Advanced User Behavior Analytics (UBA)</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value editable" contenteditable="true">© 2024 First Technology. All rights reserved.</span>
+                    <div class="editable" contenteditable="true">This proposal is valid for 30 days from the date of issue.</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value editable" contenteditable="true">Legal firms are 3x more likely</span>
+                    <div class="editable" contenteditable="true">Average cost of legal data breach</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value editable" contenteditable="true">89% of legal cyber attacks</span>
+                    <div class="editable" contenteditable="true">SRA compliance requirements</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Mitigation Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Risk Mitigation Framework</h1>
+
+            <h2>Before ADAudit Plus Implementation at Ashtons Legal</h2>
+            <div class="warning-box no-break">
+                <strong>CRITICAL RISKS IDENTIFIED:</strong>
+                <ul>
+                    <li class="editable" contenteditable="true">Invisible Attorney Account Compromise</li>
+                    <li class="editable" contenteditable="true">Unauthorized Case File Access</li>
+                    <li class="editable" contenteditable="true">Document Exfiltration</li>
+                    <li class="editable" contenteditable="true">Regulatory Compliance Blindspots</li>
+                    <li class="editable" contenteditable="true">25+ Advanced AD Attack Detection</li>
+                    <li class="editable" contenteditable="true">Kerberoasting attacks</li>
+                </ul>
+            </div>
+
+            <h2>After ADAudit Plus Implementation</h2>
+            <div class="success-box no-break">
+                <strong>RISK REDUCTION ACHIEVED:</strong>
+                <ul>
+                    <li class="benefit-achieved editable" contenteditable="true">Golden Ticket attacks</li>
+                    <li class="benefit-achieved editable" contenteditable="true">DCSync attacks</li>
+                    <li class="benefit-achieved editable" contenteditable="true">Pass-the-hash attempts</li>
+                    <li class="benefit-achieved editable" contenteditable="true">Privilege escalation attempts</li>
+                    <li class="benefit-achieved editable" contenteditable="true">Real-time monitoring of all 5 domain controllers</li>
+                    <li class="benefit-achieved editable" contenteditable="true">User and group modifications tracking</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Implementation Timeline Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Implementation Timeline &amp; Next Steps</h1>
+
+            <h2>Recommended Deployment Schedule</h2>
+            <table class="no-break">
+                <thead>
+                    <tr>
+                        <th>Timeframe</th>
+                        <th>Activity</th>
+                        <th>Deliverables</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="editable" contenteditable="true">Permission changes with before/after values</td>
+                        <td class="editable" contenteditable="true">Account lockout analysis and troubleshooting</td>
+                        <td class="editable" contenteditable="true">GPO changes with detailed audit trails</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Complete legal document access auditing (read, write, delete, modify)</td>
+                        <td class="editable" contenteditable="true">Client file access tracking with user attribution</td>
+                        <td class="editable" contenteditable="true">NTFS and share permission change monitoring</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Failed access attempt detection for security incidents</td>
+                        <td class="editable" contenteditable="true">Matter-specific folder access reporting</td>
+                        <td class="editable" contenteditable="true">Document retention and deletion audit trails</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">Client Data Breach</td>
+                        <td class="editable" contenteditable="true">£3.2M + reputation damage</td>
+                        <td class="editable" contenteditable="true">25%</td>
+                    </tr>
+                    <tr>
+                        <td class="editable" contenteditable="true">85% reduction</td>
+                        <td class="editable" contenteditable="true">SRA Regulatory Fine</td>
+                        <td class="editable" contenteditable="true">£500K - £2M</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Success Metrics</h2>
+            <ul class="no-break">
+                <li><strong class="editable" contenteditable="true">20%</strong> into privileged account activities within 30 days</li>
+                <li><strong class="editable" contenteditable="true">90% reduction</strong> operational within 2 weeks</li>
+                <li><strong class="editable" contenteditable="true">Professional Negligence Claim</strong> automated within 6 weeks</li>
+                <li><strong class="editable" contenteditable="true">£750K average</strong> reduced by 50% within 60 days</li>
+            </ul>
+        </div>
+
+        <!-- Investment Requirements Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Investment Requirements</h1>
+
+            <h2>Professional Edition Licensing (Recommended)</h2>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">15%</li>
+                <li class="editable" contenteditable="true">70% reduction</li>
+                <li class="editable" contenteditable="true">Cyber Insurance Premium</li>
+                <li class="editable" contenteditable="true">£25K+ annually</li>
+            </ul>
+
+            <h2>Implementation Categories</h2>
+            <ul class="no-break">
+                <li><strong class="editable" contenteditable="true">100%</strong>: 5 Domain Controller licenses + ALAZ-FS01 file server monitoring (Essential)</li>
+                <li><strong class="editable" contenteditable="true">40% reduction</strong>: SQL and application server monitoring (Optional based on security requirements)</li>
+                <li><strong class="editable" contenteditable="true">75%</strong>: Strongly recommended for advanced legal compliance features</li>
+            </ul>
+        </div>
+
+        <!-- Critical Action Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Critical Action Required for Ashtons Legal</h1>
+
+            <h2>Immediate Benefits Upon Deployment</h2>
+            <div class="highlight-box no-break">
+                <ol>
+                    <li><strong class="editable" contenteditable="true">reduction in security investigation time</strong>: Real-time monitoring of all AD activities across all 5 DCs and ALAZ-FS01</li>
+                    <li><strong class="editable" contenteditable="true">90%</strong>: Automated threat detection operational for client data protection</li>
+                    <li><strong class="editable" contenteditable="true">faster compliance report generation</strong>: Complete SRA and GDPR compliance reporting framework</li>
+                    <li><strong class="editable" contenteditable="true">60%</strong>: Measurable reduction in security incidents and regulatory risks</li>
+                </ol>
+            </div>
+
+            <div class="bluf-box no-break">
+                <p><strong class="editable" contenteditable="true">reduction in false positive alerts</strong>: <span class="editable" contenteditable="true">50%</span></p>
+            </div>
+        </div>
+
+        <!-- Conclusion Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Conclusion &amp; Recommendation for Ashtons Legal</h1>
+
+            <h2>Recommended Next Steps</h2>
+            <ol class="no-break">
+                <li><strong class="editable" contenteditable="true">improvement in incident response time</strong>: Download 30-day trial and begin evaluation on ALAZ-FS01</li>
+                <li><strong class="editable" contenteditable="true">🔴 Zero visibility into partner and staff access to client files</strong>: Conduct proof-of-concept deployment across primary DCs</li>
+                <li><strong class="editable" contenteditable="true">🔴 No detection of unauthorized document access or copying</strong>: Present security findings and compliance benefits to senior partners</li>
+                <li><strong class="editable" contenteditable="true">🔴 Manual compliance reporting taking weeks for SRA audits</strong>: Proceed with full implementation to protect client data and ensure regulatory compliance</li>
+            </ol>
+
+            <div class="contact-info no-break">
+                <h2>Contact Information</h2>
+                <ul>
+                    <li><strong>Phone:</strong> <span class="editable" contenteditable="true">🔴 Reactive security posture with no early warning systems</span></li>
+                    <li><strong>Email:</strong> <span class="editable" contenteditable="true">🔴 Limited forensic capabilities for investigating data breaches</span></li>
+                    <li><strong>Website:</strong> <span class="editable" contenteditable="true">🔴 No monitoring of privileged legal assistant account activities</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>TERMS AND CONDITIONS</h1>
+
+            <ol class="no-break">
+                <li class="editable" contenteditable="true">🟢 Real-time monitoring of all client file access across ALAZ-FS01</li>
+                <li class="editable" contenteditable="true">🟢 Automated threat detection with instant alerts for suspicious activity</li>
+                <li class="editable" contenteditable="true">🟢 Continuous SRA and GDPR compliance monitoring and reporting</li>
+            </ol>
+
+            <div class="highlight-box no-break">
+                <p class="editable" contenteditable="true">🟢 Proactive security posture with behavioral analytics</p>
+            </div>
+        </div>
+
+        <!-- Appendix Section -->
+        <div class="page-section page-break">
+            <div class="section-controls">
+                <button onclick="moveSectionUp(this)">↑</button>
+                <button onclick="moveSectionDown(this)">↓</button>
+                <button onclick="removeSection(this)">×</button>
+            </div>
+            <h1>Appendix: Ashtons Legal Infrastructure Summary</h1>
+
+            <h2>Current Environment Overview</h2>
+            <ul class="no-break">
+                <li><strong>Primary Sites</strong>: <span class="editable" contenteditable="true">🟢 Complete forensic audit trail for legal investigations</span></li>
+                <li><strong>Core Infrastructure</strong>: <span class="editable" contenteditable="true">🟢 Comprehensive privileged account monitoring across all 5 DCs</span></li>
+                <li><strong>Critical Asset</strong>: <span class="editable" contenteditable="true">Week 1-2</span></li>
+                <li><strong>Security Priority</strong>: <span class="editable" contenteditable="true">Infrastructure assessment and software installation</span></li>
+                <li><strong>Compliance Requirements</strong>: <span class="editable" contenteditable="true">System readiness, software deployment</span></li>
+            </ul>
+
+            <h2>Recommended ADAudit Plus Configuration</h2>
+            
+            <h3>Essential Components:</h3>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">Week 3-4</li>
+                <li class="editable" contenteditable="true">Domain controller monitoring configuration</li>
+                <li class="editable" contenteditable="true">All 5 DCs monitored, basic alerting</li>
+                <li class="editable" contenteditable="true">Week 5-6</li>
+            </ul>
+
+            <h3>Optional Components:</h3>
+            <ul class="no-break">
+                <li class="editable" contenteditable="true">File server and Windows server integration</li>
+                <li class="editable" contenteditable="true">This assessment is based on current legal industry best practices and 20+ years of Microsoft infrastructure security experience. Implementation of comprehensive AD auditing is no longer optional for legal firms handling sensitive client data and facing increasing regulatory scrutiny.</li>
+                <li class="editable" contenteditable="true">Multiple locations with distributed DCs</li>
+            </ul>
+
+            <div style="margin-top: 40px; text-align: center; font-size: 10pt; color: #666;" class="no-break">
+                <p class="editable" contenteditable="true">Mixed Server 2016/2019 environment</p>
+                <p class="editable" contenteditable="true">ALAZ-FS01 file server containing client documents</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editMode = false;
+        let originalContent = {};
+        let sectionCount = 0;
+
+        // Template options
+        const templateOptions = {
+            themes: {
+                'legal': {
+                    primaryColor: '#1f4e79',
+                    secondaryColor: '#2c5aa0',
+                    fontFamily: 'Georgia, serif'
+                },
+                'corporate': {
+                    primaryColor: '#4a6baf',
+                    secondaryColor: '#6c8ae4',
+                    fontFamily: 'Arial, sans-serif'
+                },
+                'technical': {
+                    primaryColor: '#3e768f',
+                    secondaryColor: '#5aa3cc',
+                    fontFamily: 'Courier New, monospace'
+                }
+            },
+            layouts: {
+                'standard': {
+                    margins: '0.75in',
+                    spacing: 'normal'
+                },
+                'compact': {
+                    margins: '0.5in',
+                    spacing: 'tight'
+                }
+            }
+        };
+
+        // Apply template theme
+        function applyTemplate(templateName) {
+            const theme = templateOptions.themes[templateName];
+            if (theme) {
+                document.documentElement.style.setProperty('--primary-blue', theme.primaryColor);
+                document.documentElement.style.setProperty('--secondary-blue', theme.secondaryColor);
+                document.body.style.fontFamily = theme.fontFamily;
+            }
+        }
+
+        // Toggle Edit Mode
+        function toggleEditMode() {
+            editMode = !editMode;
+            const body = document.body;
+            const editables = document.querySelectorAll('.editable');
+            const button = document.querySelector('.btn-edit');
+            
+            if (editMode) {
+                body.classList.add('edit-mode');
+                editables.forEach(el => {
+                    el.contentEditable = 'true';
+                    // Store original content
+                    originalContent[el.getAttribute('data-id') || Math.random()] = el.innerHTML;
+                });
+                button.textContent = 'Exit Edit Mode';
+                button.style.backgroundColor = '#dc3545';
+            } else {
+                body.classList.remove('edit-mode');
+                editables.forEach(el => {
+                    el.contentEditable = 'false';
+                });
+                button.textContent = 'Toggle Edit Mode';
+                button.style.backgroundColor = '#28a745';
+            }
+        }
+
+        // Toggle Compact Mode
+        function toggleCompactMode() {
+            document.body.classList.toggle('compact-mode');
+            const button = document.querySelector('.btn-compact');
+            if (document.body.classList.contains('compact-mode')) {
+                button.textContent = 'Exit Compact View';
+            } else {
+                button.textContent = 'Toggle Compact View';
+            }
+        }
+
+        // Save Changes to Local Storage
+        function saveChanges() {
+            const editables = document.querySelectorAll('.editable');
+            const content = {};
+            
+            editables.forEach((el, index) => {
+                content[index] = el.innerHTML;
+            });
+            
+            localStorage.setItem('proposalContent', JSON.stringify(content));
+            
+            // Show save confirmation
+            const button = document.querySelector('.btn-save');
+            const originalText = button.textContent;
+            button.textContent = 'Saved ✓';
+            button.style.backgroundColor = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '#ffc107';
+            }, 2000);
+        }
+
+        // Load Saved Changes
+        function loadChanges() {
+            const saved = localStorage.getItem('proposalContent');
+            if (saved) {
+                try {
+                    const content = JSON.parse(saved);
+                    const editables = document.querySelectorAll('.editable');
+                    
+                    editables.forEach((el, index) => {
+                        if (content[index]) {
+                            el.innerHTML = content[index];
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading saved content:', e);
+                }
+            }
+        }
+
+        // Add new section
+        function addSection(sectionType) {
+            sectionCount++;
+            const sections = {
+                'standard': {
+                    title: 'New Section',
+                    content: '<h2>Subsection</h2><p class="editable" contenteditable="false">Content goes here</p>'
+                },
+                'risk': {
+                    title: 'Risk Analysis',
+                    content: `
+                        <h2>Risk Analysis</h2>
+                        <table class="no-break">
+                            <thead>
+                                <tr>
+                                    <th>Risk Category</th>
+                                    <th>Risk Level</th>
+                                    <th>Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="editable" contenteditable="false">New risk</td>
+                                    <td class="editable" contenteditable="false">High</td>
+                                    <td class="editable" contenteditable="false">Potential impact</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `
+                },
+                'timeline': {
+                    title: 'Project Timeline',
+                    content: `
+                        <h2>Implementation Timeline</h2>
+                        <table class="no-break">
+                            <thead>
+                                <tr>
+                                    <th>Timeframe</th>
+                                    <th>Activity</th>
+                                    <th>Deliverables</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="editable" contenteditable="false">Week 1</td>
+                                    <td class="editable" contenteditable="false">Initial setup</td>
+                                    <td class="editable" contenteditable="false">System configured</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `
+                }
+            };
+            
+            const newSection = document.createElement('div');
+            newSection.className = 'page-section';
+            newSection.innerHTML = `
+                <div class="section-controls">
+                    <button onclick="moveSectionUp(this)">↑</button>
+                    <button onclick="moveSectionDown(this)">↓</button>
+                    <button onclick="removeSection(this)">×</button>
+                </div>
+                <h1 class="editable" contenteditable="false">${sections[sectionType].title} ${sectionCount}</h1>
+                ${sections[sectionType].content}
+            `;
+            
+            document.getElementById('documentContainer').appendChild(newSection);
+            
+            // Scroll to new section
+            newSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Remove section
+        function removeSection(button) {
+            if(confirm('Delete this entire section?')) {
+                button.closest('.page-section').remove();
+            }
+        }
+
+        // Move section up
+        function moveSectionUp(button) {
+            const section = button.closest('.page-section');
+            if (section.previousElementSibling) {
+                section.parentNode.insertBefore(section, section.previousElementSibling);
+            }
+        }
+
+        // Move section down
+        function moveSectionDown(button) {
+            const section = button.closest('.page-section');
+            if (section.nextElementSibling) {
+                section.parentNode.insertBefore(section.nextElementSibling, section);
+            }
+        }
+
+        // Insert page break
+        function insertPageBreak() {
+            const breakEl = document.createElement('div');
+            breakEl.className = 'page-break';
+            
+            // Find the current focused element or use last section
+            const focused = document.activeElement.closest('.page-section') || 
+                          document.querySelector('.page-section:last-child');
+            
+            if (focused) {
+                focused.parentNode.insertBefore(breakEl, focused.nextElementSibling);
+            } else {
+                document.getElementById('documentContainer').appendChild(breakEl);
+            }
+            
+            breakEl.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Export to PDF
+        function exportToPDF() {
+            // Hide control panel during export
+            document.body.classList.add('exporting');
+            
+            // Create a clone for export processing
+            const element = document.getElementById('documentContainer').cloneNode(true);
+            
+            // Process the clone for export
+            element.querySelectorAll('.control-panel, .section-controls').forEach(el => el.remove());
+            
+            // Add compact mode for export
+            element.classList.add('compact-mode', 'exporting');
+            
+            // Create temporary container
+            const tempContainer = document.createElement('div');
+            tempContainer.appendChild(element);
+            document.body.appendChild(tempContainer);
+            
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // Smaller margins
+                filename: 'Proposal_Export.pdf',
+                html2canvas: { 
+                    scale: 2,
+                    letterRendering: true,
+                    ignoreElements: (element) => element.classList.contains('no-export')
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4',
+                    orientation: 'portrait'
+                },
+                pagebreak: {
+                    mode: ['avoid-all', 'css', 'legacy'],
+                    before: '.page-break',
+                    after: '.page-section',
+                    avoid: ['.no-break']
+                }
+            };
+
+            // Export with retry logic for robustness
+            const exportWithRetry = (attempts = 3) => {
+                html2pdf().set(opt).from(element).save()
+                    .then(() => {
+                        tempContainer.remove();
+                        showExportSuccess('PDF');
+                        document.body.classList.remove('exporting');
+                    })
+                    .catch(err => {
+                        if(attempts > 0) {
+                            console.log(`Retrying PDF export (${attempts} attempts left)`);
+                            exportWithRetry(attempts - 1);
+                        } else {
+                            console.error('PDF export failed:', err);
+                            alert('PDF export failed after multiple attempts. Please try again.');
+                            tempContainer.remove();
+                            document.body.classList.remove('exporting');
+                        }
+                    });
+            };
+            
+            exportWithRetry();
+        }
+
+        // Export to Word
+        function exportToWord() {
+            // Hide control panel during export
+            document.body.classList.add('exporting');
+            
+            const element = document.getElementById('documentContainer');
+            
+            // Create a clean HTML structure for Word export
+            let htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Proposal Export</title>
+                    <style>
+                        body { 
+                            font-family: 'Segoe UI', Arial, sans-serif; 
+                            font-size: 10pt; 
+                            line-height: 1.3; 
+                            margin: 0.5in; 
+                        }
+                        h1 { 
+                            font-size: 14pt; 
+                            color: var(--primary-blue); 
+                            border-bottom: 2px solid var(--primary-blue); 
+                            padding-bottom: 8px; 
+                            page-break-after: avoid; 
+                        }
+                        h2 { 
+                            font-size: 12pt; 
+                            color: var(--secondary-blue); 
+                            margin-top: 15px; 
+                            page-break-after: avoid; 
+                        }
+                        table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin: 10px 0; 
+                            page-break-inside: avoid; 
+                        }
+                        th, td { 
+                            border: 1px solid #ddd; 
+                            padding: 8px; 
+                            text-align: left; 
+                        }
+                        th { 
+                            background-color: var(--primary-blue); 
+                            color: white; 
+                        }
+                        .page-break { 
+                            page-break-before: always; 
+                        }
+                        .no-break { 
+                            page-break-inside: avoid; 
+                        }
+                        .risk-critical { 
+                            color: var(--warning-red); 
+                            font-weight: bold; 
+                        }
+                        .highlight-box, .warning-box, .success-box { 
+                            border: 1px solid #ddd; 
+                            padding: 15px; 
+                            margin: 15px 0; 
+                            page-break-inside: avoid; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${element.innerHTML}
+                </body>
+                </html>
+            `;
+
+            // Clean up the HTML content for Word export
+            htmlContent = htmlContent.replace(/contenteditable="[^"]*"/g, '');
+            htmlContent = htmlContent.replace(/class="editable[^"]*"/g, '');
+            htmlContent = htmlContent.replace(/data-id="[^"]*"/g, '');
+            htmlContent = htmlContent.replace(/<div class="section-controls">.*?<\/div>/g, '');
+            htmlContent = htmlContent.replace(/<div class="control-panel">.*?<\/div>/g, '');
+
+            // Create and download the Word document
+            const blob = new Blob([htmlContent], {
+                type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            });
+            
+            saveAs(blob, 'Proposal_Export.doc');
+            
+            // Show control panel again
+            document.body.classList.remove('exporting');
+            
+            // Show export confirmation
+            showExportSuccess('Word');
+        }
+
+        // Show export success message
+        function showExportSuccess(type) {
+            const buttons = document.querySelectorAll('.btn-export');
+            const button = type === 'PDF' ? buttons[0] : buttons[1];
+            const originalText = button.textContent;
+            
+            button.textContent = `${type} Exported ✓`;
+            button.style.backgroundColor = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '#1f4e79';
+            }, 3000);
+        }
+
+        // Auto-save functionality
+        function autoSave() {
+            if (editMode) {
+                saveChanges();
+            }
+        }
+
+        // Initialize the document
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChanges();
+            
+            // Auto-save every 30 seconds when in edit mode
+            setInterval(autoSave, 30000);
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+S to save
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveChanges();
+                }
+                
+                // Ctrl+E to toggle edit mode
+                if (e.ctrlKey && e.key === 'e') {
+                    e.preventDefault();
+                    toggleEditMode();
+                }
+                
+                // Ctrl+P to export PDF
+                if (e.ctrlKey && e.key === 'p') {
+                    e.preventDefault();
+                    exportToPDF();
+                }
+            });
+        });
+
+        // Add visual feedback for editing
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('editable')) {
+                e.target.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    e.target.style.backgroundColor = '';
+                }, 1000);
+            }
+        });
+
+        // Prevent page breaks in critical sections during print
+        window.addEventListener('beforeprint', function() {
+            // Add additional no-break classes to prevent awkward page breaks
+            const sections = document.querySelectorAll('.page-section');
+            sections.forEach(section => {
+                section.style.pageBreakInside = 'avoid';
+            });
+        });
+    </script>
+
+
+</body></html>
