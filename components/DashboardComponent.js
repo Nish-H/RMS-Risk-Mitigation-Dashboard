@@ -127,6 +127,7 @@ const DashboardComponent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isAccountTypesCollapsed, setIsAccountTypesCollapsed] = useState(false);
+  const [accountTypeFilter, setAccountTypeFilter] = useState(null);
 
   useEffect(() => {
     if (darkMode) document.body.classList.add('dark');
@@ -189,11 +190,17 @@ const DashboardComponent = () => {
   const disabledThisRun = filteredData.filter(item => item.ActionThisRun === 'Disabled');
 
   const getAccountsToShow = () => {
-    if (selectedView === 'enabled') return enabledAccounts;
-    if (selectedView === 'disabled') return disabledAccounts;
-    if (selectedView === 'stale') return staleAccounts;
-    if (selectedView === 'neverLoggedIn') return neverLoggedIn;
-    return filteredData;
+    let accounts = filteredData;
+    
+    if (accountTypeFilter) {
+      accounts = accounts.filter(a => a.AccountType && a.AccountType.toLowerCase().includes(accountTypeFilter.toLowerCase()));
+    }
+    
+    if (selectedView === 'enabled') return accounts.filter(a => a.Status === 'Enabled');
+    if (selectedView === 'disabled') return accounts.filter(a => a.Status === 'Disabled');
+    if (selectedView === 'stale') return accounts.filter(a => parseInt(a.PasswordAgeInDays) > 90 && a.Status === 'Enabled');
+    if (selectedView === 'neverLoggedIn') return accounts.filter(a => !a.LastLogon && a.Status === 'Enabled');
+    return accounts;
   };
 
   const renderAccountList = () => {
@@ -213,10 +220,14 @@ const DashboardComponent = () => {
       );
     }
 
-    const title = selectedView === 'enabled' ? 'Enabled Accounts' : 
+    let title = selectedView === 'enabled' ? 'Enabled Accounts' : 
                  selectedView === 'disabled' ? 'Disabled Accounts' : 
                  selectedView === 'stale' ? 'Stale Password Accounts (90+ days)' :
                  selectedView === 'neverLoggedIn' ? 'Never Logged In Accounts' : 'All Accounts';
+    
+    if (accountTypeFilter) {
+      title = `${accountTypeFilter} - ${title}`;
+    }
 
     return (
       <div className="mt-6 border rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
@@ -226,6 +237,14 @@ const DashboardComponent = () => {
             <p className="text-sm text-gray-500">{accounts.length} accounts</p>
           </div>
           <div className="flex gap-2">
+            {accountTypeFilter && (
+              <button 
+                onClick={() => {setAccountTypeFilter(null); setSelectedView('all');}}
+                className="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 flex items-center"
+              >
+                <XCircle size={16} className="mr-1" /> Clear Filter
+              </button>
+            )}
             <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="px-3 py-2 border rounded-lg dark:bg-gray-700" />
             <button onClick={() => exportToCSV(accounts, title.replace(/ /g, '_'))} className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
               <Download size={18} className="mr-2" />Export
@@ -320,10 +339,30 @@ const DashboardComponent = () => {
             {!isAccountTypesCollapsed && (
               <div className="grid grid-cols-2 gap-2">
                 {accountTypeData.map((item, i) => (
-                  <div key={i} className="p-3 rounded-lg border" style={{ borderColor: COLORS[i % COLORS.length], backgroundColor: COLORS[i % COLORS.length] + '20' }}>
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (accountTypeFilter === item.name) {
+                        setAccountTypeFilter(null);
+                        setSelectedView('all');
+                      } else {
+                        setAccountTypeFilter(item.name);
+                        setSelectedView('filtered');
+                      }
+                    }}
+                    className={`p-3 rounded-lg border text-left transition-all hover:scale-105 ${
+                      accountTypeFilter === item.name 
+                        ? 'ring-2 ring-offset-2 ring-blue-500 border-blue-500' 
+                        : ''
+                    }`}
+                    style={{ 
+                      borderColor: accountTypeFilter === item.name ? '#3B82F6' : COLORS[i % COLORS.length], 
+                      backgroundColor: accountTypeFilter === item.name ? '#DBEAFE' : COLORS[i % COLORS.length] + '20'
+                    }}
+                  >
                     <div className="text-xs text-gray-600">{item.name}</div>
-                    <div className="text-xl font-bold" style={{ color: COLORS[i % COLORS.length] }}>{item.value}</div>
-                  </div>
+                    <div className="text-xl font-bold" style={{ color: accountTypeFilter === item.name ? '#1D4ED8' : COLORS[i % COLORS.length] }}>{item.value}</div>
+                  </button>
                 ))}
               </div>
             )}
