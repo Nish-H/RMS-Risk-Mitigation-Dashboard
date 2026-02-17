@@ -1,502 +1,376 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Download, Moon, Sun } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Download, Moon, Sun, Shield, AlertTriangle, CheckCircle, XCircle, Users, UserCheck, UserX, Search, Building2, User, X, Activity, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
-//const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];  -pastrel
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#EF4444', '#10B981', '#F97316'];
 
-//DashboardHeader component
-const DashboardHeader = ({ darkMode, setDarkMode }) => (
-  <div className="mb-8 flex justify-between items-center">
-    <div>
-    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
-  RMS Risk Mitigation Dashboard
-</h1>            
-<h1 className="text-xl md:text-xl font-semibold text-gray-500 dark:text-blue-300">
-  FTech Engineer & Domain Admin Accounts
-</h1>
-      <div className="h-1 w-52 bg-blue-500 mt-2"></div>
+const StatCard = ({ title, value, icon: Icon, color, onClick, active }) => {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600', green: 'from-green-500 to-green-600',
+    red: 'from-red-500 to-red-600', yellow: 'from-yellow-500 to-yellow-600',
+    purple: 'from-purple-500 to-purple-600',
+  };
+  return (
+    <div onClick={onClick} className={`relative overflow-hidden rounded-xl shadow-lg transform transition-all hover:scale-105 cursor-pointer ${active ? 'ring-4 ring-blue-500 ring-offset-2' : ''} bg-gradient-to-br ${colorClasses[color]} text-white`}>
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-blue-100 text-sm font-medium">{title}</p>
+            <p className="text-3xl font-bold mt-1">{value}</p>
+          </div>
+          <div className="bg-white/20 p-3 rounded-lg"><Icon size={28} /></div>
+        </div>
+      </div>
     </div>
-    <button 
-      onClick={function() { setDarkMode(!darkMode); }}
-      className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-      aria-label="Toggle dark mode"
-    >
-      {darkMode ? <Sun size={30} /> : <Moon size={30} />}
-    </button>
-  </div>
-);
+  );
+};
+
+const getAccountTypeBadge = (accountType) => {
+  if (!accountType) return 'bg-gray-100 text-gray-700';
+  const type = accountType.toLowerCase();
+  if (type.includes('domain admin') || type.includes('enterprise')) return 'bg-red-100 text-red-700';
+  if (type.includes('ftech') || type.includes('privileged')) return 'bg-orange-100 text-orange-700';
+  if (type.includes('service') || type.includes('svc')) return 'bg-blue-100 text-blue-700';
+  if (type.includes('shared') || type.includes('portal')) return 'bg-yellow-100 text-yellow-700';
+  return 'bg-green-100 text-green-700';
+};
+
+const AccountDetailsModal = ({ account, onClose }) => {
+  if (!account) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-6 border-b">
+          <h2 className="text-xl font-bold">Account Details</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="text-sm text-gray-500">Username</label><p className="font-semibold">{account.Username}</p></div>
+            <div><label className="text-sm text-gray-500">Domain</label><p className="font-semibold">{account.DomainName}</p></div>
+            <div><label className="text-sm text-gray-500">Time Stamp</label><p className="font-semibold text-orange-600">{account.TimeStamp}</p></div>
+            <div><label className="text-sm text-gray-500">Full Name</label><p className="font-semibold">{account.FirstName} {account.LastName}</p></div>
+            <div><label className="text-sm text-gray-500">Status</label><p className={`font-semibold ${account.Status === 'Enabled' ? 'text-green-600' : 'text-red-600'}`}>{account.Status}</p></div>
+            <div><label className="text-sm text-gray-500">Type</label><p className="font-semibold">{account.AccountType}</p></div>
+            <div><label className="text-sm text-gray-500">Password Age</label><p className="font-semibold">{account.PasswordAgeInDays} days</p></div>
+            <div><label className="text-sm text-gray-500">Last Logon</label><p className="font-semibold">{account.LastLogon || 'Never'}</p></div>
+            <div className="col-span-2"><label className="text-sm text-gray-500">Description</label><p className="font-semibold">{account.Description || 'N/A'}</p></div>
+          </div>
+        </div>
+        <div className="p-6 border-t flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LeadEngineerWidget = ({ customer, data }) => {
+  if (!customer || customer === 'All') return null;
+  
+  const customerData = data.filter(item => item.Customer === customer);
+  let leadEngineer = null;
+  let maxScore = -1;
+  
+  customerData.forEach(item => {
+    if (item.Description && item.Description.toLowerCase().includes('engineer')) {
+      const name = `${item.FirstName || ''} ${item.LastName || ''}`.trim() || item.Username;
+      let score = 0;
+      if (item.Description.toLowerCase().includes('lead')) score += 3;
+      if (item.Description.toLowerCase().includes('senior')) score += 2;
+      if (item.Description.toLowerCase().includes('principal')) score += 3;
+      if (item.Description.toLowerCase().includes('security')) score += 1;
+      if (item.Description.toLowerCase().includes('server')) score += 1;
+      if (item.Description.toLowerCase().includes('rms')) score += 1;
+      
+      if (score > maxScore) {
+        maxScore = score;
+        leadEngineer = { name, description: item.Description, score };
+      }
+    }
+  });
+  
+  if (!leadEngineer) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+        <h3 className="text-lg font-semibold mb-2">Lead Engineer - {customer}</h3>
+        <p className="text-gray-500">No lead engineer identified</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+      <h3 className="text-lg font-semibold mb-3 flex items-center">
+        <User className="mr-2 text-blue-500" />
+        Lead Engineer - {customer}
+      </h3>
+      <div className="flex items-center space-x-3">
+        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+          {leadEngineer.name.charAt(0)}
+        </div>
+        <div>
+          <p className="font-semibold text-lg">{leadEngineer.name}</p>
+          <p className="text-sm text-gray-500">{leadEngineer.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DashboardComponent = () => {
-  // State declarations
   const [darkMode, setDarkMode] = useState(false);
   const [data, setData] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('All');
-  const [selectedView, setSelectedView] = useState(null);
+  const [selectedView, setSelectedView] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('7days');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
-  const [leadEngineers, setLeadEngineers] = useState({});
-  const [currentLeadEngineer, setCurrentLeadEngineer] = useState(null);
-  const [passwordAgeFilter, setPasswordAgeFilter] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [isAccountTypesCollapsed, setIsAccountTypesCollapsed] = useState(false);
 
-  const [isPasswordSectionCollapsed, setIsPasswordSectionCollapsed] = useState(false);
-  const [isDisabledAccountsCollapsed, setIsDisabledAccountsCollapsed] = useState(false);
+  useEffect(() => {
+    if (darkMode) document.body.classList.add('dark');
+    else document.body.classList.remove('dark');
+  }, [darkMode]);
 
-  // Apply dark mode class to body
-    useEffect(() => {
-     if (darkMode) {
-     document.body.classList.add('dark', 'bg-gray-900', 'text-gray');
-     } else {
-     document.body.classList.remove('dark', 'bg-gray-900', 'text-white');
-     }
-    }, [darkMode]);
-
-      useEffect(() => {
-      const loadData = async () => {
+  useEffect(() => {
+    const loadData = async () => {
       try {
         const response = await fetch('/api/data');
         const jsonData = await response.json();
         setData(jsonData);
-        
-        // Extract lead engineers from the data
-        const engineers = identifyLeadEngineers(jsonData);
-        setLeadEngineers(engineers);
-        
         setLoading(false);
       } catch (error) {
         console.error('Error:', error);
-        setError(error.message);
         setLoading(false);
       }
     };
-
     loadData();
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
-  
-  // Effect to update current lead engineer when customer selection changes
-  useEffect(() => {
-    if (selectedCustomer === 'All') {
-      setCurrentLeadEngineer(null);
-    } else {
-      setCurrentLeadEngineer(leadEngineers[selectedCustomer] || null);
-    }
-  }, [selectedCustomer, leadEngineers]);
-
-  // function to handle clicking on a password age box
-  const handlePasswordAgeFilterClick = (range) => {
-  // If already selected, clear the filter, otherwise set it
-  setPasswordAgeFilter(passwordAgeFilter === range ? null : range);
-  // When selecting a password age filter, always show accounts
-  if (passwordAgeFilter !== range) {
-    setSelectedView('enabled');
-  }
-};
-
-  // Function to identify the most senior engineer for each customer
-  const identifyLeadEngineers = (jsonData) => {
-    const engineers = {};
-    
-    jsonData.forEach(record => {
-      if (!record.Description) return;
-      
-      const description = (typeof record.Description === 'string') ? record.Description.toLowerCase() : '';
-      const customer = record.Customer;
-      
-      if (description && description.includes("engineer")) {
-        // Score the engineer based on title keywords
-        let score = 0;
-        if (description.includes("lead")) score += 3;
-        if (description.includes("senior")) score += 2;
-        if (description.includes("principal")) score += 3;
-        if (description.includes("security")) score += 1;
-        if (description.includes("server")) score += 1;
-        if (description.includes("rms")) score += 1;
-        
-        // Store the engineer with their score
-        if (!engineers[customer] || engineers[customer].score < score) {
-          engineers[customer] = {
-            name: `${record.FirstName || ''} ${record.LastName || ''}`.trim(),
-            description: record.Description,
-            username: record.Username,
-            score: score
-          };
-        }
-      }
-    });
-    
-    return engineers;
-  };
 
   const exportToCSV = (exportData, filename) => {
-    const headers = ['Username', 'DomainName', 'FirstName', 'LastName', 'Status', 'AccountType', 
-                    'LastLogon', 'PasswordLastSet', 'PasswordAgeInDays', 'Description'];
-    const csvContent = [
-      headers.join(','),
-      ...exportData.map(item => 
-        headers.map(header => 
-          JSON.stringify(item[header] || '')
-        ).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const headers = ['Username', 'DomainName', 'TimeStamp', 'FirstName', 'LastName', 'Status', 'AccountType', 'LastLogon', 'PasswordAgeInDays', 'Description'];
+    const csvContent = [headers.join(','), ...exportData.map(item => headers.map(h => JSON.stringify(item[h] || '')).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
-  const handleSort = (key) => {
-    setSortConfig({
-      key,
-      direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-    });
-  };
-
-  const TableHeader = ({ label, sortKey, className = "" }) => (
-    <th 
-      className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${className}`}
-      onClick={() => handleSort(sortKey)}
-    >
-      <div className="flex items-center space-x-1">
-        <span>{label}</span>
-        {sortConfig.key === sortKey && (
-          <span>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>
-        )}
-      </div>
-    </th>
-  );
-
-  if (loading) return <div className="p-4">Loading dashboard data...</div>;
-  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
-
   const customers = ['All', ...new Set(data.map(item => item.Customer))].sort();
-  const filteredData = selectedCustomer === 'All' 
-    ? data 
-    : data.filter(item => item.Customer === selectedCustomer);
-
+  
+  let filteredData = selectedCustomer === 'All' ? data : data.filter(item => item.Customer === selectedCustomer);
+  
   const enabledAccounts = filteredData.filter(item => item.Status === 'Enabled');
   const disabledAccounts = filteredData.filter(item => item.Status === 'Disabled');
+  const staleAccounts = enabledAccounts.filter(a => parseInt(a.PasswordAgeInDays) > 90);
+  const neverLoggedIn = enabledAccounts.filter(a => !a.LastLogon || a.LastLogon === 'Never');
+
+  const accountTypeData = Object.entries(filteredData.reduce((acc, item) => { const t = item.AccountType || 'Unknown'; acc[t] = (acc[t] || 0) + 1; return acc; }, {}))
+    .map(([n, v]) => ({ name: n, value: v })).sort((a, b) => b.value - a.value);
+
+  const passwordAgeData = filteredData.reduce((acc, item) => { const age = parseInt(item.PasswordAgeInDays); if (age < 30) acc['0-30']++; else if (age < 60) acc['31-60']++; else if (age < 90) acc['61-90']++; else acc['90+']++; return acc; }, { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 });
+
+  const leadEngineerRankings = Object.entries(filteredData.reduce((acc, item) => {
+    if (item.Description && (item.Description.toLowerCase().includes('engineer'))) {
+      const name = `${item.FirstName || ''} ${item.LastName || ''}`.trim() || item.Username;
+      if (!acc[name]) acc[name] = { name, stalePasswords: 0, neverLoggedIn: 0, disabled: 0, unmaintainedScore: 0 };
+      if (parseInt(item.PasswordAgeInDays) > 90) acc[name].stalePasswords++;
+      if (!item.LastLogon) acc[name].neverLoggedIn++;
+      if (item.Status === 'Disabled') acc[name].disabled++;
+      acc[name].unmaintainedScore = acc[name].stalePasswords * 3 + acc[name].neverLoggedIn * 2 + acc[name].disabled;
+    }
+    return acc;
+  }, {})).map(([n, s]) => s).sort((a, b) => b.unmaintainedScore - a.unmaintainedScore).slice(0, 10);
+
   const disabledThisRun = filteredData.filter(item => item.ActionThisRun === 'Disabled');
 
-  // Account Type Distribution
-  const accountTypeData = Object.entries(
-    filteredData.reduce((acc, item) => {
-      acc[item.AccountType] = (acc[item.AccountType] || 0) + 1;
-      return acc;
-    }, {})
-  ).map(([type, count]) => ({ name: type, value: count }));
-
-  // Password Age Distribution
-  const passwordAgeData = filteredData.reduce((acc, item) => {
-    const age = parseInt(item.PasswordAgeInDays);
-    if (age < 30) acc['0-30']++;
-    else if (age < 60) acc['31-60']++;
-    else if (age < 90) acc['61-90']++;
-    else acc['90+']++;
-    return acc;
-  }, { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 });
-
-  // Last Login Analysis
-  const now = new Date();
-  const loginData = filteredData.reduce((acc, item) => {
-    const lastLogin = new Date(item.LastLogon);
-    const daysSinceLogin = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceLogin <= 7) acc['Last 7 days']++;
-    else if (daysSinceLogin <= 30) acc['8-30 days']++;
-    else if (daysSinceLogin <= 90) acc['31-90 days']++;
-    else acc['90+ days']++;
-    
-    return acc;
-  }, { 'Last 7 days': 0, '8-30 days': 0, '31-90 days': 0, '90+ days': 0 });
+  const getAccountsToShow = () => {
+    if (selectedView === 'enabled') return enabledAccounts;
+    if (selectedView === 'disabled') return disabledAccounts;
+    if (selectedView === 'stale') return staleAccounts;
+    if (selectedView === 'neverLoggedIn') return neverLoggedIn;
+    return filteredData;
+  };
 
   const renderAccountList = () => {
-    let accounts = [];
-    let title = '';
-
-    // Handle search input changes
-    const handleSearch = (e) => {
-      setSearchQuery(e.target.value);
-    };
-
-    if (selectedView === 'enabled') {
-      accounts = enabledAccounts;
-      title = 'Enabled Accounts';
-    } else if (selectedView === 'disabled') {
-      accounts = disabledAccounts;
-      title = 'Disabled Accounts';
-    } else {
-      return null;
+    let accounts = getAccountsToShow();
+    
+    if (searchQuery) {
+      accounts = accounts.filter(a => a.Username.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (`${a.FirstName} ${a.LastName}`).toLowerCase().includes(searchQuery.toLowerCase()));
     }
-     // Apply password age filter if active
-     if (passwordAgeFilter) {
-      const [minDays, maxDays] = passwordAgeFilter.split('-').map(day => 
-      day === '90+' ? 90 : parseInt(day)
-    );
     
-      accounts = accounts.filter(account => {
-      const age = parseInt(account.PasswordAgeInDays);
-      if (passwordAgeFilter === '90+') {
-        return age >= 90;
-      } else {
-        return age >= minDays && age <= maxDays;
-      }
-    });
-    
-    title = `${title} (Password Age: ${passwordAgeFilter} days)`;
-  }
-    // Apply search filter if search query exists
-    if (searchQuery.trim()) {
-      accounts = accounts.filter(account => 
-        account.Username.toLowerCase().includes(searchQuery.toLowerCase())
+    if (accounts.length === 0) {
+      return (
+        <div className="mt-4 border rounded-xl p-12 bg-white dark:bg-gray-800 text-center">
+          <Search size={48} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500">No accounts found</p>
+        </div>
       );
     }
 
-    // Apply sorting
-    if (sortConfig.key) {
-      accounts = [...accounts].sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) 
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) 
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+    const title = selectedView === 'enabled' ? 'Enabled Accounts' : 
+                 selectedView === 'disabled' ? 'Disabled Accounts' : 
+                 selectedView === 'stale' ? 'Stale Password Accounts (90+ days)' :
+                 selectedView === 'neverLoggedIn' ? 'Never Logged In Accounts' : 'All Accounts';
 
     return (
-      <div className="mt-4 border rounded-lg p-4 bg-white shadow">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2">{title}</h3>
-            <div className="flex items-center space-x-4">
-              <input
-                type="text"
-                placeholder="Search by username..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="w-64 p-2 border rounded shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="p-2 text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+      <div className="mt-6 border rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <p className="text-sm text-gray-500">{accounts.length} accounts</p>
           </div>
-          <button 
-            onClick={() => exportToCSV(accounts, title.replace(' ', '_'))}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            <Download size={16} />
-            <span>Export</span>
-          </button>
+          <div className="flex gap-2">
+            <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="px-3 py-2 border rounded-lg dark:bg-gray-700" />
+            <button onClick={() => exportToCSV(accounts, title.replace(/ /g, '_'))} className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+              <Download size={18} className="mr-2" />Export
+            </button>
+          </div>
         </div>
-
-        <div className="overflow-auto max-h-96">
+        <div className="overflow-x-auto max-h-96">
           <table className="min-w-full">
-           <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+            <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
               <tr>
-                <TableHeader label="Username" sortKey="Username" />
-                <TableHeader label="Domain" sortKey="DomainName" />
-                <TableHeader label="Time Stamp" sortKey="TimeStamp" className="w-28" />
-                <TableHeader label="Full Name" sortKey="FirstName" />
-                <TableHeader label="Account Type" sortKey="AccountType" />
-                <TableHeader label="Last Logon" sortKey="LastLogon" />
-                <TableHeader label="Password Last Set" sortKey="PasswordLastSet" />
-                <TableHeader label="Password Age (Days)" sortKey="PasswordAgeInDays" />
-                <TableHeader label="Description" sortKey="Description" />
+                <th className="px-4 py-3 text-left">Username</th>
+                <th className="px-4 py-3 text-left">Domain</th>
+                <th className="px-4 py-3 text-left">Time Stamp</th>
+                <th className="px-4 py-3 text-left">Type</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Last Logon</th>
+                <th className="px-4 py-3 text-left">Pwd Age</th>
+                <th className="px-4 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account, index) => (
-                <tr key={index} className="border-t hover:bg-gray-50 dark:hover:bg-gray700 dark:border-gray-700">
-                  <td className="px-4 py-2 dark:text-blue-700">{account.Username}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{account.DomainName}</td>
-                  <td className="px-4 py-2 dark:text-orange-700 whitespace-nowrap">
-                      {new Date(account.TimeStamp).toLocaleDateString()} {new Date(account.TimeStamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </td>
-                  <td className="px-4 py-2 dark:text-blue-700">{`${account.FirstName || ''} ${account.LastName || ''}`}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{account.AccountType}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{new Date(account.LastLogon).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{new Date(account.PasswordLastSet).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{account.PasswordAgeInDays}</td>
-                  <td className="px-4 py-2 dark:text-blue-700">{account.Description}</td>
+              {accounts.slice(0, 100).map((account, i) => (
+                <tr key={i} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedAccount(account)}>
+                  <td className="px-4 py-3 font-medium">{account.Username}</td>
+                  <td className="px-4 py-3">{account.DomainName}</td>
+                  <td className="px-4 py-3 text-orange-600">{account.TimeStamp}</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs ${getAccountTypeBadge(account.AccountType)}`}>{account.AccountType}</span></td>
+                  <td className="px-4 py-3">{account.Status === 'Enabled' ? <span className="text-green-600">Enabled</span> : <span className="text-red-600">Disabled</span>}</td>
+                  <td className="px-4 py-3">{account.LastLogon ? new Date(account.LastLogon).toLocaleDateString() : 'Never'}</td>
+                  <td className="px-4 py-3"><span className={parseInt(account.PasswordAgeInDays) > 90 ? 'text-red-600 font-medium' : ''}>{account.PasswordAgeInDays} days</span></td>
+                  <td className="px-4 py-3"><button onClick={(e) => { e.stopPropagation(); setSelectedAccount(account); }} className="p-2 text-blue-500 hover:bg-blue-100 rounded"><Eye size={18} /></button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {accounts.length > 100 && <div className="p-4 text-center text-gray-500">Showing first 100 of {accounts.length} accounts</div>}
       </div>
     );
   };
 
+  if (loading) return <div className="p-6">Loading...</div>;
+
   return (
-    <div className={`p-4 ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-slate-300'}`}>
-      <DashboardHeader darkMode={darkMode} setDarkMode={setDarkMode} />
-      
-      <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-        <div className="flex items-center space-x-4">
-          <div>
-            <label htmlFor="customer-select" className="block text-sm font-bold text-black-700 mb-1">Customer</label>
-            <select 
-              id="customer-select"
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="p-2 border rounded shadow-sm w-64"
-            >
-              {customers.map(customer => (
-                <option key={customer} value={customer}>{customer}</option>
-              ))}
+    <div className={darkMode ? 'dark bg-gray-900' : 'bg-gray-100'}>
+      <div className="p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl mb-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <Shield className="text-yellow-400" size={32} />
+                <h1 className="text-2xl md:text-3xl font-bold">RMS Risk Mitigation Dashboard</h1>
+              </div>
+              <p className="text-blue-100">FTech Engineer & Domain Admin Accounts</p>
+              <div className="flex items-center space-x-4 mt-4 text-sm text-blue-100">
+                <span><Building2 size={14} className="inline mr-1" /> Hosted on RMS-WEB01</span>
+                <span><Activity size={14} className="inline mr-1" /> Independent of Power-BI</span>
+              </div>
+            </div>
+            <button onClick={() => setDarkMode(!darkMode)} className="p-3 rounded-full bg-white/20 hover:bg-white/30">
+              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <StatCard title="Total" value={filteredData.length} icon={Users} color="blue" onClick={() => setSelectedView('all')} active={selectedView === 'all'} />
+          <StatCard title="Enabled" value={enabledAccounts.length} icon={UserCheck} color="green" onClick={() => setSelectedView('enabled')} active={selectedView === 'enabled'} />
+          <StatCard title="Disabled" value={disabledAccounts.length} icon={UserX} color="red" onClick={() => setSelectedView('disabled')} active={selectedView === 'disabled'} />
+          <StatCard title="Stale (90+)" value={staleAccounts.length} icon={AlertTriangle} color="yellow" onClick={() => setSelectedView('stale')} active={selectedView === 'stale'} />
+          <StatCard title="Never Login" value={neverLoggedIn.length} icon={XCircle} color="purple" onClick={() => setSelectedView('neverLoggedIn')} active={selectedView === 'neverLoggedIn'} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <label className="block text-sm font-medium mb-2">Customer</label>
+            <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-gray-700">
+              {customers.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          
-          <div>
-            <label className="block text-sm font-bold text-black-700 mb-1">Lead Engineer</label>
-            <div className="p-2 border rounded shadow-sm bg-gray-50 w-64 min-h-10">
-              {currentLeadEngineer ? (
-                <div>
-                  <div className="font-medium">{currentLeadEngineer.name}</div>
-                  <div className="text-sm text-gray-600">{currentLeadEngineer.description}</div>
-                </div>
-              ) : (
-                <span className="text-gray-500 italic">
-                  {selectedCustomer === 'All' ? 'Select a customer' : 'No lead engineer identified'}
-                </span>
-              )}
-            </div>
-          </div>
+          <LeadEngineerWidget customer={selectedCustomer} data={data} />
         </div>
-        
-        <div className="flex gap-4">
-          <div 
-            className="flex-1 p-4 bg-blue-500 rounded-lg cursor-pointer hover:bg-blue-700"
-            onClick={() => setSelectedView(null)}
-          >
-            <h3 className="font-bold">Total: {filteredData.length}</h3>
-          </div>
-          <div 
-            className="flex-1 p-4 bg-green-500 rounded-lg cursor-pointer hover:bg-green-700"
-            onClick={() => setSelectedView('enabled')}
-          >
-            <h3 className="font-bold">Enabled: {enabledAccounts.length}</h3>
-          </div>
-          <div 
-            className="flex-1 p-4 bg-red-500 rounded-lg cursor-pointer hover:bg-red-700"
-            onClick={() => setSelectedView('disabled')}
-          >
-            <h3 className="font-bold">Disabled: {disabledAccounts.length}</h3>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Password Age Risk Distribution - Collapsible */}
-        <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
-          <div 
-            className="flex justify-between items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded"
-            onClick={() => setIsPasswordSectionCollapsed(!isPasswordSectionCollapsed)}
-          >
-            <h3 className="text-lg font-semibold">Password Age Risk Distribution</h3>
-            <span className="text-xl">{isPasswordSectionCollapsed ? '▼' : '▲'}</span>
-          </div>
-          
-          {!isPasswordSectionCollapsed && (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             {Object.entries(passwordAgeData).map(([range, count]) => (
-           <div 
-            key={range}
-          className={`p-4 rounded-lg text-white cursor-pointer transform transition-transform hover:scale-105 ${
-           passwordAgeFilter === range ? 'ring-4 ring-blue-500 ring-offset-2' : ''
-          } ${
-            range === '0-30' ?  'bg-green-500 dark:bg-green-600' :
-            range === '31-60' ? 'bg-yellow-500 dark:bg-yellow-600' :
-            range === '61-90' ? 'bg-orange-500 dark:bg-orange-600' :
-             'bg-red-500 dark:bg-red-600'
-         }`}
-           onClick={() => handlePasswordAgeFilterClick(range)}
-    >   
-           <div className="font-bold">{range} days</div>
-          <div className="text-2xl">{count}</div>
-         </div>
-           ))}
-         </div>
-              
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Last Login Analysis</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(loginData).map(([period, count]) => ({
-                        name: period,
-                        value: count
-                      }))}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={60}
-                      label
-                    >
-                      {Object.entries(loginData).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Account Types</h3>
+              <button onClick={() => setIsAccountTypesCollapsed(!isAccountTypesCollapsed)} className="p-1 hover:bg-gray-100 rounded">
+                {isAccountTypesCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+              </button>
+            </div>
+            {!isAccountTypesCollapsed && (
+              <div className="grid grid-cols-2 gap-2">
+                {accountTypeData.map((item, i) => (
+                  <div key={i} className="p-3 rounded-lg border" style={{ borderColor: COLORS[i % COLORS.length], backgroundColor: COLORS[i % COLORS.length] + '20' }}>
+                    <div className="text-xs text-gray-600">{item.name}</div>
+                    <div className="text-xl font-bold" style={{ color: COLORS[i % COLORS.length] }}>{item.value}</div>
+                  </div>
+                ))}
               </div>
-            </>
-          )}
-        </div>
-
-        {/* Latest Disabled Accounts - Collapsible */}
-        <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
-          <div 
-            className="flex justify-between items-center mb-4 cursor-pointer hover:bg-gray-50 p-2 rounded"
-            onClick={() => setIsDisabledAccountsCollapsed(!isDisabledAccountsCollapsed)}
-          >
-            <h3 className="text-lg font-semibold">Latest FTech Accs Disabled by Automation Script</h3>
-            <span className="text-xl">{isDisabledAccountsCollapsed ? '▼' : '▲'}</span>
+            )}
           </div>
-          
-          {!isDisabledAccountsCollapsed && (
-            <div className="overflow-auto max-h-[500px]">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-2">Username</th>
-                    <th className="px-4 py-2">Domain</th>
-                    <th className="px-4 py-2">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {disabledThisRun.map((account, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="px-4 py-2">{account.Username}</td>
-                      <td className="px-4 py-2">{account.DomainName}</td>
-                      <td className="px-4 py-2">{new Date(account.TimeStamp).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4">Password Age Distribution</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={Object.entries(passwordAgeData).map(([r, c]) => ({ range: r, count: c }))}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="range" /><YAxis /><Tooltip /><Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><AlertTriangle className="mr-2 text-red-500" />FTech Engineer Rankings</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {leadEngineerRankings.length > 0 ? leadEngineerRankings.map((e, i) => (
+                <div key={i} className={`p-3 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-500' : i === 1 ? 'bg-orange-50 border-orange-500' : i === 2 ? 'bg-yellow-50 border-yellow-500' : 'bg-gray-50 border-gray-300'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{e.name}</span>
+                    <span className="font-bold text-red-600">{e.unmaintainedScore}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">Stale: {e.stalePasswords} | Never: {e.neverLoggedIn} | Disabled: {e.disabled}</div>
+                </div>
+              )) : <p className="text-gray-500 text-center py-4">No engineer data</p>}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4">Recently Disabled</h3>
+            <div className="max-h-64 overflow-y-auto">
+              {disabledThisRun.length > 0 ? (
+                <table className="min-w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-3 py-2 text-left">Username</th><th className="px-3 py-2 text-left">Domain</th><th className="px-3 py-2 text-left">Time</th></tr></thead>
+                <tbody>{disabledThisRun.slice(0, 10).map((a, i) => <tr key={i} className="border-t"><td className="px-3 py-2">{a.Username}</td><td className="px-3 py-2">{a.DomainName}</td><td className="px-3 py-2 text-sm">{a.TimeStamp}</td></tr>)}</tbody></table>
+              ) : <p className="text-gray-500 text-center py-4">No accounts disabled</p>}
+            </div>
+          </div>
+        </div>
+
+        {renderAccountList()}
+        <AccountDetailsModal account={selectedAccount} onClose={() => setSelectedAccount(null)} />
       </div>
-
-
-      {renderAccountList()}
     </div>
   );
-}
+};
 
 export default DashboardComponent;

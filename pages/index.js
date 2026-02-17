@@ -2,50 +2,81 @@
 import React, { useState } from 'react';
 import DashboardComponent from '../components/DashboardComponent';
 import AdminTools from '../components/AdminTools';
+import ComputerDashboard from '../components/ComputerDashboard';
 import Link from 'next/link';
+import { LayoutDashboard, Wrench, Shield, Monitor, HardDrive } from 'lucide-react';
 
 export default function Home() {
     const [activeTab, setActiveTab] = useState('dashboard');
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-1xl font-bold mb-5">RMS - Preventative Measures ~ contact: NishenH  *Hosted on RMS-WEB01*             *Independent of Power-BI*</h1>
-            <div className="mb-4">
-                <Link href="/ad-security" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    View AD Security Assessment
-                </Link>
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+            {/* Top Bar */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-800 dark:to-indigo-900 text-white p-4 shadow-lg">
+                <div className="container mx-auto flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Shield className="text-yellow-400" size={28} />
+                        <div>
+                            <h1 className="text-xl font-bold">RMS - Preventative Measures</h1>
+                            <p className="text-blue-200 text-xs">Contact: NishenH | Hosted on RMS-WEB01 | Independent of Power-BI</p>
+                        </div>
+                    </div>
+                    <Link 
+                        href="/ad-security" 
+                        className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
+                    >
+                        <Shield size={18} />
+                        <span>AD Security Assessment</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Main Tab Navigation */}
-            <div className="mt-6 mb-4 border-b-2 border-gray-300">
+            <div className="container mx-auto px-4 mt-4">
                 <div className="flex space-x-2">
                     <button
-                        className={`px-8 py-3 font-bold rounded-t-lg transition-all ${
+                        className={`flex items-center space-x-2 px-6 py-3 font-bold rounded-t-lg transition-all ${
                             activeTab === 'dashboard'
                                 ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                         onClick={() => setActiveTab('dashboard')}
                     >
-                        Dashboard
+                        <LayoutDashboard size={20} />
+                        <span>User Dashboard</span>
                     </button>
                     <button
-                        className={`px-8 py-3 font-bold rounded-t-lg transition-all ${
+                        className={`flex items-center space-x-2 px-6 py-3 font-bold rounded-t-lg transition-all ${
+                            activeTab === 'computers'
+                                ? 'bg-purple-500 text-white shadow-lg transform scale-105'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                        onClick={() => setActiveTab('computers')}
+                    >
+                        <Monitor size={20} />
+                        <span>Computer Objects</span>
+                    </button>
+                    <button
+                        className={`flex items-center space-x-2 px-6 py-3 font-bold rounded-t-lg transition-all ${
                             activeTab === 'admin-tools'
                                 ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                         onClick={() => setActiveTab('admin-tools')}
                     >
-                        Admin-Tools
+                        <Wrench size={20} />
+                        <span>Admin-Tools</span>
                     </button>
                 </div>
             </div>
 
             {/* Tab Content */}
-            <div className="tab-content">
-                {activeTab === 'dashboard' && <DashboardComponent />}
-                {activeTab === 'admin-tools' && <AdminTools />}
+            <div className="container mx-auto px-4 pb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-b-lg rounded-tr-lg shadow-xl p-4 min-h-screen">
+                    {activeTab === 'dashboard' && <DashboardComponent />}
+                    {activeTab === 'computers' && <ComputerDashboard />}
+                    {activeTab === 'admin-tools' && <AdminTools />}
+                </div>
             </div>
         </div>
     );
