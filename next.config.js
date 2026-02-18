@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins: ['10.1.55.10', 'localhost', '127.0.0.1', 'rms-web01'],
+  allowedDevOrigins: ['10.1.55.10', 'localhost', '127.0.0.1', 'rms-web01', 'rms-web01.rmslab.local'],
   async headers() {
     return [
       {
