@@ -206,9 +206,14 @@ function Disable-InactiveEndpoints {
         
         foreach ($computer in $inactiveEndpoints) {
             try {
-                # Disable the computer account
+                $disableDate = Get-Date -Format "yyyy-MM-dd"
+                $newDescription = "$($computer.Description) - AutoDisabled on $disableDate"
+                
+                # Disable the computer account and update description
                 Disable-ADAccount -Identity $computer.SamAccountName
-                Write-Log -Message "Disabled endpoint: $($computer.ComputerName) (Type: $($computer.ComputerType), Last Logon: $($computer.LastLogonAgeDays) days ago)" -Level Information
+                Set-ADComputer -Identity $computer.SamAccountName -Description $newDescription
+                
+                Write-Log -Message "Disabled endpoint: $($computer.ComputerName) (Type: $($computer.ComputerType), Last Logon: $($computer.LastLogonAgeDays) days ago) - Description updated" -Level Information
                 $disabledComputers += $computer
             }
             catch {

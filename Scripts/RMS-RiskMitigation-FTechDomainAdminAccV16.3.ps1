@@ -367,8 +367,13 @@ function Disable-InactiveFTechAccounts {
         }
 
         foreach ($account in $inactiveAccounts) {
+            $disableDate = Get-Date -Format "yyyy-MM-dd"
+            $newDescription = "$($account.Description) - AutoDisabled on $disableDate"
+            
             Disable-ADAccount -Identity $account.Username
-            Write-Log -Message "Disabled FTech account: $($account.Username) (Domain Admin: $($account.IsDomainAdmin))" -Level Information
+            Set-ADUser -Identity $account.Username -Description $newDescription
+            
+            Write-Log -Message "Disabled FTech account: $($account.Username) (Domain Admin: $($account.IsDomainAdmin)) - Description updated" -Level Information
         }
 
         return $inactiveAccounts
