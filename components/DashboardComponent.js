@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, Moon, Sun, Shield, AlertTriangle, CheckCircle, XCircle, Users, UserCheck, UserX, Search, Building2, User, X, Activity, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
+import HistoricalTrendWidget from './HistoricalTrendWidget';
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#EF4444', '#10B981', '#F97316'];
 
 const StatCard = ({ title, value, icon: Icon, color, onClick, active }) => {
@@ -120,7 +122,8 @@ const LeadEngineerWidget = ({ customer, data }) => {
 
 const DashboardComponent = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState([]); // This holds ALL historical data
+  const [latestData, setLatestData] = useState([]); // This holds only the latest record per user
   const [selectedCustomer, setSelectedCustomer] = useState('All');
   const [selectedView, setSelectedView] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -140,6 +143,20 @@ const DashboardComponent = () => {
         const response = await fetch('/api/data');
         const jsonData = await response.json();
         setData(jsonData);
+        
+        // Filter to get only the latest record for each user per customer
+        // Group by Customer + Username, then pick the one with latest TimeStamp/ReportDate
+        const latestRecords = Object.values(jsonData.reduce((acc, item) => {
+          const key = `${item.Customer}-${item.Username}`;
+          const itemDate = new Date(item.TimeStamp || item.ReportDate || 0);
+          
+          if (!acc[key] || itemDate > new Date(acc[key].TimeStamp || acc[key].ReportDate || 0)) {
+            acc[key] = item;
+          }
+          return acc;
+        }, {}));
+        
+        setLatestData(latestRecords);
         setLoading(false);
       } catch (error) {
         console.error('Error:', error);
@@ -163,7 +180,8 @@ const DashboardComponent = () => {
 
   const customers = ['All', ...new Set(data.map(item => item.Customer))].sort();
   
-  let filteredData = selectedCustomer === 'All' ? data : data.filter(item => item.Customer === selectedCustomer);
+  // Use latestData for current view stats, but keep full data for historical widget
+  let filteredData = selectedCustomer === 'All' ? latestData : latestData.filter(item => item.Customer === selectedCustomer);
   
   const enabledAccounts = filteredData.filter(item => item.Status === 'Enabled');
   const disabledAccounts = filteredData.filter(item => item.Status === 'Disabled');
@@ -326,6 +344,7 @@ const DashboardComponent = () => {
             </select>
           </div>
           <LeadEngineerWidget customer={selectedCustomer} data={data} />
+          <HistoricalTrendWidget data={data} customer={selectedCustomer} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

@@ -42,10 +42,25 @@ function Write-Log {
 
 # Function to determine if computer is a server
 function Get-ComputerType {
-    param([string]$Name)
+    param(
+        [string]$Name,
+        [string]$OperatingSystem,
+        [string]$DistinguishedName
+    )
+    
+    # 1. Check Operating System (Most reliable)
+    if ($OperatingSystem -match "Server") {
+        return 'Server'
+    }
+    
+    # 2. Check Distinguished Name (OU)
+    if ($DistinguishedName -match "OU=.*Servers.*" -or $DistinguishedName -match "OU=.*Domain Controllers.*") {
+        return 'Server'
+    }
     
     $nameLower = $Name.ToLower()
     
+    # 3. Check Name Patterns
     # Server patterns
     $serverPatterns = @(
         'srv', 'server', 'dc', 'dc01', 'dc02', 'dc03', 
@@ -100,19 +115,19 @@ function Get-ComputerDetails {
             $computers = Get-ADComputer -Filter * -Properties Name, DNSHostName, SamAccountName, 
                 Enabled, LastLogonDate, PasswordLastSet, whenCreated, Description, 
                 OperatingSystem, OperatingSystemVersion, ServicePrincipalName, 
-                TrustedForDelegation,TrustedToAuthForDelegation,msDS-UserPasswordExpiryTime
+                TrustedForDelegation,TrustedToAuthForDelegation,DistinguishedName
         } else {
             # Get only non-server computers (endpoints)
             $computers = Get-ADComputer -Filter * -Properties Name, DNSHostName, SamAccountName, 
                 Enabled, LastLogonDate, PasswordLastSet, whenCreated, Description, 
                 OperatingSystem, OperatingSystemVersion, ServicePrincipalName,
-                TrustedForDelegation,TrustedToAuthForDelegation
+                TrustedForDelegation,TrustedToAuthForDelegation,DistinguishedName
         }
         
         Write-Log -Message "Found $($computers.Count) computer objects" -Level Information
         
         $results = foreach ($computer in $computers) {
-            $computerType = Get-ComputerType -Name $computer.Name
+            $computerType = Get-ComputerType -Name $computer.Name -OperatingSystem $computer.OperatingSystem -DistinguishedName $computer.DistinguishedName
             $isServer = ($computerType -eq 'Server')
             
             # Calculate last logon age

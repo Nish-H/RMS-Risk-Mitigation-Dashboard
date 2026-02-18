@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Download, Moon, Sun, Shield, AlertTriangle, CheckCircle, XCircle, Users, Monitor, Laptop, Server, Calendar, Search, RefreshCw, Cpu, HardDrive, Wifi, WifiOff, Clock, Trash2, Eye } from 'lucide-react';
+import ComputerHistoricalTrendWidget from './ComputerHistoricalTrendWidget';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#EF4444'];
 
@@ -161,6 +162,7 @@ const ComputerDetailsModal = ({ computer, onClose }) => {
 const ComputerDashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [data, setData] = useState([]);
+  const [latestData, setLatestData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,6 +175,19 @@ const ComputerDashboard = () => {
         const response = await fetch('/api/computers');
         const jsonData = await response.json();
         setData(jsonData);
+        
+        // Filter for latest data only
+        const latestRecords = Object.values(jsonData.reduce((acc, item) => {
+          const key = `${item.Customer}-${item.ComputerName}`;
+          const itemDate = new Date(item.TimeStamp || item.ReportDate || 0);
+          
+          if (!acc[key] || itemDate > new Date(acc[key].TimeStamp || acc[key].ReportDate || 0)) {
+            acc[key] = item;
+          }
+          return acc;
+        }, {}));
+        
+        setLatestData(latestRecords);
         setLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -196,7 +211,8 @@ const ComputerDashboard = () => {
 
   const customers = ['All', ...new Set(data.map(item => item.Customer))].sort();
   
-  let filteredData = selectedCustomer === 'All' ? data : data.filter(item => item.Customer === selectedCustomer);
+  // Use latestData for current view stats
+  let filteredData = selectedCustomer === 'All' ? latestData : latestData.filter(item => item.Customer === selectedCustomer);
   
   if (typeFilter) {
     filteredData = filteredData.filter(item => item.ComputerType === typeFilter);
@@ -217,9 +233,9 @@ const ComputerDashboard = () => {
   const endpoints = filteredData.filter(item => item.ComputerType !== 'Server').length;
 
   const computerTypeData = [
-    { name: 'Servers', value: data.filter(d => d.ComputerType === 'Server').length },
-    { name: 'Desktops', value: data.filter(d => d.ComputerType === 'Desktop').length },
-    { name: 'Laptops', value: data.filter(d => d.ComputerType === 'Laptop').length },
+    { name: 'Servers', value: filteredData.filter(d => d.ComputerType === 'Server').length },
+    { name: 'Desktops', value: filteredData.filter(d => d.ComputerType === 'Desktop').length },
+    { name: 'Laptops', value: filteredData.filter(d => d.ComputerType === 'Laptop').length },
   ].filter(d => d.value > 0);
 
   const riskData = [
@@ -328,12 +344,14 @@ const ComputerDashboard = () => {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <ComputerTypeWidget 
             data={data} 
             onFilterChange={setTypeFilter} 
             activeFilter={typeFilter} 
           />
+
+          <ComputerHistoricalTrendWidget data={data} customer={selectedCustomer} />
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
             <h3 className="text-lg font-semibold mb-4 flex items-center">
