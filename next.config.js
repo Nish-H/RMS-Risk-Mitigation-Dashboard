@@ -1,7 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
+  staticPageGenerationTimeout: 180,
   allowedDevOrigins: ['10.1.55.10', 'localhost', '127.0.0.1', 'rms-web01', 'rms-web01.rmslab.local'],
+  webpack: (config) => {
+    config.watchOptions = {
+      poll: 1000,   // Check for changes every second
+      aggregateTimeout: 300, // Delay before rebuilding
+    };
+    return config;
+  },
   async headers() {
     return [
       {
