@@ -1,8 +1,8 @@
-## Updated Script V16.0 - FT Engineer AD Accs -Autodisable if lastlogon 60days + ALL USERS option
-#***Nishen RMS 13/02/26****AdRisk -Preventative measures-  Solution - make contact with Nishen for a full description behind this scripts logic.
+## Updated Script V16.3 - FT Engineer AD Accs -Autodisable if lastlogon 60days + ALL USERS option
+#***Nishen RMS 18/02/26****AdRisk -Preventative measures-  Solution - make contact with Nishen for a full description behind this scripts logic.
 #Produces 1 Html & 1 .csv Report emailed to rmsreports@ftechkzn.co.za
 #Updated with Office 365 SMTP relay settings
-#NEW V16.0: Includes ALL users option with privileged user highlighting, enhanced group analysis, and improved security checks
+#V16.3: Improved Privileged User detection (removed adminCount), better Server detection in computer script
 
 # Import Active Directory module
 Import-Module ActiveDirectory
@@ -512,10 +512,10 @@ function Get-EnhancedAccountDetails {
                 -IsSchemaAdmin $privilegedMembership.IsSchemaAdmin -IsAccountOperator $privilegedMembership.IsAccountOperator `
                 -IsBackupOperator $privilegedMembership.IsBackupOperator
             
-            # Check if privileged
+            # Check if privileged (Strict check - ignore adminCount as it can be sticky)
             $isPrivileged = ($isDomainAdmin -or $privilegedMembership.IsEnterpriseAdmin -or $privilegedMembership.IsSchemaAdmin -or 
                            $privilegedMembership.IsAccountOperator -or $privilegedMembership.IsBackupOperator -or $privilegedMembership.IsServerOperator -or
-                           $privilegedMembership.IsPrintOperator -or $user.adminCount -eq 1)
+                           $privilegedMembership.IsPrintOperator -or $accountType -match "FTech Engineer")
             
             [PSCustomObject]@{
                 DomainName = $domainName
