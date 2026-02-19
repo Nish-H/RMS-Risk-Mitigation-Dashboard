@@ -267,6 +267,12 @@ function New-HTMLComputerReport {
         [string]$reportType
     )
     
+    $totalCount = $computers.Count
+    $endpointCount = ($computers | Where-Object { $_.ComputerType -ne 'Server' }).Count
+    $serverCount = ($computers | Where-Object { $_.ComputerType -eq 'Server' }).Count
+    $staleCount = ($computers | Where-Object { $_.IsStale -eq $true }).Count
+    $disabledCount = $disabledComputers.Count
+
     $html = @"
 <!DOCTYPE html>
 <html>
@@ -296,11 +302,11 @@ function New-HTMLComputerReport {
     
     <div class="summary-box">
         <h2>Summary</h2>
-        <p><strong>Total Computers:</strong> $($computers.Count)</p>
-        <p><strong>Endpoints (Desktops/Laptops):</strong> $($computers | Where-Object { $_.ComputerType -ne 'Server' } | Measure-Object).Count</p>
-        <p><strong>Servers:</strong> $($computers | Where-Object { $_.ComputerType -eq 'Server' } | Measure-Object).Count</p>
-        <p><strong>Stale Computers (90+ days):</strong> $($computers | Where-Object { $_.IsStale -eq $true } | Measure-Object).Count</p>
-        <p><strong>Disabled This Run:</strong> $($disabledComputers.Count)</p>
+        <p><strong>Total Computers:</strong> $totalCount</p>
+        <p><strong>Endpoints (Desktops/Laptops):</strong> $endpointCount</p>
+        <p><strong>Servers:</strong> $serverCount</p>
+        <p><strong>Stale Computers (90+ days):</strong> $staleCount</p>
+        <p><strong>Disabled This Run:</strong> $disabledCount</p>
     </div>
     
     <h2>Computer Details</h2>
