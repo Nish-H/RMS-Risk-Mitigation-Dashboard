@@ -387,7 +387,7 @@ const ComputerDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 mb-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Trash2 className="mr-2 text-red-500" />
-            Recently Disabled by Automation
+            Recently Disabled
           </h3>
           <div className="max-h-64 overflow-y-auto">
             {disabledThisRun.length > 0 ? (
