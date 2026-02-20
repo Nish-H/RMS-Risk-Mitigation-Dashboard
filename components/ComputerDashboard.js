@@ -211,8 +211,11 @@ const ComputerDashboard = () => {
 
   const customers = ['All', ...new Set(data.map(item => item.Customer))].sort();
   
-  // Use latestData for current view stats
-  let filteredData = selectedCustomer === 'All' ? latestData : latestData.filter(item => item.Customer === selectedCustomer);
+  // Data filtered by customer only (for widgets)
+  const customerData = selectedCustomer === 'All' ? latestData : latestData.filter(item => item.Customer === selectedCustomer);
+  
+  // Data filtered by customer AND active filters (for table and stats)
+  let filteredData = customerData;
   
   if (typeFilter) {
     filteredData = filteredData.filter(item => item.ComputerType === typeFilter);
@@ -225,19 +228,17 @@ const ComputerDashboard = () => {
     );
   }
 
-  const totalComputers = filteredData.length;
-  const enabledComputers = filteredData.filter(item => item.Status === 'Enabled').length;
-  const disabledComputers = filteredData.filter(item => item.Status === 'Disabled').length;
-  const staleComputers = filteredData.filter(item => item.IsStale === true || item.LastLogonAgeDays > 90).length;
-  const servers = filteredData.filter(item => item.ComputerType === 'Server').length;
-  const endpoints = filteredData.filter(item => item.ComputerType !== 'Server').length;
+  const totalComputers = customerData.length;
+  const enabledComputers = customerData.filter(item => item.Status === 'Enabled').length;
+  const disabledComputers = customerData.filter(item => item.Status === 'Disabled').length;
+  const staleComputers = customerData.filter(item => item.IsStale === true || item.LastLogonAgeDays > 90).length;
+  const servers = customerData.filter(item => item.ComputerType === 'Server').length;
+  const endpoints = customerData.filter(item => item.ComputerType !== 'Server').length;
 
-  const computerTypeData = [
-    { name: 'Servers', value: filteredData.filter(d => d.ComputerType === 'Server').length },
-    { name: 'Desktops', value: filteredData.filter(d => d.ComputerType === 'Desktop').length },
-    { name: 'Laptops', value: filteredData.filter(d => d.ComputerType === 'Laptop').length },
-  ].filter(d => d.value > 0);
-
+  // Use filteredData for charts if we want them to reflect the type filter, 
+  // OR use customerData if we want charts to show distribution regardless of selected type.
+  // Usually pie charts should show distribution of the current view, but type widget should show all options.
+  
   const riskData = [
     { name: 'Critical', value: filteredData.filter(d => d.RiskLevel === 'Critical').length },
     { name: 'High', value: filteredData.filter(d => d.RiskLevel === 'High').length },
@@ -245,6 +246,8 @@ const ComputerDashboard = () => {
     { name: 'Low', value: filteredData.filter(d => d.RiskLevel === 'Low').length },
     { name: 'None', value: filteredData.filter(d => d.RiskLevel === 'None').length },
   ].filter(d => d.value > 0);
+
+  const disabledThisRun = customerData.filter(item => item.ActionThisRun === 'Disabled');
 
   const exportToCSV = () => {
     const headers = ['ComputerName', 'DomainName', 'ComputerType', 'Status', 'LastLogonDate', 'LastLogonAgeDays', 'OperatingSystem', 'Description', 'RiskLevel'];
@@ -346,7 +349,7 @@ const ComputerDashboard = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <ComputerTypeWidget 
-            data={data} 
+            data={customerData} 
             onFilterChange={setTypeFilter} 
             activeFilter={typeFilter} 
           />
@@ -377,6 +380,43 @@ const ComputerDashboard = () => {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Recently Disabled */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 mb-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <Trash2 className="mr-2 text-red-500" />
+            Recently Disabled by Automation
+          </h3>
+          <div className="max-h-64 overflow-y-auto">
+            {disabledThisRun.length > 0 ? (
+              <table className="min-w-full">
+                <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Computer Name</th>
+                    <th className="px-4 py-2 text-left">Domain</th>
+                    <th className="px-4 py-2 text-left">Reason</th>
+                    <th className="px-4 py-2 text-left">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {disabledThisRun.map((computer, index) => (
+                    <tr key={index} className="border-t dark:border-gray-700">
+                      <td className="px-4 py-2 font-medium">{computer.ComputerName}</td>
+                      <td className="px-4 py-2 text-gray-600 dark:text-gray-300">{computer.DomainName}</td>
+                      <td className="px-4 py-2 text-red-500 text-sm">Inactive ({computer.LastLogonAgeDays} days)</td>
+                      <td className="px-4 py-2 text-gray-500 text-sm">{new Date(computer.TimeStamp).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                <CheckCircle size={32} className="mx-auto mb-2 text-green-500" />
+                <p>No computers disabled in this period</p>
+              </div>
+            )}
           </div>
         </div>
 
