@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import DashboardComponent from '../components/DashboardComponent';
 import AdminTools from '../components/AdminTools';
 import ComputerDashboard from '../components/ComputerDashboard';
+import ADSecureScoreDashboard from '../components/ad-secure-score-dashboard-combined.jsx';
 import Link from 'next/link';
 import { LayoutDashboard, Wrench, Shield, Monitor, HardDrive } from 'lucide-react';
 
@@ -67,6 +68,17 @@ export default function Home() {
                         <Wrench size={20} />
                         <span>Admin-Tools</span>
                     </button>
+                    <button
+                        className={`flex items-center space-x-2 px-6 py-3 font-bold rounded-t-lg transition-all ${
+                            activeTab === 'ad-secure-score'
+                                ? 'bg-green-500 text-white shadow-lg transform scale-105'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                        onClick={() => setActiveTab('ad-secure-score')}
+                    >
+                        <Shield size={20} />
+                        <span>AD Secure Score</span>
+                    </button>
                 </div>
             </div>
 
@@ -76,6 +88,7 @@ export default function Home() {
                     {activeTab === 'dashboard' && <DashboardComponent />}
                     {activeTab === 'computers' && <ComputerDashboard />}
                     {activeTab === 'admin-tools' && <AdminTools />}
+                    {activeTab === 'ad-secure-score' && <ADSecureScoreDashboard />}
                 </div>
             </div>
         </div>

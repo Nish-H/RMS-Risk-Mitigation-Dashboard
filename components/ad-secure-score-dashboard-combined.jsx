@@ -1,6 +1,8 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { deriveClientNameFromDomain } from "../clientNameUtils";
+import { ClientFindingPopover, ensureFindingsHasAccounts, downloadJSONReport, exportCSVFromFindings } from "./ad-secure-score-core.jsx";
+import ClientsOverview from "./ClientsOverview.jsx";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -10,13 +12,12 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: "identity",   label: "Identity & Access", weight: 22, color: "#00d4ff", icon: "🔐" },
-  { id: "password",   label: "Password & Auth",   weight: 18, color: "#ff6b35", icon: "🔑" },
-  { id: "gpo",        label: "GPO & Hardening",   weight: 18, color: "#a855f7", icon: "🛡️" },
-  { id: "dchealth",   label: "DC Health",          weight: 18, color: "#22c55e", icon: "🖥️" },
-  { id: "hygiene",    label: "AD Hygiene",          weight: 9, color: "#f59e0b", icon: "🧹" },
+  { id: "identity",   label: "Identity & Access", weight: 25, color: "#00d4ff", icon: "🔐" },
+  { id: "password",   label: "Password & Auth",   weight: 20, color: "#ff6b35", icon: "🔑" },
+  { id: "gpo",        label: "GPO & Hardening",   weight: 20, color: "#a855f7", icon: "🛡️" },
+  { id: "dchealth",   label: "DC Health",          weight: 20, color: "#22c55e", icon: "🖥️" },
+  { id: "hygiene",    label: "AD Hygiene",          weight: 10, color: "#f59e0b", icon: "🧹" },
   { id: "monitoring", label: "Monitoring & Logs",   weight: 5,  color: "#ec4899", icon: "📊" },
-  { id: "infrastructure", label: "Infrastructure", weight: 10, color: "#f43f5e", icon: "🏗️" },
 ];
 
 const SEV_COLORS = { Critical: "#ef4444", High: "#f97316", Medium: "#eab308", Low: "#22c55e" };
@@ -407,14 +408,14 @@ Get-MpComputerStatus | Select AntivirusSignatureLastUpdated,AntivirusSignatureVe
 // ─── Seed Data ─────────────────────────────────────────────────────────────────
 
 const SEED_FINDINGS = [
-  { checkId:"kerberoastable",  category:"identity",   label:"Kerberoastable SPNs",      severity:"Critical", score:25, status:"Fail",    threshold:"0 privileged accounts with SPN",  actualValue:"3 accounts",         description:"Privileged accounts with SPN set", recommendation:"Remove SPNs from privileged accounts. Use gMSA." },
-  { checkId:"pwdNeverExpires", category:"identity",   label:"Password Never Expires",   severity:"High",     score:65, status:"Warning", threshold:"<5% of accounts",                 actualValue:"68 accounts (8.1%)", description:"Accounts with non-expiring passwords", recommendation:"Migrate service accounts to gMSA. Enforce expiry on regular accounts." },
-  { checkId:"staleAdmins",     category:"identity",   label:"Stale Admin Accounts",     severity:"Critical", score:40, status:"Fail",    threshold:"0 stale accounts",               actualValue:"4 stale accounts",   description:"Admin accounts inactive >90 days", recommendation:"Disable stale admin accounts immediately." },
-  { checkId:"dualUseAdmin",    category:"identity",   label:"Dual-use Admin Accounts",  severity:"Critical", score:60, status:"Warning", threshold:"0 dual-use",                      actualValue:"2 potential",        description:"DA members not clearly admin-only accounts", recommendation:"Implement Tiered Administration model." },
-  { checkId:"protectedUsers",  category:"identity",   label:"Protected Users Group",    severity:"High",     score:55, status:"Warning", threshold:"100% Tier-0 admins",             actualValue:"6 of 12 (50%)",      description:"Tier-0 admins in Protected Users group", recommendation:"Add all Tier-0 admins to Protected Users group." },
-  { checkId:"defaultAdmin",    category:"identity",   label:"Default Admin Account",    severity:"High",     score:50, status:"Warning", threshold:"Renamed & Disabled",             actualValue:"Name: Administrator, Enabled: True", description:"Built-in RID-500 account status", recommendation:"Rename and disable built-in Administrator account." },
-  { checkId:"minPwdLength",    category:"password",   label:"Minimum Password Length",  severity:"Critical", score:30, status:"Fail",    threshold:"14+ (100%), 12 (50%), 11- (0%)",             actualValue:"8 characters",       description:"Domain password policy minimum length", recommendation:"Set minimum password length to 14+ characters." },
-  { checkId:"fgpp",            category:"password",   label:"Fine-Grained PSO",         severity:"High",     score:0,  status:"Fail",    threshold:"PSO for all admin groups",        actualValue:"No PSOs found",      description:"Password Settings Objects for admin accounts", recommendation:"Create PSO for admin accounts with stricter policy." },
+  { checkId:"kerberoastable",  category:"identity",   label:"Kerberoastable SPNs",      severity:"Critical", score:25, status:"Fail",    threshold:"0 privileged accounts with SPN",  actualValue:"3 accounts",         description:"Privileged accounts with SPN set", recommendation:"Remove SPNs from privileged accounts. Use gMSA.", affectedAccounts:["svc-sql (SPN: MSSQLSvc/sql01.domain.com:1433)", "svc-web (SPN: HTTP/web01.domain.com)", "svc-app (SPN: HOST/app01.domain.com)"] },
+  { checkId:"pwdNeverExpires", category:"identity",   label:"Password Never Expires",   severity:"High",     score:65, status:"Warning", threshold:"<5% of accounts",                 actualValue:"68 accounts (8.1%)", description:"Accounts with non-expiring passwords", recommendation:"Migrate service accounts to gMSA. Enforce expiry on regular accounts.", affectedAccounts:["svc-backup", "svc-oldapp", "admin-john.doe", "svc-legacy", "svc-reporting", "svc-monitor", "admin-jane.smith"] },
+  { checkId:"staleAdmins",     category:"identity",   label:"Stale Admin Accounts",     severity:"Critical", score:40, status:"Fail",    threshold:"0 stale accounts",               actualValue:"4 stale accounts",   description:"Admin accounts inactive >90 days", recommendation:"Disable stale admin accounts immediately.", affectedAccounts:["admin-olduser", "svc-inactive", "helpdesk-old", "admin-test"] },
+  { checkId:"dualUseAdmin",    category:"identity",   label:"Dual-use Admin Accounts",  severity:"Critical", score:60, status:"Warning", threshold:"0 dual-use",                      actualValue:"2 potential",        description:"DA members not clearly admin-only accounts", recommendation:"Implement Tiered Administration model.", affectedAccounts:["admin-john.doe", "admin-jane.smith"] },
+  { checkId:"protectedUsers",  category:"identity",   label:"Protected Users Group",    severity:"High",     score:55, status:"Warning", threshold:"100% Tier-0 admins",             actualValue:"6 of 12 (50%)",      description:"Tier-0 admins in Protected Users group", recommendation:"Add all Tier-0 admins to Protected Users group.", affectedAccounts:["admin-olduser", "svc-service", "helpdesk-lead"] },
+  { checkId:"defaultAdmin",    category:"identity",   label:"Default Admin Account",    severity:"High",     score:50, status:"Warning", threshold:"Renamed & Disabled",             actualValue:"Name: Administrator, Enabled: True", description:"Built-in RID-500 account status", recommendation:"Rename and disable built-in Administrator account.", affectedAccounts:["Administrator"] },
+  { checkId:"minPwdLength",    category:"password",   label:"Minimum Password Length",  severity:"Critical", score:30, status:"Fail",    threshold:"14+ (100%), 12 (50%), 11- (0%)",             actualValue:"8 characters",       description:"Domain password policy minimum length", recommendation:"Set minimum password length to 14+ characters.", affectedAccounts:["svc-oldapp", "legacy-system", "backup-service"] },
+  { checkId:"fgpp",            category:"password",   label:"Fine-Grained PSO",         severity:"High",     score:0,  status:"Fail",    threshold:"PSO for all admin groups",        actualValue:"No PSOs found",      description:"Password Settings Objects for admin accounts", recommendation:"Create PSO for admin accounts with stricter policy.", affectedAccounts:["Administrator", "krbtgt", "Domain Admins group", "Enterprise Admins group"] },
   { checkId:"reversibleEncrypt",category:"password",  label:"Reversible Encryption",    severity:"Critical", score:100,status:"Pass",    threshold:"0 accounts",                      actualValue:"0 accounts",         description:"AllowReversiblePasswordEncryption enabled", recommendation:"No action required." },
   { checkId:"asrepRoastable",  category:"password",   label:"AS-REP Roastable",         severity:"Critical", score:85, status:"Pass",    threshold:"0 accounts",                      actualValue:"1 account (fixed)",  description:"Pre-auth disabled accounts", recommendation:"Monitor for regression." },
   { checkId:"pwdAge",          category:"password",   label:"Password Age Compliance",  severity:"High",     score:70, status:"Warning", threshold:"<2% of accounts",                 actualValue:"4.2% aged >365d",    description:"Accounts with password >365 days", recommendation:"Force password reset for non-compliant accounts." },
@@ -641,7 +642,10 @@ function Pill({ label, color }) {
   return <span style={{padding:"2px 8px",borderRadius:10,fontSize:10,fontWeight:700,background:`${color}25`,color}}>{label}</span>;
 }
 
+// Hover popover is now provided by shared core: ClientFindingPopover
+
 const TABS = [
+  {id:"clients",label:"All Clients",icon:"◈"},
   {id:"dashboard",label:"Overview",icon:"◈"},
   {id:"categories",label:"Categories",icon:"◉"},
   {id:"checks",label:"All Checks",icon:"◎"},
@@ -653,47 +657,48 @@ const TABS = [
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [tab, setTab] = useState("dashboard");
+  const [tab, setTab] = useState("clients");
   const [findings, setFindings] = useState(SEED_FINDINGS);
   const [history, setHistory] = useState(SEED_HISTORY);
   const [activeFinding, setActiveFinding] = useState(null);
   const [remFilter, setRemFilter] = useState("All");
   const [importStatus, setImportStatus] = useState(null);
-  const [clients, setClients] = useState([]); // Array of {id, name, data: {findings, history}}
+  const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [pendingChanges, setPendingChanges] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef();
-  const { catMap, overall } = computeWeighted(findings);
-
-  // Load client data from server API
+  
+// Load client data from server API
   const loadClientData = useCallback(async () => {
     try {
-      // Fetch clients from API - loads from ADSecureScoreData folder on server
       const response = await fetch('/api/ad-secure-clients');
       const result = await response.json();
       
       if (result.clients && Array.isArray(result.clients)) {
-        setClients(result.clients);
+        // Ensure findings have a safe default for affectedAccounts for hover display
+        const augmentedClients = result.clients.map(c => ({
+          ...c,
+          data: {
+            ...(c.data || {}),
+            findings: (c.data?.findings || []).map(f => ({ ...f, affectedAccounts: f.affectedAccounts ?? [] }))
+          }
+        }));
+        setClients(augmentedClients);
+        console.log('Clients loaded:', augmentedClients.length, augmentedClients.map(c => c.name));
         
-        // Auto-select first client if none selected
-        if (result.clients.length > 0) {
-          // Only auto-select if no client is currently selected
-          setSelectedClientId(prev => {
-            if (!prev && result.clients[0]) {
-              // Load first client's data with score normalization
-              if (result.clients[0].data?.findings?.length > 0) {
-                const normalizedFindings = normalizeScores(result.clients[0].data.findings);
-                setFindings(normalizedFindings);
-                const clientHistory = result.clients[0].data?.history;
-                setHistory(clientHistory && clientHistory.length > 0 ? clientHistory : SEED_HISTORY);
-              }
-              return result.clients[0].id;
-            }
-            return prev;
-          });
+        // If no client selected yet, auto-select the first one
+        if (!selectedClientId && augmentedClients.length > 0) {
+          const firstClient = augmentedClients[0];
+          if (firstClient.data?.findings?.length > 0) {
+            const normalizedFindings = normalizeScores(firstClient.data.findings);
+            setFindings(normalizedFindings);
+            setHistory(firstClient.data.history || SEED_HISTORY);
+            setSelectedClientId(firstClient.id);
+            setTab("clients"); // Show overview first
+          }
         }
       }
     } catch (error) {
@@ -702,7 +707,7 @@ export default function App() {
     }
   }, []);
 
-  // Normalize scores based on current scoring rules (applies to legacy data)
+  // Normalize scores based on current scoring rules
   const normalizeScores = (findings) => {
     return findings.map(f => {
       if (f.checkId === "minPwdLength") {
@@ -719,32 +724,51 @@ export default function App() {
     });
   };
 
-  // Load selected client's data when client selection changes
-  useEffect(() => {
-    if (selectedClientId && clients.length > 0) {
-      const selectedClient = clients.find(client => client.id === selectedClientId);
-      if (selectedClient) {
-        if (selectedClient.data?.findings?.length > 0) {
-          const normalizedFindings = normalizeScores(selectedClient.data.findings);
-          setFindings(normalizedFindings);
-        }
-        // Always set history - use client's history or fall back to SEED_HISTORY
-        const clientHistory = selectedClient.data?.history;
-        if (clientHistory && clientHistory.length > 0) {
-          setHistory(clientHistory);
-        } else {
-          setHistory(SEED_HISTORY);
-        }
-        setImportStatus({ ok: true, msg: `Loaded data for ${selectedClient.name}` });
-        setTab("dashboard");
-      }
-    }
-  }, [selectedClientId, clients]);
+  const { catMap, overall } = computeWeighted(findings);
+  
+  const matchesRemFilter = (f) => {
+    if (remFilter === "All") return true;
+    if (f && f.severity === remFilter) return true;
+    const remNorm = (remFilter || "").toString().toLowerCase().replace(/\s+/g, '');
+    const cat = f ? (f.category || '') : '';
+    return remNorm === cat.toLowerCase();
+  };
 
   // Load client data on initial mount
   useEffect(() => {
     loadClientData();
   }, [loadClientData]);
+
+// Handler for selecting a client from the ClientsOverview OR dropdown
+  const selectClient = useCallback((clientId) => {
+    console.log('selectClient:', clientId);
+    if (!clientId) return;
+    setSelectedClientId(clientId);
+    const client = clients.find(c => c.id === clientId);
+    console.log('Found for dashboard:', client?.name, 'findings:', client?.data?.findings?.length);
+    if (client && client.data?.findings?.length > 0) {
+      const normalizedFindings = normalizeScores(client.data.findings);
+      setFindings(normalizedFindings);
+      setHistory(client.data.history || SEED_HISTORY);
+      setTab("dashboard");
+    }
+  }, [clients]);
+
+  // When selectedClientId changes, update dashboard data
+  useEffect(() => {
+    if (!selectedClientId) return;
+    const client = clients.find(c => c.id === selectedClientId);
+    if (client && client.data?.findings?.length > 0) {
+      const normalizedFindings = normalizeScores(client.data.findings);
+      setFindings(normalizedFindings);
+      setHistory(client.data.history || SEED_HISTORY);
+    }
+  }, [selectedClientId, clients]);
+
+  // Handler for selecting a client from the ClientsOverview
+  const handleClientSelect = useCallback((clientId) => {
+    selectClient(clientId);
+  }, [selectClient]);
 
   // ── JSON Import ──
   const handleImport = useCallback(async (e) => {
@@ -782,35 +806,18 @@ export default function App() {
             console.log(`[Import] file=${file} domain=${domain} derivedName=${derived} clientName=${clientName} clientId=${clientId}`);
           }
           
-          // Check if client already exists - merge history if it does
-          const existingClient = clients.find(c => c.id === clientId);
-          let mergedHistory = data.history || SEED_HISTORY;
-          
-          if (existingClient && existingClient.data?.history && data.history) {
-            // Merge histories - append new entries to existing history
-            const existingHistory = existingClient.data.history;
-            const newHistory = data.history;
-            
-            // Combine and sort by date
-            const combinedHistory = [...existingHistory, ...newHistory];
-            // Remove duplicates by date, keeping the latest entry for each date
-            const historyMap = new Map();
-            combinedHistory.forEach(h => historyMap.set(h.date, h));
-            mergedHistory = Array.from(historyMap.values()).sort((a, b) => 
-              new Date(a.date) - new Date(b.date)
-            );
-          }
-          
+          // Check if client already exists
           const existingClientIndex = clients.findIndex(c => c.id === clientId);
+          
           if (existingClientIndex >= 0) {
-            // Update existing client with merged history
+            // Update existing client
             const updatedClients = [...clients];
             updatedClients[existingClientIndex] = {
               id: clientId,
               name: clientName,
               data: {
                 findings: data.findings,
-                history: mergedHistory
+                history: data.history || SEED_HISTORY
               }
             };
             setClients(updatedClients);
@@ -821,18 +828,22 @@ export default function App() {
               name: clientName,
               data: {
                 findings: data.findings,
-                history: mergedHistory
+                history: data.history || SEED_HISTORY
               }
             }]);
           }
           
           // Select this client
           setSelectedClientId(clientId);
-           
-           // Load the data into the dashboard with merged history (normalized)
-           const normalizedDataFindings = normalizeScores(data.findings);
-           setFindings(normalizedDataFindings);
-           setHistory(mergedHistory);
+          
+          // Load the data into the dashboard (normalized)
+          const normalizedDataFindings = normalizeScores(data.findings);
+          setFindings(normalizedDataFindings);
+          if (data.history && Array.isArray(data.history)) {
+            setHistory(data.history);
+          } else {
+            setHistory(SEED_HISTORY); // Use seed history if none provided
+          }
           
           setImportStatus({ ok: true, msg: `Loaded ${data.findings.length} checks for ${clientName}` });
           setTab("dashboard");
@@ -866,6 +877,27 @@ export default function App() {
     reader.readAsText(file);
   }, [clients]);
 
+  // ── JSON Export ──
+  const exportJSON = () => {
+    const clientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client') : 'AD Secure Score';
+    const payload = {
+      clientName,
+      clientId: selectedClientId,
+      findings,
+      history,
+      generatedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ad_secure_score_report_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // ── Trend data ──
   const trendData = [...history.map(h => ({
     month: h.date,
@@ -878,6 +910,11 @@ export default function App() {
   const passing   = findings.filter(f => f.score>=80).length;
   const prevScore = history.length > 1 ? history[history.length-2].overallScore : overall;
   const delta     = overall - prevScore;
+  // Shared export helpers (JSON/CSV) for both dashboards
+  const exportClientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client') : 'AD Secure Score';
+  const handleExportJSON = () => {
+    downloadJSONReport({ clientName: exportClientName, clientId: selectedClientId, findings, history });
+  };
 
   // ── Export HTML ──
   const exportHTML = () => {
@@ -1135,7 +1172,24 @@ ${findings.map(f=>`<tr>
             >
               {saving ? "Saving..." : "Confirm Save"}
             </button>
-          </div>
+            {true && (
+              <button onClick={handleExportJSON}
+                style={{
+                  padding:"10px 16px",
+                  borderRadius:6,
+                  border:"1px solid #00d4ff50",
+                  background:"rgba(0,212,255,0.1)",
+                  color:"#00d4ff",
+                  cursor:"pointer",
+                  fontSize:11,
+                  fontWeight:700,
+                  marginLeft:8
+                }}
+              >
+                ⤓ Export JSON
+              </button>
+            )}
+            </div>
         </div>
       </div>
     );
@@ -1154,17 +1208,15 @@ ${findings.map(f=>`<tr>
                <div style={{fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",textTransform:"uppercase"}}>Domain Security Assessment Platform</div>
              </div>
            </div>
-            <div style={{display:"flex",gap:2, alignItems:"center"}}>
-              {/* Client Selector */}
-              {selectedClientId && (
-                <span style={{fontSize: 14, fontWeight: 600, color: '#00d4ff', marginRight: 8}}>
-                  {clients.find(c => c.id === selectedClientId)?.name || ''}
-                </span>
-              )}
-               <div style={{position: "relative", marginRight: "16px"}}>
+           <div style={{display:"flex",gap:2, alignItems:"center"}}>
+             {/* Client Selector */}
+              <div style={{position: "relative", marginRight: "16px"}}>
                 <select 
                   value={selectedClientId || ""}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  onChange={(e) => {
+                    console.log('Dropdown changed to:', e.target.value);
+                    selectClient(e.target.value);
+                  }}
                   style={{
                     padding: "10px 14px",
                     borderRadius: 8,
@@ -1182,15 +1234,15 @@ ${findings.map(f=>`<tr>
                     }
                   }}
                 >
-                  {clients.length > 0 ? (
+{clients.length > 0 ? (
                     <>
                       <option value="">Select Client</option>
-              {clients.map(client => {
-                    const display = deriveClientNameFromDomain(client?.data?.meta?.domain) || client.name;
-                    return (
-                      <option key={client.id} value={client.id}>{display}</option>
-                    );
-              })}
+                      {clients.map(client => {
+                        const display = client.name || client.data?.meta?.domain || 'Unknown';
+                        return (
+                          <option key={client.id} value={client.id}>{display}</option>
+                        );
+                      })}
                     </>
                   ) : (
                     <option value="" disabled>No clients loaded - Import a JSON file to get started</option>
@@ -1220,6 +1272,16 @@ ${findings.map(f=>`<tr>
       </div>
 
       <div style={S.body}>
+
+        {/* ═══════════════ ALL CLIENTS OVERVIEW ═══════════════ */}
+        {tab==="clients" && (
+          <ClientsOverview 
+            clients={clients} 
+            onSelectClient={handleClientSelect}
+            selectedClientId={selectedClientId}
+            refreshClients={loadClientData}
+          />
+        )}
 
         {/* ═══════════════ DASHBOARD ═══════════════ */}
         {tab==="dashboard" && (
@@ -1400,6 +1462,46 @@ ${findings.map(f=>`<tr>
               >
                 {saving ? "Saving..." : "💾 Save Changes"}
               </button>
+              {true && (
+                <button
+                  onClick={() => {
+                    // Trigger export of current findings as CSV
+                    const header = ["Check","Category","Threshold","Client Finding","Severity","Client Score","Client Status","Affected Accounts"].join(",");
+                    const rows = findings.map((f) => [
+                      f.label,
+                      (CATEGORIES.find(c=>c.id===f.category)?.label)||f.category,
+                      f.threshold,
+                      f.actualValue,
+                      f.severity,
+                      f.score,
+                      f.status,
+                      (f.affectedAccounts && f.affectedAccounts.length>0) ? f.affectedAccounts.join("; ") : ""
+                    ].join(","));
+                    const csv = [header, ...rows].join("\n");
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'ad_secure_score_checks.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                  style={{
+                    padding:"10px 16px",
+                    borderRadius:6,
+                    border:"1px solid #00d4ff50",
+                    background:"rgba(0,212,255,0.1)",
+                    color:"#00d4ff",
+                    cursor:"pointer",
+                    fontSize:11,
+                    fontWeight:700
+                  }}
+                onClick={() => exportCSVFromFindings(findings)}>
+                  ⤓ Export CSV
+                </button>
+              )}
             </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
@@ -1420,7 +1522,9 @@ ${findings.map(f=>`<tr>
                       </td>
                       <td style={{padding:"11px 14px"}}><Pill label={cat?.label||f.category} color={cat?.color||"#64748b"}/></td>
                       <td style={{padding:"11px 14px",fontSize:11,color:"#e2e8f0",maxWidth:140}}>{f.threshold}</td>
-                      <td style={{padding:"11px 14px",fontSize:11,color:"#cbd5e1",maxWidth:140}}>{f.actualValue}</td>
+                      <td style={{padding:"11px 14px",fontSize:11,color:"#cbd5e1",maxWidth:140}}>
+                        <ClientFindingPopover finding={f} />
+                      </td>
                       <td style={{padding:"11px 14px"}}><Pill label={f.severity} color={SEVERITY_COLORS[f.severity]}/></td>
                       <td style={{padding:"11px 14px",fontSize:20,fontWeight:800,color:scoreColor(f.score),fontFamily:"monospace"}}>{f.score}</td>
                       <td style={{padding:"11px 14px"}}><Pill label={f.status} color={statusColor(f.status)}/></td>
@@ -1521,7 +1625,7 @@ ${findings.map(f=>`<tr>
               </div>
               <div style={{...S.card,padding:16}}>
                 <div style={{fontSize:10,color:"#94a3b8",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}}>Quick Select — Failing Checks</div>
-                {findings.filter(f=>f.status!=="Pass").sort((a,b)=>a.score-b.score).map((f,i)=>(
+                {findings.filter(f=>f.status!=="Pass" && matchesRemFilter(f)).sort((a,b)=>a.score-b.score).map((f,i)=>(
                   <div key={i} onClick={()=>setActiveFinding(f.checkId)} style={{
                     padding:"10px 12px",borderRadius:6,cursor:"pointer",marginBottom:4,
                     background:activeFinding===f.checkId?"rgba(0,212,255,0.1)":"#0f172a",
@@ -1591,8 +1695,8 @@ ${findings.map(f=>`<tr>
               })() : (
                 <div style={{...S.card,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,color:"#94a3b8"}}>
                   <div style={{fontSize:40,marginBottom:16}}>⚙</div>
-                  <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>Select a Finding</div>
-                  <div style={{fontSize:12}}>Choose a failing check from the left panel to view remediation steps and PowerShell commands</div>
+                  <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>Remediation Not Mapped</div>
+                  <div style={{fontSize:12}}>No remediation steps are documented for this finding yet. Please update the remediation mapping data source.</div>
                 </div>
               )}
             </div>
