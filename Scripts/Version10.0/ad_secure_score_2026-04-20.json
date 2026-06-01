@@ -1,0 +1,2489 @@
+{
+  "meta": {
+    "collectorVersion": "10.0",
+    "collectedAt": "2026-04-20",
+    "collectedAtFull": "20 April 2026 10:54",
+    "domain": "internal.ashtongraham.co.uk",
+    "domainController": "ALAZ-DC01.internal.ashtongraham.co.uk",
+    "domainMode": "Windows2012R2Domain",
+    "forestMode": "Windows2012R2Forest",
+    "totalUsers": 797,
+    "totalComputers": 589,
+    "totalDCs": 5,
+    "errors": [
+      "kerberoastable: The property 'ServicePrincipalName' cannot be found on this object. Verify that the property exists.",
+      "staleAdmins: The property 'AdminCount' cannot be found on this object. Verify that the property exists.",
+      "mfaCoverage: The term 'Get-ADServicePrincipal' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.",
+      "gpoBlockConflict: The property 'gPOptions' cannot be found on this object. Verify that the property exists.",
+      "flevel: Cannot process argument transformation on parameter 'Score'. Cannot convert the \"System.Object[]\" value of type \"System.Object[]\" to type \"System.Int32\".",
+      "guestAccount: The property 'Value' cannot be found on this object. Verify that the property exists.",
+      "adminSDHolderOrphans: The property 'AdminCount' cannot be found on this object. Verify that the property exists.",
+      "legacyOS: The property 'Count' cannot be found on this object. Verify that the property exists."
+    ]
+  },
+  "scores": {
+    "overall": 69.0,
+    "categories": {
+      "identity": 36.0,
+      "password": 91.0,
+      "dchealth": 88.0,
+      "hygiene": 52.0,
+      "monitoring": 91.0,
+      "gpo": 78.0,
+      "infrastructure": 56.0
+    },
+    "weights": {
+      "identity": 22,
+      "gpo": 18,
+      "password": 18,
+      "hygiene": 9,
+      "monitoring": 5,
+      "dchealth": 18,
+      "infrastructure": 10
+    }
+  },
+  "findings": [
+    {
+      "checkId": "pwdNeverExpires",
+      "category": "identity",
+      "label": "Password Never Expires",
+      "description": "Enabled accounts with non-expiring passwords",
+      "severity": "High",
+      "score": 20,
+      "status": "Fail",
+      "threshold": "Less than 5% of enabled accounts",
+      "actualValue": "250 accounts (48.1%%)",
+      "recommendation": "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy.",
+      "remediationCmd": "Get-ADUser -Filter {PasswordNeverExpires -eq $true -and Enabled -eq $true} | Select Name,SamAccountName | Export-Csv PwdNeverExpires.csv -NoTypeInformation",
+      "details": [
+        {
+          "Name": "Administrator",
+          "SamAccountName": "Administrator"
+        },
+        {
+          "Name": "MimecastMSE",
+          "SamAccountName": "MimecastMSE"
+        },
+        {
+          "Name": "IWAM_GL-EXCH1",
+          "SamAccountName": "IWAM_GL-EXCH1"
+        },
+        {
+          "Name": "BigHand_SVC",
+          "SamAccountName": "BigHand_SVC"
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin"
+        },
+        {
+          "Name": "Polly Stephenson",
+          "SamAccountName": "stephenson_p"
+        },
+        {
+          "Name": "Tina Inniss",
+          "SamAccountName": "inniss_t"
+        },
+        {
+          "Name": "PTLAdmin",
+          "SamAccountName": "PTLAdmin"
+        },
+        {
+          "Name": "Deborah Dennis",
+          "SamAccountName": "dennis_d"
+        },
+        {
+          "Name": "Peppermint Admin",
+          "SamAccountName": "PeppermintAdmin"
+        },
+        {
+          "Name": "SQLServices",
+          "SamAccountName": "SQLServices"
+        },
+        {
+          "Name": "BH Admin",
+          "SamAccountName": "BighandSA"
+        },
+        {
+          "Name": "IWAM_AG-MAIL1",
+          "SamAccountName": "IWAM_AG-MAIL1"
+        },
+        {
+          "Name": "IWAM_AG-MAIL2",
+          "SamAccountName": "IWAM_AG-MAIL2"
+        },
+        {
+          "Name": "IWAM_AG-BACKUP",
+          "SamAccountName": "IWAM_AG-BACKUP"
+        },
+        {
+          "Name": "IWAM_FLXSVR",
+          "SamAccountName": "IWAM_FLXSVR"
+        },
+        {
+          "Name": "Mark Watson",
+          "SamAccountName": "watson_m"
+        },
+        {
+          "Name": "Amanda Smitherman",
+          "SamAccountName": "smither_a"
+        },
+        {
+          "Name": "Nick Peake",
+          "SamAccountName": "peake_n"
+        },
+        {
+          "Name": "Louise Cardwell",
+          "SamAccountName": "cardwell_l"
+        },
+        {
+          "Name": "Richard Foyster",
+          "SamAccountName": "foyster_r"
+        },
+        {
+          "Name": "Roger Loomes",
+          "SamAccountName": "Loomes_r"
+        },
+        {
+          "Name": "Paul Whittingham",
+          "SamAccountName": "whittingham_p"
+        },
+        {
+          "Name": "Ross Strowger",
+          "SamAccountName": "strowger_r"
+        },
+        {
+          "Name": "Michael Frape",
+          "SamAccountName": "frape_m"
+        },
+        {
+          "Name": "Lynn Wicks",
+          "SamAccountName": "wicks_l"
+        },
+        {
+          "Name": "Jennie Pratt",
+          "SamAccountName": "pratt_j"
+        },
+        {
+          "Name": "Christina Duck",
+          "SamAccountName": "duck_c"
+        },
+        {
+          "Name": "Patricia Gray",
+          "SamAccountName": "gray_p"
+        },
+        {
+          "Name": "Karen Collins",
+          "SamAccountName": "collins_k"
+        },
+        {
+          "Name": "Geoff Hazlewood",
+          "SamAccountName": "hazlewood_g"
+        },
+        {
+          "Name": "Magnus McManus",
+          "SamAccountName": "mcmanus_m"
+        },
+        {
+          "Name": "Rhian Brook",
+          "SamAccountName": "brook_r"
+        },
+        {
+          "Name": "Nick Holmes",
+          "SamAccountName": "holmes_n"
+        },
+        {
+          "Name": "Anthony Shord",
+          "SamAccountName": "shord_a"
+        },
+        {
+          "Name": "Kerry Jones",
+          "SamAccountName": "jones_k"
+        },
+        {
+          "Name": "Janette Wand",
+          "SamAccountName": "wand_j"
+        },
+        {
+          "Name": "Constanta Garnham",
+          "SamAccountName": "garnham_c"
+        },
+        {
+          "Name": "Sandra Stickney",
+          "SamAccountName": "andrade_s"
+        },
+        {
+          "Name": "Amanda Cook",
+          "SamAccountName": "cook_a"
+        },
+        {
+          "Name": "Sarah Lawrence",
+          "SamAccountName": "lawrence_s"
+        },
+        {
+          "Name": "Jayne Morris",
+          "SamAccountName": "morris_j"
+        },
+        {
+          "Name": "Nicola Donald",
+          "SamAccountName": "donald_n"
+        },
+        {
+          "Name": "Sandra Keeling",
+          "SamAccountName": "keeling_s"
+        },
+        {
+          "Name": "Claire Sleep",
+          "SamAccountName": "sleep_c"
+        },
+        {
+          "Name": "Leah Newcombe",
+          "SamAccountName": "newcom_le"
+        },
+        {
+          "Name": "Tracy Williamson",
+          "SamAccountName": "williams_t"
+        },
+        {
+          "Name": "Emma Metcalf",
+          "SamAccountName": "metcalf_e"
+        },
+        {
+          "Name": "Allison Southgate",
+          "SamAccountName": "southgate_a"
+        },
+        {
+          "Name": "Cheryl Walker",
+          "SamAccountName": "ingram_c"
+        },
+        {
+          "Name": "Claudia Thain",
+          "SamAccountName": "thain_c"
+        },
+        {
+          "Name": "Lisa Doggett",
+          "SamAccountName": "doggett_l"
+        },
+        {
+          "Name": "Claire Abbott",
+          "SamAccountName": "abbott_cl"
+        },
+        {
+          "Name": "IT Support",
+          "SamAccountName": "ITSupport"
+        },
+        {
+          "Name": "Louise Harper",
+          "SamAccountName": "harper_l"
+        },
+        {
+          "Name": "Michelle Gladwin",
+          "SamAccountName": "kavanagh_m"
+        },
+        {
+          "Name": "Jenny Lewis",
+          "SamAccountName": "lewis_j"
+        },
+        {
+          "Name": "Laura Bradshaw",
+          "SamAccountName": "bradshaw_l"
+        },
+        {
+          "Name": "David Sloman",
+          "SamAccountName": "sloman_d"
+        },
+        {
+          "Name": "Karen Loftus",
+          "SamAccountName": "Loftus_K"
+        },
+        {
+          "Name": "portal-noreply",
+          "SamAccountName": "portal-noreply"
+        },
+        {
+          "Name": "Joanna Cotgrove",
+          "SamAccountName": "Cotgrove_J"
+        },
+        {
+          "Name": "Suzanne Stones",
+          "SamAccountName": "stone_s"
+        },
+        {
+          "Name": "Jasmine Allen",
+          "SamAccountName": "allen_jas"
+        },
+        {
+          "Name": "Susan Harvey",
+          "SamAccountName": "harvey_s"
+        },
+        {
+          "Name": "Sally James",
+          "SamAccountName": "james_s"
+        },
+        {
+          "Name": "Alexandra Maturoi",
+          "SamAccountName": "Chereches_a"
+        },
+        {
+          "Name": "Kimberly King",
+          "SamAccountName": "king_k1"
+        },
+        {
+          "Name": "Nicola Frearson",
+          "SamAccountName": "frearson_n"
+        },
+        {
+          "Name": "Sameena Manzar",
+          "SamAccountName": "manzar_s"
+        },
+        {
+          "Name": "Harriet Richardson",
+          "SamAccountName": "dale_h"
+        },
+        {
+          "Name": "Ben Hallatt",
+          "SamAccountName": "hallatt_b"
+        },
+        {
+          "Name": "Emma Nye",
+          "SamAccountName": "nye_e"
+        },
+        {
+          "Name": "Emily Dixon",
+          "SamAccountName": "dixon_e"
+        },
+        {
+          "Name": "Tom Beattie",
+          "SamAccountName": "beattie_t"
+        },
+        {
+          "Name": "SVC_NSAccount",
+          "SamAccountName": "SVC_NSAccount"
+        },
+        {
+          "Name": "mimecast",
+          "SamAccountName": "mimecast"
+        },
+        {
+          "Name": "ServiceMGR-Share",
+          "SamAccountName": "ServiceMGR-Share"
+        },
+        {
+          "Name": "BigHand Reporting",
+          "SamAccountName": "BH3Reports"
+        },
+        {
+          "Name": "Craig Fiddaman",
+          "SamAccountName": "fiddaman_c"
+        },
+        {
+          "Name": "Amy Richardson",
+          "SamAccountName": "richardson_a"
+        },
+        {
+          "Name": "Jennifer Beal",
+          "SamAccountName": "beal_j"
+        },
+        {
+          "Name": "Melissa Callaghan",
+          "SamAccountName": "callaghan_m"
+        },
+        {
+          "Name": "Svc_MimecastLDAP",
+          "SamAccountName": "Svc_MimecastLDAP"
+        },
+        {
+          "Name": "Luke Hadley",
+          "SamAccountName": "hadley_l"
+        },
+        {
+          "Name": "Jane Durrant",
+          "SamAccountName": "durrant_j"
+        },
+        {
+          "Name": "Megan Howard",
+          "SamAccountName": "howard_m"
+        },
+        {
+          "Name": "Svc_SSRS2016",
+          "SamAccountName": "Svc_SSRS2016"
+        },
+        {
+          "Name": "Owain Atthill",
+          "SamAccountName": "atthill_o"
+        },
+        {
+          "Name": "svc-egres",
+          "SamAccountName": "svc-egres"
+        },
+        {
+          "Name": "Claire Terrington",
+          "SamAccountName": "terrington_c"
+        },
+        {
+          "Name": "Alexandria Whitmore",
+          "SamAccountName": "whitmore_a"
+        },
+        {
+          "Name": "Lily Payne",
+          "SamAccountName": "payne_l"
+        },
+        {
+          "Name": "Svc_AzureBackup",
+          "SamAccountName": "Svc_AzureBackup"
+        },
+        {
+          "Name": "Zornitsa Ledlie",
+          "SamAccountName": "ledlie_z"
+        },
+        {
+          "Name": "HPScan",
+          "SamAccountName": "HPScan"
+        },
+        {
+          "Name": "lansweeper",
+          "SamAccountName": "lansweeper"
+        },
+        {
+          "Name": "Natalie Clarke",
+          "SamAccountName": "clarke_n"
+        },
+        {
+          "Name": "Clare Best",
+          "SamAccountName": "best_c"
+        },
+        {
+          "Name": "Svc_HyperVBackup",
+          "SamAccountName": "Svc_HyperVBackup"
+        },
+        {
+          "Name": "AXA SFTP Service",
+          "SamAccountName": "AXA_SFTP_SVC"
+        },
+        {
+          "Name": "Kofax",
+          "SamAccountName": "Kofax"
+        },
+        {
+          "Name": "mimecast mso",
+          "SamAccountName": "mimecastmso"
+        },
+        {
+          "Name": "SQL Service Account",
+          "SamAccountName": "SQL_SVC"
+        },
+        {
+          "Name": "Kathryn Knight",
+          "SamAccountName": "pratt_k"
+        },
+        {
+          "Name": "Lois Panton",
+          "SamAccountName": "panton_l"
+        },
+        {
+          "Name": "Sheila Small",
+          "SamAccountName": "small_s"
+        },
+        {
+          "Name": "BigHand",
+          "SamAccountName": "bighand"
+        },
+        {
+          "Name": "Jacqui Simms",
+          "SamAccountName": "simms_j"
+        },
+        {
+          "Name": "IT Service Accounts",
+          "SamAccountName": "ITServiceAccounts"
+        },
+        {
+          "Name": "Andrew Wilson",
+          "SamAccountName": "wilson_a"
+        },
+        {
+          "Name": "Graham Heywood",
+          "SamAccountName": "heywood_g"
+        },
+        {
+          "Name": "Naomi Barrell",
+          "SamAccountName": "barrell_n"
+        },
+        {
+          "Name": "Svc_Net2Admin",
+          "SamAccountName": "Svc_Net2Admin"
+        },
+        {
+          "Name": "Peppermint Document Production",
+          "SamAccountName": "PeppDocProduction"
+        },
+        {
+          "Name": "powerbiadmin",
+          "SamAccountName": "powerbiadmin"
+        },
+        {
+          "Name": "Tracy Churchill",
+          "SamAccountName": "Churchill_T"
+        },
+        {
+          "Name": "Shannen Roberts",
+          "SamAccountName": "Roberts_S"
+        },
+        {
+          "Name": "Alex Beales",
+          "SamAccountName": "Ogley_A"
+        },
+        {
+          "Name": "Fiona Walker",
+          "SamAccountName": "Walker_F"
+        },
+        {
+          "Name": "Richard Bailey",
+          "SamAccountName": "Bailey_R"
+        },
+        {
+          "Name": "Oliver Brabbins",
+          "SamAccountName": "Brabbins_O"
+        },
+        {
+          "Name": "Robert Hickford",
+          "SamAccountName": "Hickford_R"
+        },
+        {
+          "Name": "Karen Bacon",
+          "SamAccountName": "Bacon_K"
+        },
+        {
+          "Name": "Jo Lister",
+          "SamAccountName": "Lister_J"
+        },
+        {
+          "Name": "Oliver Hayler",
+          "SamAccountName": "Hayler_O"
+        },
+        {
+          "Name": "Charlotte Welling",
+          "SamAccountName": "Welling_C"
+        },
+        {
+          "Name": "Ali Masterson",
+          "SamAccountName": "masterson_a"
+        },
+        {
+          "Name": "Ruth Sparkes",
+          "SamAccountName": "sparkes_r"
+        },
+        {
+          "Name": "Greg McCurday",
+          "SamAccountName": "mccurday_g"
+        },
+        {
+          "Name": "Sheree Richardson",
+          "SamAccountName": "richardson_s"
+        },
+        {
+          "Name": "Fatemeh Bahrami",
+          "SamAccountName": "Bahrami_F"
+        },
+        {
+          "Name": "Fiona Mowle",
+          "SamAccountName": "mowle_f"
+        },
+        {
+          "Name": "Isha White",
+          "SamAccountName": "white_i"
+        },
+        {
+          "Name": "Poppy Lee",
+          "SamAccountName": "lee_p"
+        },
+        {
+          "Name": "Amie O'Donnell",
+          "SamAccountName": "O'Donnell_A"
+        },
+        {
+          "Name": "Hannah McCreadie",
+          "SamAccountName": "mccreadie_h"
+        },
+        {
+          "Name": "Ina Beurich",
+          "SamAccountName": "Beurich_I"
+        },
+        {
+          "Name": "Felicity Sparkes",
+          "SamAccountName": "Sparkes_F"
+        },
+        {
+          "Name": "Kirsteen Durrant",
+          "SamAccountName": "Durrant_K"
+        },
+        {
+          "Name": "Hannah Maskell",
+          "SamAccountName": "maskell_h"
+        },
+        {
+          "Name": "Ismail Bell",
+          "SamAccountName": "bell_i"
+        },
+        {
+          "Name": "Daisy Rouse",
+          "SamAccountName": "Rouse_d"
+        },
+        {
+          "Name": "Natalie Cosgrove",
+          "SamAccountName": "Cosgrove_N"
+        },
+        {
+          "Name": "Securus-SD-WAN LDAP",
+          "SamAccountName": "SVC_Securus_SDWAN"
+        },
+        {
+          "Name": "Amelia Dale",
+          "SamAccountName": "Dale_A"
+        },
+        {
+          "Name": "Hannah Murphy",
+          "SamAccountName": "Murphy_H"
+        },
+        {
+          "Name": "Bighand recurringtasks",
+          "SamAccountName": "BighandRecurringtask"
+        },
+        {
+          "Name": "Eloise Eddy",
+          "SamAccountName": "Eddy_E"
+        },
+        {
+          "Name": "Megan Smith",
+          "SamAccountName": "hayward_me"
+        },
+        {
+          "Name": "Harry Barker",
+          "SamAccountName": "Barker_h"
+        },
+        {
+          "Name": "Bighand Tasks",
+          "SamAccountName": "BighandTasks"
+        },
+        {
+          "Name": "Sylvia Phillips",
+          "SamAccountName": "Phillips_S"
+        },
+        {
+          "Name": "Alexandra Lush",
+          "SamAccountName": "Lush_A"
+        },
+        {
+          "Name": "Simon Kipling",
+          "SamAccountName": "kipling_s"
+        },
+        {
+          "Name": "Daniel Thorn",
+          "SamAccountName": "Thorn_D"
+        },
+        {
+          "Name": "Holly Shaw",
+          "SamAccountName": "Shaw_H"
+        },
+        {
+          "Name": "Gemma Helsdon",
+          "SamAccountName": "Helsdon_G"
+        },
+        {
+          "Name": "Milly Smith",
+          "SamAccountName": "Smith_M"
+        },
+        {
+          "Name": "Zara Bracegirdle",
+          "SamAccountName": "Bracegirdle_Z"
+        },
+        {
+          "Name": "Bec Wiltshire",
+          "SamAccountName": "wiltshire_b"
+        },
+        {
+          "Name": "Melanie Stephenson",
+          "SamAccountName": "Stephenson_M"
+        },
+        {
+          "Name": "Jonathan Dattani",
+          "SamAccountName": "Dattani_J"
+        },
+        {
+          "Name": "Bethany Kyle",
+          "SamAccountName": "Kyle_B"
+        },
+        {
+          "Name": "CSC Residential",
+          "SamAccountName": "cforesidential"
+        },
+        {
+          "Name": "Ciaran Sheehy",
+          "SamAccountName": "Sheehy_C"
+        },
+        {
+          "Name": "Abby Creelman",
+          "SamAccountName": "Creelman_A"
+        },
+        {
+          "Name": "Louisa Earnscliffe",
+          "SamAccountName": "Earnscliffe_L"
+        },
+        {
+          "Name": "Tarryn Florence",
+          "SamAccountName": "Florence_T"
+        },
+        {
+          "Name": "Leanne Russell",
+          "SamAccountName": "Russell_L"
+        },
+        {
+          "Name": "Ruth Hinchliffe",
+          "SamAccountName": "Hinchliffe_R"
+        },
+        {
+          "Name": "Nick Palmer",
+          "SamAccountName": "Palmer_N"
+        },
+        {
+          "Name": "Lisa Downey",
+          "SamAccountName": "downey_l"
+        },
+        {
+          "Name": "Callum Neill",
+          "SamAccountName": "Neill_C"
+        },
+        {
+          "Name": "Leo Carter",
+          "SamAccountName": "carter_l"
+        },
+        {
+          "Name": "Sarah Fish",
+          "SamAccountName": "Fish_S"
+        },
+        {
+          "Name": "Lorraine Wilkin",
+          "SamAccountName": "Wilkin_L"
+        },
+        {
+          "Name": "Marta De Amorim",
+          "SamAccountName": "DeAmorim_M"
+        },
+        {
+          "Name": "Eloise French",
+          "SamAccountName": "French_E"
+        },
+        {
+          "Name": "Edward Crewe",
+          "SamAccountName": "Crewe_E"
+        },
+        {
+          "Name": "Lansweeper Service Account",
+          "SamAccountName": "Lansweeper_SVC"
+        },
+        {
+          "Name": "AAD_17dd14a2bf1b",
+          "SamAccountName": "AAD_17dd14a2bf1b"
+        },
+        {
+          "Name": "MSOL_e2f9b4b7df35",
+          "SamAccountName": "MSOL_e2f9b4b7df35"
+        },
+        {
+          "Name": "Alice Hall",
+          "SamAccountName": "Hall_A"
+        },
+        {
+          "Name": "George Milton",
+          "SamAccountName": "Milton_G"
+        },
+        {
+          "Name": "Comxo",
+          "SamAccountName": "Comxo"
+        },
+        {
+          "Name": "Kayleigh-Cherish Kipling",
+          "SamAccountName": "Kipling_K"
+        },
+        {
+          "Name": "Eleanor Lily Cooper",
+          "SamAccountName": "Cooper_E"
+        },
+        {
+          "Name": "Ruby Ling",
+          "SamAccountName": "Ling_R"
+        },
+        {
+          "Name": "Samiha Shaheed",
+          "SamAccountName": "Shaheed_S"
+        },
+        {
+          "Name": "Francesca Dooley",
+          "SamAccountName": "Dooley_F"
+        },
+        {
+          "Name": "Jemma Ramsey",
+          "SamAccountName": "Ramsey_Je"
+        },
+        {
+          "Name": "Laura Hook",
+          "SamAccountName": "Hook_L"
+        },
+        {
+          "Name": "Aidan Rengert",
+          "SamAccountName": "Rengert_A"
+        },
+        {
+          "Name": "Jasmin Glavin",
+          "SamAccountName": "glavin_j"
+        },
+        {
+          "Name": "Stephanie Bunker",
+          "SamAccountName": "bunker_s"
+        },
+        {
+          "Name": "Melissa Duncan",
+          "SamAccountName": "Duncan_M"
+        },
+        {
+          "Name": "svc_ADFSPepermint",
+          "SamAccountName": "svc_ADFSPepermint"
+        },
+        {
+          "Name": "Aidan Jones",
+          "SamAccountName": "Jones_A"
+        },
+        {
+          "Name": "Samuel Rutterford",
+          "SamAccountName": "Rutterford_S"
+        },
+        {
+          "Name": "Nicole Pudney",
+          "SamAccountName": "pudney_n"
+        },
+        {
+          "Name": "Amelia Maskell",
+          "SamAccountName": "Maskell_A"
+        },
+        {
+          "Name": "Svc-nable",
+          "SamAccountName": "svc-nable"
+        },
+        {
+          "Name": "Svc-rapidfire",
+          "SamAccountName": "Svc-rapidfire"
+        },
+        {
+          "Name": "Deanne Fisher",
+          "SamAccountName": "Fisher_D"
+        },
+        {
+          "Name": "Chloe Hales",
+          "SamAccountName": "Hales_C"
+        },
+        {
+          "Name": "Chantelle Keenan",
+          "SamAccountName": "keenan_c"
+        },
+        {
+          "Name": "Nicole Scanlan",
+          "SamAccountName": "scanlan_n"
+        },
+        {
+          "Name": "Elizabeth Payne",
+          "SamAccountName": "payne_e"
+        },
+        {
+          "Name": "Ellie Donnelly",
+          "SamAccountName": "Donnelly_E"
+        },
+        {
+          "Name": "sql_svc_progressDB",
+          "SamAccountName": "sql_svc_progressDB"
+        },
+        {
+          "Name": "Sienna Vincent",
+          "SamAccountName": "Vincent_S"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc"
+        },
+        {
+          "Name": "Mark Henry",
+          "SamAccountName": "Henry_M"
+        },
+        {
+          "Name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin"
+        },
+        {
+          "Name": "Kim Clapham",
+          "SamAccountName": "Clapham_K"
+        },
+        {
+          "Name": "Oliver Dunn",
+          "SamAccountName": "Dunn_O"
+        },
+        {
+          "Name": "Catherine LowesDeBank",
+          "SamAccountName": "LowesDeBank_C"
+        },
+        {
+          "Name": "Alex Glazkov",
+          "SamAccountName": "glazkov_a"
+        },
+        {
+          "Name": "Luisa Attoe",
+          "SamAccountName": "attoe_l"
+        },
+        {
+          "Name": "Sonia Carter",
+          "SamAccountName": "Carter_S"
+        },
+        {
+          "Name": "Emma Thomas",
+          "SamAccountName": "Thomas_E"
+        },
+        {
+          "Name": "Sally Power",
+          "SamAccountName": "Power_S"
+        },
+        {
+          "Name": "Amy Keenan",
+          "SamAccountName": "Keenan_A"
+        },
+        {
+          "Name": "Danielle Clayden",
+          "SamAccountName": "Clayden_D"
+        },
+        {
+          "Name": "FTechEvoTier1_Svc",
+          "SamAccountName": "FTechEvoTier1_Svc"
+        },
+        {
+          "Name": "FTechEvoTier2_Svc",
+          "SamAccountName": "FTechEvoTier2_Svc"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc"
+        },
+        {
+          "Name": "FTechEvoTier4_Svc",
+          "SamAccountName": "FTechEvoTier4_Svc"
+        },
+        {
+          "Name": "Ola Mirecka",
+          "SamAccountName": "Mirecka_A"
+        },
+        {
+          "Name": "Gintare Kucinskaite",
+          "SamAccountName": "Kucinskaite_G"
+        },
+        {
+          "Name": "Grace O'Neill",
+          "SamAccountName": "oneill_g"
+        },
+        {
+          "Name": "Jack Stevens",
+          "SamAccountName": "stevens_j"
+        },
+        {
+          "Name": "Karina Kilgour",
+          "SamAccountName": "Kilgour_K"
+        },
+        {
+          "Name": "intune_admin",
+          "SamAccountName": "intune_admin"
+        },
+        {
+          "Name": "Daniel Masterson",
+          "SamAccountName": "Masterson_D"
+        },
+        {
+          "Name": "Lisa Cox",
+          "SamAccountName": "cox_l"
+        },
+        {
+          "Name": "Harry Kemp",
+          "SamAccountName": "kemp_h"
+        },
+        {
+          "Name": "HealthMailbox53fe815c66584ff689c02513974a34bd",
+          "SamAccountName": "HealthMailbox53fe815"
+        },
+        {
+          "Name": "HealthMailboxd1a72c13a5bf465780c36e122da40651",
+          "SamAccountName": "HealthMailboxd1a72c1"
+        },
+        {
+          "Name": "HealthMailboxac08729aace74934b8f477ea60f7d3cd",
+          "SamAccountName": "HealthMailboxac08729"
+        },
+        {
+          "Name": "HealthMailbox8db760dd3209457c848b23fa7cda1c91",
+          "SamAccountName": "HealthMailbox8db760d"
+        },
+        {
+          "Name": "HealthMailbox9043666eca804bdf86b5bcf1e823623d",
+          "SamAccountName": "HealthMailbox9043666"
+        },
+        {
+          "Name": "HealthMailboxf0b3229dcf28434d8843b37675bcc8cc",
+          "SamAccountName": "HealthMailboxf0b3229"
+        },
+        {
+          "Name": "HealthMailbox9dc7d03bf9e34b4689714e64228f14e2",
+          "SamAccountName": "HealthMailbox9dc7d03"
+        },
+        {
+          "Name": "HealthMailbox425885e03a6e4bd09ab3f18047be3ae3",
+          "SamAccountName": "HealthMailbox425885e"
+        },
+        {
+          "Name": "HealthMailbox4895ba6eb55542dca94ae3c314f45ff9",
+          "SamAccountName": "HealthMailbox4895ba6"
+        },
+        {
+          "Name": "HealthMailbox55e0aef5d8ed47a389dd7f127e7028d9",
+          "SamAccountName": "HealthMailbox55e0aef"
+        },
+        {
+          "Name": "HealthMailbox6d176d3e496e4ac1b076f8816f2f30a7",
+          "SamAccountName": "HealthMailbox6d176d3"
+        },
+        {
+          "Name": "AD_Audit_svc",
+          "SamAccountName": "ad_audit_svc"
+        }
+      ],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dualUseAdmin",
+      "category": "identity",
+      "label": "Dual-use Admin Accounts",
+      "description": "Domain Admins members not clearly designated as admin-only accounts",
+      "severity": "Critical",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "0 - all admins must use dedicated admin accounts",
+      "actualValue": "26 potential dual-use account(s)",
+      "recommendation": "Implement Tiered Administration. Admin accounts for admin tasks only, separate from daily-use accounts.",
+      "remediationCmd": "Get-ADGroupMember 'Domain Admins' -Recursive | Where {$_.objectClass -eq 'user'} | Get-ADUser -Properties Description | Select Name,SamAccountName,Description | Export-Csv DA_Audit.csv",
+      "details": [
+        {
+          "name": "BigHand_SVC",
+          "SamAccountName": "BigHand_SVC"
+        },
+        {
+          "name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin"
+        },
+        {
+          "name": "Steven Feltham-Pye (Admin)",
+          "SamAccountName": "a-sfp"
+        },
+        {
+          "name": "Oli Stockman (Admin)",
+          "SamAccountName": "a-os"
+        },
+        {
+          "name": "Peppermint Admin",
+          "SamAccountName": "PeppermintAdmin"
+        },
+        {
+          "name": "SQLServices",
+          "SamAccountName": "SQLServices"
+        },
+        {
+          "name": "BH Admin",
+          "SamAccountName": "BighandSA"
+        },
+        {
+          "name": "NPCXSQLAgent",
+          "SamAccountName": "npcxsqlagent"
+        },
+        {
+          "name": "NPCXSQLSrv",
+          "SamAccountName": "npcxsqlsrv"
+        },
+        {
+          "name": "Rynhardt van Vuuren (Admin)",
+          "SamAccountName": "a-rvv"
+        },
+        {
+          "name": "Josh Teague (Admin)",
+          "SamAccountName": "a-jt"
+        },
+        {
+          "name": "Anthony Brown (Admin)",
+          "SamAccountName": "a-ab"
+        },
+        {
+          "name": "Lansweeper Service Account",
+          "SamAccountName": "Lansweeper_SVC"
+        },
+        {
+          "name": "SPDocPreview",
+          "SamAccountName": "SPDocPreview"
+        },
+        {
+          "name": "Sorren Day (Admin)",
+          "SamAccountName": "a-sd"
+        },
+        {
+          "name": "Nishen Harichunder (First Tech)",
+          "SamAccountName": "NHADMIN"
+        },
+        {
+          "name": "Oliver Govender (First Tech)",
+          "SamAccountName": "OGADMIN"
+        },
+        {
+          "name": "Lincoln Phillips-Morris (Admin)",
+          "SamAccountName": "a-lpm"
+        },
+        {
+          "name": "sql_svc_progressDB",
+          "SamAccountName": "sql_svc_progressDB"
+        },
+        {
+          "name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc"
+        },
+        {
+          "name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin"
+        },
+        {
+          "name": "Mitch Skitt (Admin)",
+          "SamAccountName": "a-ms"
+        },
+        {
+          "name": "FTechEvoTier4_Svc",
+          "SamAccountName": "FTechEvoTier4_Svc"
+        },
+        {
+          "name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin"
+        },
+        {
+          "name": "AD_Audit_svc",
+          "SamAccountName": "ad_audit_svc"
+        },
+        {
+          "name": "PTLCXAdmin",
+          "SamAccountName": "PTLCXAdmin"
+        }
+      ],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "protectedUsers",
+      "category": "identity",
+      "label": "Protected Users Group",
+      "description": "Tier-0 admin accounts enrolled in the Protected Users security group",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "100% of Tier-0 admins",
+      "actualValue": "33 of 32 Tier-0 admins (103%%)",
+      "recommendation": "Add all Domain Admins, Enterprise Admins, Schema Admins to Protected Users group. Test compatibility first.",
+      "remediationCmd": "Get-ADGroupMember 'Domain Admins' -Recursive | Where {$_.objectClass -eq 'user'} | ForEach-Object { Add-ADGroupMember 'Protected Users' -Members $_.SamAccountName }",
+      "details": [
+        {
+          "name": "Nishen Harichunder (First Tech)",
+          "SamAccountName": "NHADMIN"
+        },
+        {
+          "name": "Stuart Ferguson (First Tech)",
+          "SamAccountName": "SFADMIN"
+        },
+        {
+          "name": "Duwayne Padayachi (First Tech)",
+          "SamAccountName": "DPADMIN"
+        },
+        {
+          "name": "Oliver Govender (First Tech)",
+          "SamAccountName": "OGADMIN"
+        },
+        {
+          "name": "Lance Butler (First Tech)",
+          "SamAccountName": "LBADMIN"
+        },
+        {
+          "name": "Mohammed Ismail (First Tech)",
+          "SamAccountName": "mohammedI_ftadmin"
+        },
+        {
+          "name": "Sanele Mthethwa  (First Tech)",
+          "SamAccountName": "sanelem_ftadmin"
+        },
+        {
+          "name": "Mthokozisi Ncumatha  (First Tech)",
+          "SamAccountName": "mthokozisin_ftadmin"
+        },
+        {
+          "name": "Laancen Govender",
+          "SamAccountName": "lgadmin"
+        },
+        {
+          "name": "Shailen Sewrajbally (First Tech)",
+          "SamAccountName": "shailens_ftadmin"
+        },
+        {
+          "name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin"
+        },
+        {
+          "name": "Kyle Naidoo (First Tech)",
+          "SamAccountName": "KNADMIN"
+        },
+        {
+          "name": "Joshua Govender (First Tech)",
+          "SamAccountName": "JoshuaG_FTadmin"
+        },
+        {
+          "name": "Asanda Gabela (First Tech)",
+          "SamAccountName": "asandag_ftadmin"
+        },
+        {
+          "name": "Realin Naidoo (First Tech)",
+          "SamAccountName": "realinn_ftadmin"
+        },
+        {
+          "name": "Luyanda Godfrey (First Tech)",
+          "SamAccountName": "luyandag_ftadmin"
+        },
+        {
+          "name": "Xolani Mkulise (First Tech)",
+          "SamAccountName": "xolanim_ftadmin"
+        },
+        {
+          "name": "Anesh Maharaj (First Tech)",
+          "SamAccountName": "aneshm_ftadmin"
+        },
+        {
+          "name": "Ayanda Mthethwa (First Tech)",
+          "SamAccountName": "ayandam_ftadmin"
+        },
+        {
+          "name": "Nkululeko Bhengu (First Tech)",
+          "SamAccountName": "nkululekob_ftadmin"
+        },
+        {
+          "name": "Phelelani Gama (First Tech)",
+          "SamAccountName": "phelelanig_ftadmin"
+        },
+        {
+          "name": "Sinazo Jafta (First Tech)",
+          "SamAccountName": "SinazoJ_FTadmin"
+        },
+        {
+          "name": "Pearl Maphumulo (First Tech)",
+          "SamAccountName": "PearlM_FTadmin"
+        },
+        {
+          "name": "Tristan Sooklall (First Tech)",
+          "SamAccountName": "TristanS_FTadmin"
+        },
+        {
+          "name": "Sello Musi (First Tech)",
+          "SamAccountName": "SelloM_FTadmin"
+        },
+        {
+          "name": "Anele Miya (First Tech)",
+          "SamAccountName": "AneleM_FTadmin"
+        },
+        {
+          "name": "Zuko Zungu (First Tech)",
+          "SamAccountName": "ZukoZ_FTadmin"
+        },
+        {
+          "name": "Sohail Ramnarain (First Tech)",
+          "SamAccountName": "SohailR_FTadmin"
+        },
+        {
+          "name": "Myron Chinnasami (First Tech)",
+          "SamAccountName": "MyronC_FTadmin"
+        },
+        {
+          "name": "Saieshan Pillay (First Tech)",
+          "SamAccountName": "Saieshanp_ftadmin"
+        },
+        {
+          "name": "Zinhle Sikhosana  (First Tech)",
+          "SamAccountName": "ZinhleS_FTadmin"
+        },
+        {
+          "name": "Noelen Moonsamy (First Tech)",
+          "SamAccountName": "NoelenM_FTadmin"
+        },
+        {
+          "name": "Sheridan Moonsamy (First Tech)",
+          "SamAccountName": "SheridanM_ftadmin"
+        }
+      ],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "defaultAdmin",
+      "category": "identity",
+      "label": "Default Admin Account",
+      "description": "Built-in Administrator (RID-500) should be renamed and disabled",
+      "severity": "High",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "Renamed and Disabled",
+      "actualValue": "Name: Administrator, Enabled: True",
+      "recommendation": "Rename the built-in Administrator account and disable it.",
+      "remediationCmd": "$domSID=(Get-ADDomain).DomainSID.Value\nRename-ADObject -Identity (Get-ADUser \"$domSID-500\").DistinguishedName -NewName 'Acct-Disabled-500'\nDisable-ADAccount -Identity \"$domSID-500\"",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "pwdNotRequired",
+      "category": "identity",
+      "label": "Password Not Required (Legacy)",
+      "description": "Accounts with PASSWD_NOTREQD flag - can authenticate with blank password",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 enabled accounts with PASSWD_NOTREQD flag",
+      "actualValue": "0 enabled accounts with PASSWD_NOTREQD flag. 0 disabled account(s) still carry the flag.",
+      "recommendation": "Clear the PASSWD_NOTREQD flag on all affected accounts.",
+      "remediationCmd": "Get-ADUser -Filter * -Properties userAccountControl | Where-Object { ($_.userAccountControl -band 32) -ne 0 } | Export-Csv C:\\Temp\\PwdNotRequired_Audit.csv",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "adminGroupBloat",
+      "category": "identity",
+      "label": "Admin Group Membership Bloat",
+      "description": "Excessive membership in Domain Admins, Enterprise Admins, Schema Admins groups",
+      "severity": "High",
+      "score": 10,
+      "status": "Fail",
+      "threshold": "Domain Admins <= 5 named accounts",
+      "actualValue": "Domain Admins: 31 | Enterprise Admins: 1 | Schema Admins: 0",
+      "recommendation": "Reduce Domain Admins to minimum required accounts.",
+      "remediationCmd": "foreach ($grp in @('Domain Admins','Enterprise Admins','Schema Admins')) { Get-ADGroupMember $grp -Recursive | Where {$_.objectClass -eq 'user'} | Get-ADUser -Properties LastLogonDate | Select Name,SamAccountName,LastLogonDate }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "serviceAcctAudit",
+      "category": "identity",
+      "label": "Service Account Audit (MSA/gMSA)",
+      "description": "Regular user accounts used as service accounts",
+      "severity": "Medium",
+      "score": 20,
+      "status": "Fail",
+      "threshold": "0 regular user accounts used as service accounts",
+      "actualValue": "39 regular-account service accounts detected | 2 gMSA accounts in use | Accounts: IWAM_GL-EXCH1, BigHand_SVC, SQLServices, IWAM_AG-MAIL1, IWAM_AG-MAIL2, IWAM_AG-BACKUP, IWAM_FLXSVR, ingram_c",
+      "recommendation": "Migrate service accounts to Group Managed Service Accounts (gMSA).",
+      "remediationCmd": "Get-ADUser -Filter * -Properties PasswordNeverExpires,ServicePrincipalName | Where-Object { $_.Enabled -and $_.PasswordNeverExpires -and ($_.SamAccountName -match '^(svc|sa_|sa-|service|app_)') } | Select Name,SamAccountName",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "minPwdLength",
+      "category": "password",
+      "label": "Minimum Password Length",
+      "description": "Default Domain Password Policy minimum password length",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "14+ characters (100%), 12 characters (50%), 11 or below (0%)",
+      "actualValue": "14 characters",
+      "recommendation": "Set minimum password length to 14+ characters via Default Domain Policy.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -MinPasswordLength 14",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "fgpp",
+      "category": "password",
+      "label": "Fine-Grained Password Policy",
+      "description": "Password Settings Objects (PSO) targeting admin accounts",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "PSO applied to all admin groups",
+      "actualValue": "Total PSOs: 1; Admin-targeted: 1",
+      "recommendation": "Create a stricter PSO for admin accounts (min 20 chars, lockout after 3 attempts).",
+      "remediationCmd": "New-ADFineGrainedPasswordPolicy -Name 'PSO-Admins' -Precedence 10 -MinPasswordLength 20 -LockoutThreshold 3",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "reversibleEncrypt",
+      "category": "password",
+      "label": "Reversible Encryption",
+      "description": "Accounts with AllowReversiblePasswordEncryption enabled",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 accounts",
+      "actualValue": "0 account(s)",
+      "recommendation": "Disable reversible password encryption on all affected accounts immediately.",
+      "remediationCmd": "Get-ADUser -Filter {AllowReversiblePasswordEncryption -eq $true} | Set-ADUser -AllowReversiblePasswordEncryption $false",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "asrepRoastable",
+      "category": "password",
+      "label": "AS-REP Roastable Accounts",
+      "description": "Accounts with Kerberos pre-authentication disabled",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 accounts",
+      "actualValue": "0 account(s)",
+      "recommendation": "Enable Kerberos pre-authentication on all accounts.",
+      "remediationCmd": "Get-ADUser -Filter {DoesNotRequirePreAuth -eq $true} | Set-ADUser -KerberosEncryptionType AES256",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "pwdAge",
+      "category": "password",
+      "label": "Password Age Compliance",
+      "description": "Enabled accounts with password unchanged for more than 365 days",
+      "severity": "High",
+      "score": 45,
+      "status": "Fail",
+      "threshold": "Less than 2% of enabled accounts",
+      "actualValue": "27 accounts (10%%)",
+      "recommendation": "Force password reset for non-compliant accounts. Enforce maximum password age policy.",
+      "remediationCmd": "Get-ADUser -Filter {Enabled -eq $true} -Properties PasswordLastSet | Where {$_.PasswordLastSet -lt (Get-Date).AddDays(-365)} | Set-ADUser -ChangePasswordAtLogon $true",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "lockoutPolicy",
+      "category": "password",
+      "label": "Account Lockout Policy",
+      "description": "Account lockout threshold configuration",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "Lockout after <=5 attempts",
+      "actualValue": "Threshold: 5 attempts | Duration: 15min | Observation: 15min",
+      "recommendation": "Set lockout threshold to 5 attempts or fewer.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -LockoutThreshold 5 -LockoutDuration '00:15:00' -LockoutObservationWindow '00:15:00'",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "pwdComplexity",
+      "category": "password",
+      "label": "Password Complexity Policy",
+      "description": "Password complexity requirement",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Complexity: Enabled | Min length: 14+",
+      "actualValue": "Complexity: True | Min length: 14 | Max age: 180d",
+      "recommendation": "Enable password complexity. Set minimum length to 14+.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -ComplexityEnabled $true -MinPasswordLength 14 -MaxPasswordAge '90.00:00:00'",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "ddpModified",
+      "category": "gpo",
+      "label": "Default Domain Policy Modified",
+      "description": "Default Domain Policy contains settings beyond Kerberos and password policy",
+      "severity": "Medium",
+      "score": 40,
+      "status": "Warning",
+      "threshold": "DDP used only for domain-wide password and Kerberos policy",
+      "actualValue": "28 settings detected",
+      "recommendation": "Move non-password/Kerberos settings from DDP to dedicated GPOs.",
+      "remediationCmd": "Get-GPOReport -Name 'Default Domain Policy' -ReportType HTML -Path 'C:\\Temp\\DDP-Report.html'",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "orphanedGPO",
+      "category": "gpo",
+      "label": "Orphaned GPOs",
+      "description": "GPOs with no OU or site links",
+      "severity": "Low",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 unlinked GPOs",
+      "actualValue": "0 unlinked GPO(s)",
+      "recommendation": "Review and remove orphaned GPOs.",
+      "remediationCmd": "Get-GPO -All | Where {([xml](Get-GPOReport -Guid $_.Id -ReportType Xml)).GPO.LinksTo -eq $null} | Select DisplayName | Export-Csv OrphanedGPOs.csv",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "serviceAccountLogonRestrict",
+      "category": "gpo",
+      "label": "Service Account Interactive Logon",
+      "description": "Service accounts should be restricted from interactive logon and RDP access to servers",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Service accounts denied interactive/RDP logon via GPO",
+      "actualValue": "Service accounts protected via GPO: Default Domain Controllers Policy, 2026 - Computer  - Deny - Logon - Service - Acc, 2024 - Computer - Restrict RDP Access to DA accounts and security group(s): Service Accounts, SvcAccounts-DenyLogon, SvcAccounts_Deny_Logon_Interactive",
+      "recommendation": "Create a GPO that denies 'Allow log on locally' and 'Allow log on through Remote Desktop Services' for service accounts or a dedicated security group containing service accounts.",
+      "remediationCmd": "New-ADGroup -Name 'ServiceAccounts-NoInteractiveLogon' -GroupScope Global; Set-GPPermissions -Name 'Deny Interactive Logon' -TargetGroup 'ServiceAccounts-NoInteractiveLogon' -Permission Deny",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "laps",
+      "category": "gpo",
+      "label": "LAPS Deployment",
+      "description": "Local Administrator Password Solution - covers both On-Prem LAPS and Windows LAPS (Azure AD/Intune)",
+      "severity": "Critical",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "95%+ coverage with LAPS (On-Prem or Azure AD)",
+      "actualValue": "No LAPS solution detected (On-Prem or Azure)",
+      "recommendation": "Deploy On-Prem LAPS via GPO, or configure Windows LAPS via Intune for cloud-managed devices. Both solutions secure local admin passwords.",
+      "remediationCmd": "On-Prem: Import-Module AdmPwd.PS; Update-AdmPwdADSchema | Azure: Configure LAPS policy in Intune",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "smbv1",
+      "category": "gpo",
+      "label": "SMBv1 Disabled",
+      "description": "SMBv1 protocol enabled on domain controllers (EternalBlue/WannaCry risk)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Disabled on all systems",
+      "actualValue": "Local DC SMBv1: Disabled",
+      "recommendation": "Disable SMBv1 via GPO and directly on all servers.",
+      "remediationCmd": "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "ntlmv1",
+      "category": "gpo",
+      "label": "NTLMv1 Disabled",
+      "description": "LAN Manager Authentication Level should be 5 (NTLMv2 only)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "LmCompatibilityLevel = 5",
+      "actualValue": "LmCompatibilityLevel = 5",
+      "recommendation": "Set LmCompatibilityLevel to 5 via GPO under Security Options.",
+      "remediationCmd": "Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name 'LmCompatibilityLevel' -Value 5",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "auditPolicy",
+      "category": "gpo",
+      "label": "Advanced Audit Policy",
+      "description": "Advanced Audit Policy configured across all 9 Windows audit categories",
+      "severity": "High",
+      "score": 70,
+      "status": "Warning",
+      "threshold": "All 9 audit categories configured",
+      "actualValue": "8 of 9 categories detected",
+      "recommendation": "Enable all Advanced Audit Policy categories via GPO using CIS Benchmark Level 1.",
+      "remediationCmd": "$cats=@('Account Logon','Account Management','Logon/Logoff','Object Access','Policy Change','Privilege Use','System')\nforeach ($c in $cats) { auditpol /set /category:\"$c\" /success:enable /failure:enable }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "appLocker",
+      "category": "gpo",
+      "label": "AppLocker / WDAC",
+      "description": "Application control policy deployment",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "Applied to all servers and privileged workstations",
+      "actualValue": "AppIDSvc: Stopped; GPO: 1 found",
+      "recommendation": "Deploy AppLocker in audit mode first, then enforce. WDAC preferred for newer OS.",
+      "remediationCmd": "Set-Service AppIDSvc -StartupType Automatic\nStart-Service AppIDSvc\nGet-AppLockerPolicy -Effective | Format-List",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "wmiFilterOrphans",
+      "category": "gpo",
+      "label": "GPO WMI Filter Health",
+      "description": "GPOs with broken WMI filter references",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 GPOs with broken WMI filter references",
+      "actualValue": "1 GPOs use WMI filters | 0 broken filter links",
+      "recommendation": "Remove broken WMI filter links from affected GPOs.",
+      "remediationCmd": "Get-GPO -All | Where {$_.WmiFilter} | Select DisplayName,@{N='Filter';E={$_.WmiFilter.Name}}",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "fsmoRoles",
+      "category": "dchealth",
+      "label": "FSMO Role Health",
+      "description": "All 5 FSMO role holders responding and reachable",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All 5 FSMO holders online",
+      "actualValue": "5/5 FSMO holders responding",
+      "recommendation": "Ensure all FSMO holders are online and healthy.",
+      "remediationCmd": "netdom query fsmo",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "replErrors",
+      "category": "dchealth",
+      "label": "AD Replication Errors",
+      "description": "Active Directory replication error count (repadmin /replsummary)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 replication errors",
+      "actualValue": "0 error indicator(s)",
+      "recommendation": "Run repadmin /replsummary and repadmin /showrepl to identify failing partners.",
+      "remediationCmd": "repadmin /replsummary\nrepadmin /showrepl",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dfsr",
+      "category": "dchealth",
+      "label": "DFSR Replication (SYSVOL)",
+      "description": "SYSVOL replication mechanism - DFSR is modern, FRS is deprecated",
+      "severity": "High",
+      "score": 60,
+      "status": "Warning",
+      "threshold": "DFSR only - no FRS components",
+      "actualValue": "DFSR: True | FRS members: 8",
+      "recommendation": "Migrate from FRS to DFSR using dfsrmig tool.",
+      "remediationCmd": "dfsrmig /GetGlobalState\ndfsrmig /GetMigrationState",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dcEOL",
+      "category": "dchealth",
+      "label": "DC OS Version / EOL Check",
+      "description": "Domain Controllers running end-of-life Windows Server versions",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All DCs on Windows Server 2016 or newer",
+      "actualValue": "All DCs on supported OS",
+      "recommendation": "Upgrade or replace EOL DCs immediately.",
+      "remediationCmd": "Get-ADDomainController -Filter * | ForEach-Object { Get-ADComputer $_.Name -Properties OperatingSystem } | Select-Object Name,OperatingSystem | Sort-Object OperatingSystem",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dnsScavenge",
+      "category": "dchealth",
+      "label": "DNS Scavenging",
+      "description": "DNS aging and scavenging enabled on primary forward lookup zones",
+      "severity": "Medium",
+      "score": 25,
+      "status": "Fail",
+      "threshold": "All primary zones with aging enabled",
+      "actualValue": "0/9 zones (0%%)",
+      "recommendation": "Enable aging on all AD-integrated zones. Set 7-day no-refresh, 7-day refresh intervals.",
+      "remediationCmd": "Get-DnsServerZone -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' | Where-Object {-not $_.IsReverseLookupZone -and $_.ZoneType -eq 'Primary'} | ForEach-Object { Set-DnsServerZoneAging -Name $_.ZoneName -Aging $true -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "ntp",
+      "category": "dchealth",
+      "label": "NTP Time Synchronisation",
+      "description": "Domain time synchronisation hierarchy",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "PDC Emulator syncing to external NTP",
+      "actualValue": "Source: pool.ntp.org,0x8  | NtpServer configured: True",
+      "recommendation": "Configure PDC Emulator to sync to external NTP (pool.ntp.org).",
+      "remediationCmd": "w32tm /config /manualpeerlist:'0.pool.ntp.org,1.pool.ntp.org' /syncfromflags:manual /reliable:YES /update\nRestart-Service w32tm\nw32tm /resync /force",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "tombstone",
+      "category": "dchealth",
+      "label": "Tombstone Lifetime",
+      "description": "AD tombstone lifetime - affects backup restore validity",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "180 days or more",
+      "actualValue": "200 days",
+      "recommendation": "Set tombstone lifetime to 180 days.",
+      "remediationCmd": "$configNC=(Get-ADRootDSE).configurationNamingContext\nSet-ADObject -Identity \"CN=Directory Service,CN=Windows NT,CN=Services,$configNC\" -Replace @{tombstoneLifetime=180}",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dcRedundancy",
+      "category": "dchealth",
+      "label": "DC Redundancy",
+      "description": "Number of domain controllers and their AD site distribution",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "3+ DCs across 2+ AD sites",
+      "actualValue": "5 DCs across 5 AD sites. | Sites: ALNO-DC01[Norwich] | ALIP-DC01[Ipswich] | ALCA-DC01[Cambridge] | ALFH-DC01[Fornham] | ALAZ-DC01[Azure]",
+      "recommendation": "Minimum 2 DCs required. Best practice: 3+ DCs across 2+ sites.",
+      "remediationCmd": "Get-ADDomainController -Filter * | Select Name,Site,IPv4Address",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dnsZoneSync",
+      "category": "dchealth",
+      "label": "DNS Zone Sync",
+      "description": "DNS zone presence and SOA serial consistency across DNS DCs",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All zones present on all DNS DCs",
+      "actualValue": "All ashtonslegal.co.uk privatelink.file.core.windows.net internal.ashtongraham.co.uk ashtonkcjtest2.co.uk ashtonkcj.co.uk ashtonkcjclients.co.uk sonicwall.com TrustAnchors axa.com zones in sync across 5 DNS DCs.",
+      "recommendation": "Ensure all DCs hosting DNS have identical zone sets.",
+      "remediationCmd": "foreach ($dc in (Get-ADDomainController -Filter *).HostName) { Get-DnsServerZone -ComputerName $dc | Select ZoneName }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dcNicDns",
+      "category": "dchealth",
+      "label": "DC NIC DNS Configuration",
+      "description": "DC network adapter DNS server settings audited against best practices",
+      "severity": "High",
+      "score": 70,
+      "status": "Warning",
+      "threshold": "No loopback/public DNS as primary, min 2 entries",
+      "actualValue": "1 minor DNS NIC violations detected.",
+      "recommendation": "Primary DNS should be another DC's IP. Never use public DNS on DCs.",
+      "remediationCmd": "Get-WmiObject Win32_NetworkAdapterConfiguration -ComputerName $dc | Where {$_.IPEnabled} | Select DNSServerSearchOrder",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "dcDiagnostics",
+      "category": "dchealth",
+      "label": "DCDiag Health Check",
+      "description": "dcdiag quick DC health validation",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 dcdiag failures",
+      "actualValue": "Tests passed: 5 | Failed: 0 | Log: C:\\FTSupport\\adreports\\SecureScore\\dcdiag_2026-04-20.log",
+      "recommendation": "Investigate any dcdiag failures immediately.",
+      "remediationCmd": "dcdiag /v /test:replications /test:netlogons /test:services /test:fsmocheck",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "sysvolNetlogon",
+      "category": "dchealth",
+      "label": "SYSVOL / NETLOGON Shares",
+      "description": "SYSVOL and NETLOGON share accessibility on all DCs",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Both SYSVOL and NETLOGON accessible on all DCs",
+      "actualValue": "SYSVOL: 5/5 OK | NETLOGON: 5/5 OK",
+      "recommendation": "SYSVOL/NETLOGON inaccessible means GPOs are not delivered.",
+      "remediationCmd": "Test-Path '\\\\\\\\DC01\\\\SYSVOL'; Test-Path '\\\\\\\\DC01\\\\NETLOGON'",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "staleComputers",
+      "category": "hygiene",
+      "label": "Stale Computer Accounts",
+      "description": "Enabled computer accounts with no logon in 90+ days",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Less than 3% of enabled computers",
+      "actualValue": "2 stale (0.4%%)",
+      "recommendation": "Disable then delete stale computer accounts after 30-day grace period.",
+      "remediationCmd": "Get-ADComputer -Filter {Enabled -eq $true} -Properties LastLogonDate | Where-Object {$_.LastLogonDate -lt (Get-Date).AddDays(-90)} | Disable-ADAccount",
+      "details": [
+        {
+          "Name": "ALFH-HPV03",
+          "SamAccountName": "ALFH-HPV03$",
+          "LastLogonDate": "2025-12-10T09:31:42.7750207+00:00"
+        },
+        {
+          "Name": "peppcxarchivedmatter",
+          "SamAccountName": "archivedmatter$",
+          "LastLogonDate": "2025-02-04T13:43:28.893322+00:00"
+        }
+      ],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "duplicateSPN",
+      "category": "hygiene",
+      "label": "Duplicate SPNs",
+      "description": "Duplicate Service Principal Names in AD",
+      "severity": "High",
+      "score": 50,
+      "status": "Warning",
+      "threshold": "0 duplicate SPNs",
+      "actualValue": "1 duplicate SPN(s)",
+      "recommendation": "Run 'setspn -X -F' to identify. Remove duplicates from non-owner accounts.",
+      "remediationCmd": "setspn -X -F",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "inactiveUsers",
+      "category": "hygiene",
+      "label": "Inactive User Accounts",
+      "description": "Enabled user accounts with no logon in 60+ days",
+      "severity": "Medium",
+      "score": 35,
+      "status": "Fail",
+      "threshold": "Less than 5% of enabled users",
+      "actualValue": "56 accounts (10.8%%)",
+      "recommendation": "Implement automated 60-day inactivity policy. Notify manager, disable, delete after 30-day hold.",
+      "remediationCmd": "Search-ADAccount -AccountInactive -TimeSpan (New-TimeSpan -Days 60) -UsersOnly | Where-Object {$_.Enabled} | Select-Object Name,LastLogonDate",
+      "details": [
+        {
+          "Name": "MimecastMSE",
+          "SamAccountName": "MimecastMSE",
+          "LastLogonDate": "2024-09-04T15:04:45.3326815+01:00"
+        },
+        {
+          "Name": "IWAM_GL-EXCH1",
+          "SamAccountName": "IWAM_GL-EXCH1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin",
+          "LastLogonDate": "2022-03-21T16:13:52.1920543+00:00"
+        },
+        {
+          "Name": "PTLAdmin",
+          "SamAccountName": "PTLAdmin",
+          "LastLogonDate": "2025-08-18T12:35:37.3469672+01:00"
+        },
+        {
+          "Name": "Deborah Dennis",
+          "SamAccountName": "dennis_d",
+          "LastLogonDate": "2022-07-21T11:15:16.5707203+01:00"
+        },
+        {
+          "Name": "IWAM_AG-MAIL1",
+          "SamAccountName": "IWAM_AG-MAIL1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_AG-MAIL2",
+          "SamAccountName": "IWAM_AG-MAIL2",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_AG-BACKUP",
+          "SamAccountName": "IWAM_AG-BACKUP",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_FLXSVR",
+          "SamAccountName": "IWAM_FLXSVR",
+          "LastLogonDate": "2010-04-20T11:59:25.4439159+01:00"
+        },
+        {
+          "Name": "Paul Whittingham",
+          "SamAccountName": "whittingham_p",
+          "LastLogonDate": "2024-09-17T11:33:52.893194+01:00"
+        },
+        {
+          "Name": "Mary Pearce",
+          "SamAccountName": "pearce_m",
+          "LastLogonDate": "2025-05-29T10:13:15.8303632+01:00"
+        },
+        {
+          "Name": "Tom Cook",
+          "SamAccountName": "cook_t",
+          "LastLogonDate": "2024-07-24T08:03:48.8951166+01:00"
+        },
+        {
+          "Name": "IT Support",
+          "SamAccountName": "ITSupport",
+          "LastLogonDate": "2020-11-21T01:59:30.2170467+00:00"
+        },
+        {
+          "Name": "portal-noreply",
+          "SamAccountName": "portal-noreply",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Sameena Manzar",
+          "SamAccountName": "manzar_s",
+          "LastLogonDate": "2025-05-19T09:01:15.5118239+01:00"
+        },
+        {
+          "Name": "SVC_NSAccount",
+          "SamAccountName": "SVC_NSAccount",
+          "LastLogonDate": "2014-12-06T17:30:57.6810017+00:00"
+        },
+        {
+          "Name": "mimecast",
+          "SamAccountName": "mimecast",
+          "LastLogonDate": "2018-12-30T13:43:21.7051792+00:00"
+        },
+        {
+          "Name": "ServiceMGR-Share",
+          "SamAccountName": "ServiceMGR-Share",
+          "LastLogonDate": "2025-09-29T12:04:51.0675773+01:00"
+        },
+        {
+          "Name": "BigHand Reporting",
+          "SamAccountName": "BH3Reports",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Document Production",
+          "SamAccountName": "doc_production",
+          "LastLogonDate": "2018-07-12T14:01:32.9950186+01:00"
+        },
+        {
+          "Name": "svc-egres",
+          "SamAccountName": "svc-egres",
+          "LastLogonDate": "2021-10-28T09:42:34.2703954+01:00"
+        },
+        {
+          "Name": "lansweeper",
+          "SamAccountName": "lansweeper",
+          "LastLogonDate": "2022-05-24T13:50:00.5936804+01:00"
+        },
+        {
+          "Name": "mimecast mso",
+          "SamAccountName": "mimecastmso",
+          "LastLogonDate": "2020-07-16T14:14:02.7913479+01:00"
+        },
+        {
+          "Name": "SQL Service Account",
+          "SamAccountName": "SQL_SVC",
+          "LastLogonDate": "2025-10-26T23:14:13.9651674+00:00"
+        },
+        {
+          "Name": "BigHand",
+          "SamAccountName": "bighand",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IT Service Accounts",
+          "SamAccountName": "ITServiceAccounts",
+          "LastLogonDate": "2024-06-03T14:25:00.868702+01:00"
+        },
+        {
+          "Name": "Kimberley Maddison-Haines",
+          "SamAccountName": "Maddison_K",
+          "LastLogonDate": "2025-07-29T09:12:10.1114335+01:00"
+        },
+        {
+          "Name": "Bighand recurringtasks",
+          "SamAccountName": "BighandRecurringtask",
+          "LastLogonDate": "2022-11-10T11:32:55.9065422+00:00"
+        },
+        {
+          "Name": "Bighand Tasks",
+          "SamAccountName": "BighandTasks",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "CSC Residential",
+          "SamAccountName": "cforesidential",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Emma Starr",
+          "SamAccountName": "a-es",
+          "LastLogonDate": "2025-04-12T18:11:21.7134689+01:00"
+        },
+        {
+          "Name": "Hayley Caulfield",
+          "SamAccountName": "clarke_h",
+          "LastLogonDate": "2025-09-29T12:31:09.6785888+01:00"
+        },
+        {
+          "Name": "Rebecca Redit",
+          "SamAccountName": "redit_r",
+          "LastLogonDate": "2025-12-04T14:11:21.6063501+00:00"
+        },
+        {
+          "Name": "Duwayne Padayachi (First Tech)",
+          "SamAccountName": "DPADMIN",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Asanda Gabela (First Tech)",
+          "SamAccountName": "asandag_ftadmin",
+          "LastLogonDate": "2026-02-16T16:30:51.8352021+00:00"
+        },
+        {
+          "Name": "Realin Naidoo (First Tech)",
+          "SamAccountName": "realinn_ftadmin",
+          "LastLogonDate": "2026-02-16T11:49:33.2277435+00:00"
+        },
+        {
+          "Name": "Luyanda Godfrey (First Tech)",
+          "SamAccountName": "luyandag_ftadmin",
+          "LastLogonDate": "2026-01-28T08:02:16.4988837+00:00"
+        },
+        {
+          "Name": "Tristan Sooklall (First Tech)",
+          "SamAccountName": "TristanS_FTadmin",
+          "LastLogonDate": "2026-02-12T10:32:20.342831+00:00"
+        },
+        {
+          "Name": "Sohail Ramnarain (First Tech)",
+          "SamAccountName": "SohailR_FTadmin",
+          "LastLogonDate": "2026-02-12T15:16:14.2980101+00:00"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc",
+          "LastLogonDate": "2026-02-06T16:04:39.1066903+00:00"
+        },
+        {
+          "Name": "FTechEvoTier1_Svc",
+          "SamAccountName": "FTechEvoTier1_Svc",
+          "LastLogonDate": "2025-12-04T07:53:57.7844497+00:00"
+        },
+        {
+          "Name": "FTechEvoTier2_Svc",
+          "SamAccountName": "FTechEvoTier2_Svc",
+          "LastLogonDate": "2025-12-02T15:40:38.9906791+00:00"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc",
+          "LastLogonDate": "2025-12-15T05:11:49.5583108+00:00"
+        },
+        {
+          "Name": "intune_admin",
+          "SamAccountName": "intune_admin",
+          "LastLogonDate": "2025-12-11T17:07:52.4897822+00:00"
+        },
+        {
+          "Name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin",
+          "LastLogonDate": "2026-01-16T12:24:19.557169+00:00"
+        },
+        {
+          "Name": "HealthMailboxd1a72c13a5bf465780c36e122da40651",
+          "SamAccountName": "HealthMailboxd1a72c1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailboxac08729aace74934b8f477ea60f7d3cd",
+          "SamAccountName": "HealthMailboxac08729",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox8db760dd3209457c848b23fa7cda1c91",
+          "SamAccountName": "HealthMailbox8db760d",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox9043666eca804bdf86b5bcf1e823623d",
+          "SamAccountName": "HealthMailbox9043666",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailboxf0b3229dcf28434d8843b37675bcc8cc",
+          "SamAccountName": "HealthMailboxf0b3229",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox9dc7d03bf9e34b4689714e64228f14e2",
+          "SamAccountName": "HealthMailbox9dc7d03",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox425885e03a6e4bd09ab3f18047be3ae3",
+          "SamAccountName": "HealthMailbox425885e",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox4895ba6eb55542dca94ae3c314f45ff9",
+          "SamAccountName": "HealthMailbox4895ba6",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox55e0aef5d8ed47a389dd7f127e7028d9",
+          "SamAccountName": "HealthMailbox55e0aef",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Abigail Griffths",
+          "SamAccountName": "griffiths_a",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Victoria Hill",
+          "SamAccountName": "hill_v",
+          "LastLogonDate": null
+        }
+      ],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "krbtgt",
+      "category": "hygiene",
+      "label": "KRBTGT Password Age",
+      "description": "Age of the KRBTGT account password - Golden Ticket mitigation",
+      "severity": "High",
+      "score": 15,
+      "status": "Fail",
+      "threshold": "Changed within last 180 days (90 recommended)",
+      "actualValue": "676 days since last change",
+      "recommendation": "Reset KRBTGT password TWICE (10+ hours apart) every 180 days.",
+      "remediationCmd": "$newPwd = ConvertTo-SecureString ([System.Web.Security.Membership]::GeneratePassword(32,8)) -AsPlainText -Force\nSet-ADAccountPassword -Identity krbtgt -Reset -NewPassword $newPwd",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "emptyOUs",
+      "category": "hygiene",
+      "label": "Empty Organisational Units",
+      "description": "OUs with no child objects",
+      "severity": "Low",
+      "score": 60,
+      "status": "Fail",
+      "threshold": "0 empty OUs",
+      "actualValue": "15 empty OU(s) found",
+      "recommendation": "Review empty OUs and remove if no longer needed.",
+      "remediationCmd": "Get-ADOrganizationalUnit -Filter * | ForEach-Object { $children = @(Get-ADObject -SearchBase $_.DistinguishedName -SearchScope OneLevel -Filter *); if ($children.Count -eq 0) { Write-Host $_.DistinguishedName } }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "eventLogSize",
+      "category": "monitoring",
+      "label": "Security Event Log Size",
+      "description": "Maximum Security event log size on domain controllers",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "600MB - 1.2GB with archiving and backup in place",
+      "actualValue": "834MB configured",
+      "recommendation": "Optimal range is 600MB-1.2GB with auto-archive enabled. Balance retention with storage and backup capacity.",
+      "remediationCmd": "wevtutil sl Security /ms:1073741824",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "logRetention",
+      "category": "monitoring",
+      "label": "Log Retention Policy",
+      "description": "Security event log retention and archiving configuration",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "AutoBackup or SIEM forwarding; 90+ day retention",
+      "actualValue": "Log mode: AutoBackup",
+      "recommendation": "Enable auto-archive for Security logs. Forward to SIEM for 90-day minimum retention.",
+      "remediationCmd": "wevtutil sl Security /rt:true /ab:true",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "siemForwarding",
+      "category": "monitoring",
+      "label": "SIEM / Log Forwarding",
+      "description": "Windows Event Forwarding or SIEM agent for centralised log collection (informational check)",
+      "severity": "Low",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "SIEM forwarding recommended but not critical for AD security score",
+      "actualValue": "No WEF or SIEM forwarding detected (informational - consider deploying)",
+      "recommendation": "Consider deploying WEF or SIEM agent for enhanced log retention and correlation. Not required for AD security baseline.",
+      "remediationCmd": "winrm quickconfig\nwecutil cs subscription.xml",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "avCoverage",
+      "category": "monitoring",
+      "label": "AV / Defender Coverage",
+      "description": "Windows Defender/AV active on domain controllers with real-time monitoring",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Running with real-time protection on all DCs",
+      "actualValue": "Engine: Windows Defender | Running: True | Real-time: True | Mode: Normal",
+      "recommendation": "Ensure Defender/AV runs on all DCs with real-time protection. Add AD exclusions per KB822158.",
+      "remediationCmd": "Invoke-Command -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' -ScriptBlock { Set-MpPreference -DisableRealtimeMonitoring $false }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "caCertExpiry",
+      "category": "infrastructure",
+      "label": "CA Certificate Expiry",
+      "description": "Enterprise CA, Root CA, and NTAuth certificate expiry audit",
+      "severity": "High",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "All CA certs valid with >180 days remaining",
+      "actualValue": "1 EXPIRED certificate(s) found (NTAuth)",
+      "recommendation": "Renew CA certificates before expiry. Expired certs cause domain-wide auth failures. Include Enterprise, Root, and NTAuth certificates.",
+      "remediationCmd": "certutil -store Root\ncertutil -store CA\ncertutil -store CA -enterprise",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "gpoCertExpiry",
+      "category": "infrastructure",
+      "label": "GPO Certificate Expiry",
+      "description": "Certificates deployed via GPO  expiry audit",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "No expired certs in GPO distribution",
+      "actualValue": "2 GPO(s) with certificate policies found.",
+      "recommendation": "Review certificate-deploying GPOs before expiry.",
+      "remediationCmd": "Get-GPO -All | ForEach-Object { $rpt = Get-GPOReport -Guid $_.Id -ReportType Xml; if ($rpt -match 'PublicKeyPolicies') { Write-Host $_.DisplayName } }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "serverAvCoverage",
+      "category": "infrastructure",
+      "label": "Server AV / EDR Coverage",
+      "description": "Antivirus and EDR coverage across domain-joined servers",
+      "severity": "High",
+      "score": 30,
+      "status": "Fail",
+      "threshold": "95%+ of servers with AV/EDR",
+      "actualValue": "AV Coverage: 0 / 35 servers (0%) [Reachable: 35, Unreachable: 0, No-Remote: 0]",
+      "recommendation": "Deploy AV/EDR to ALL servers. Unprotected servers are highest-risk assets.",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} | ForEach-Object { try { Invoke-Command -ComputerName $_.Name -ScriptBlock { Get-Service -Name WinDefend } -ErrorAction SilentlyContinue } catch {} }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "serverUptime",
+      "category": "infrastructure",
+      "label": "Server Uptime / Reboot Required",
+      "description": "Servers requiring reboot due to high uptime (excludes Hyper-V hosts)",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "< 10% servers needing reboot",
+      "actualValue": "Servers needing reboot: 0 / 35 (0%) | Checked: 0 | Exempt Hyper-V: 1 | Critical(60d+): 0 | High(30d+): 0 | Medium(14d+): 0 | Unreachable: 34",
+      "recommendation": "Reboot servers with high uptime. Hyper-V hosts are exempt (typically rebooted every 2-3 months).",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} -Properties LastLogonDate | ForEach-Object { $wmi = Get-WmiObject -ComputerName $_.Name -Class Win32_OperatingSystem -ErrorAction SilentlyContinue; if ($wmi) { $days = ((Get-Date) - ($wmi.ConvertToDateTime($wmi.LastBootUpTime))).Days; if ($days -gt 14) { $_.Name + ' - ' + $days + ' days' } } }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "serverWindowsUpdate",
+      "category": "infrastructure",
+      "label": "Windows Update / Patching Status",
+      "description": "Servers with overdue Windows updates (excludes Hyper-V hosts)",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "< 10% servers with overdue updates",
+      "actualValue": "Servers needing updates: 0 / 35 (0%) | Checked: 0 | Exempt Hyper-V: 1 | Critical(30d+): 0 | High(21d+): 0 | Medium(14d+): 0 | Unreachable: 0",
+      "recommendation": "Deploy pending Windows updates. Hyper-V hosts are exempt from strict checks (typically patched on host reboot schedule).",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} | ForEach-Object { try { $sessions = New-PSSession -ComputerName $_.Name -ErrorAction SilentlyContinue; if ($sessions) { $lastUpdate = Invoke-Command -Session $sessions -ScriptBlock { try { $session = New-Object -ComObject Microsoft.Update.Session; $searcher = $session.CreateUpdateSearcher(); $history = $searcher.QueryHistory(0,1) | Select-Object -First 1; if ($history) { $history.Date } } catch {} }; Remove-PSSession $sessions } } catch {} }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "wsusCompliance",
+      "category": "infrastructure",
+      "label": "Windows Update Compliance",
+      "description": "Server patch compliance - days since last Windows Update applied",
+      "severity": "High",
+      "score": 35,
+      "status": "Fail",
+      "threshold": "All servers patched within 30 days",
+      "actualValue": "Servers checked: 32/35 | >30d overdue: 31",
+      "recommendation": "Servers >30 days without patches require immediate attention.",
+      "remediationCmd": "Get-ADComputer -Filter {Enabled -eq $true} -Properties OperatingSystem | Where {$_.OperatingSystem -match 'Server'}",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    },
+    {
+      "checkId": "rdpNLA",
+      "category": "infrastructure",
+      "label": "RDP Network Level Authentication",
+      "description": "NLA requires authentication before RDP session opens",
+      "severity": "High",
+      "score": 25,
+      "status": "Fail",
+      "threshold": "NLA enabled on all DCs and servers",
+      "actualValue": "NLA compliant: 0 | Non-compliant: 32",
+      "recommendation": "Enable NLA on all servers especially DCs.",
+      "remediationCmd": "Invoke-Command -ComputerName SERVERNAME -ScriptBlock { Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name 'UserAuthenticationRequired' -Value 1 }",
+      "details": [],
+      "collectedAt": "2026-04-20"
+    }
+  ],
+  "history": [
+    {
+	 "date": "2026-01-15",
+      "overallScore": 41,
+      "categoryScores": {
+        "monitoring": 78,
+        "gpo": 71,
+        "hygiene": 40,
+        "infrastructure": 77,
+        "password": 20,
+        "identity": 28,
+        "dchealth": 86
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 12
+    },
+    {
+      "date": "2026-01-25",
+      "overallScore": 41,
+      "categoryScores": {
+        "monitoring": 68,
+        "gpo": 41,
+        "hygiene": 30,
+        "infrastructure": 70,
+        "password": 20,
+        "identity": 28,
+        "dchealth": 86
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 12
+    },
+    {
+      "date": "2026-02-25",
+      "overallScore": 58,
+      "categoryScores": {
+        "monitoring": 68,
+        "gpo": 61,
+        "hygiene": 40,
+        "infrastructure": 77,
+        "password": 70,
+        "identity": 28,
+        "dchealth": 76
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 9
+    },
+    {
+      "date": "2026-03-25",
+      "overallScore": 62,
+      "categoryScores": {
+        "monitoring": 78,
+        "gpo": 71,
+        "hygiene": 40,
+        "infrastructure": 77,
+        "password": 70,
+        "identity": 28,
+        "dchealth": 86
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 9
+    },
+    {
+      "date": "2026-03-30",
+      "overallScore": 64,
+      "categoryScores": {
+        "password": 80,
+        "monitoring": 78,
+        "gpo": 71,
+        "infrastructure": 77,
+        "hygiene": 40,
+        "dchealth": 86,
+        "identity": 28
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 8
+    },
+    {
+      "date": "2026-04-08",
+      "overallScore": 68,
+      "categoryScores": {
+        "identity": 50,
+        "password": 83,
+        "hygiene": 50,
+        "monitoring": 69,
+        "gpo": 75,
+        "dchealth": 80,
+        "infrastructure": 60
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 3,
+      "highFails": 7
+    },
+    {
+      "date": "2026-04-10",
+      "overallScore": 69,
+      "categoryScores": {
+        "password": 83,
+        "infrastructure": 66,
+        "hygiene": 50,
+        "gpo": 75,
+        "identity": 44,
+        "dchealth": 86,
+        "monitoring": 91
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 6
+    },
+    {
+      "date": "2026-04-15",
+      "overallScore": 73,
+      "categoryScores": {
+        "gpo": 86,
+        "infrastructure": 100,
+        "password": 81,
+        "monitoring": 91,
+        "identity": 34,
+        "dchealth": 86,
+        "hygiene": 60
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 3,
+      "highFails": 4
+    },	
+	{	
+      "date": "2026-04-20",
+      "overallScore": 69.0,
+      "categoryScores": {
+        "identity": 36.0,
+        "password": 91.0,
+        "dchealth": 88.0,
+        "hygiene": 52.0,
+        "monitoring": 91.0,
+        "gpo": 78.0,
+        "infrastructure": 56.0
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 9
+    }
+  ]
+}

@@ -298,6 +298,10 @@ const ComputerDashboard = () => {
           </div>
         </div>
 
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg mb-4 text-center font-semibold animate-pulse">
+          Coming Soon
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
           <StatCard title="Total" value={totalComputers} icon={Monitor} color="blue" />

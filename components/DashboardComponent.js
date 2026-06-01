@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, Moon, Sun, Shield, AlertTriangle, CheckCircle, XCircle, Users, UserCheck, UserX, Search, Building2, User, X, Activity, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, Moon, Sun, Shield, AlertTriangle, CheckCircle, XCircle, Users, UserCheck, UserX, Search, Building2, User, X, Activity, Eye, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import Papa from 'papaparse';
 
 import HistoricalTrendWidget from './HistoricalTrendWidget';
 
@@ -131,6 +132,45 @@ const DashboardComponent = () => {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isAccountTypesCollapsed, setIsAccountTypesCollapsed] = useState(false);
   const [accountTypeFilter, setAccountTypeFilter] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const getCustomerNameFromDomain = (domainName) => {
+    if (!domainName) return 'Unknown';
+    return domainName.split('.')[0].toUpperCase();
+  };
+
+  const computeLatestData = (rawData) => {
+    return Object.values(rawData.reduce((acc, item) => {
+      const key = `${item.Customer}-${item.Username}`;
+      const itemDate = new Date(item.TimeStamp || item.ReportDate || 0);
+      if (!acc[key] || itemDate > new Date(acc[key].TimeStamp || acc[key].ReportDate || 0)) {
+        acc[key] = item;
+      }
+      return acc;
+    }, {}));
+  };
+
+  const handleImportCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const importedRecords = results.data.map(record => ({
+          ...record,
+          Customer: getCustomerNameFromDomain(record.DomainName)
+        }));
+
+        const mergedData = [...data, ...importedRecords];
+        setData(mergedData);
+        setLatestData(computeLatestData(mergedData));
+      }
+    });
+
+    event.target.value = '';
+  };
 
   useEffect(() => {
     if (darkMode) document.body.classList.add('dark');
@@ -143,20 +183,7 @@ const DashboardComponent = () => {
         const response = await fetch('/api/data');
         const jsonData = await response.json();
         setData(jsonData);
-        
-        // Filter to get only the latest record for each user per customer
-        // Group by Customer + Username, then pick the one with latest TimeStamp/ReportDate
-        const latestRecords = Object.values(jsonData.reduce((acc, item) => {
-          const key = `${item.Customer}-${item.Username}`;
-          const itemDate = new Date(item.TimeStamp || item.ReportDate || 0);
-          
-          if (!acc[key] || itemDate > new Date(acc[key].TimeStamp || acc[key].ReportDate || 0)) {
-            acc[key] = item;
-          }
-          return acc;
-        }, {}));
-        
-        setLatestData(latestRecords);
+        setLatestData(computeLatestData(jsonData));
         setLoading(false);
       } catch (error) {
         console.error('Error:', error);
@@ -322,9 +349,29 @@ const DashboardComponent = () => {
                 <span><Activity size={14} className="inline mr-1" /> Independent of Power-BI</span>
               </div>
             </div>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-3 rounded-full bg-white/20 hover:bg-white/30">
-              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
-            </button>
+            <div className="flex items-center gap-4">
+              <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
+              <button onClick={() => fileInputRef.current.click()} className="bg-white/15 hover:bg-white/25 rounded-lg px-3 py-2 text-sm text-white flex items-center gap-1.5 transition-colors">
+                <Upload size={16} /> Import CSV
+              </button>
+              <div className="bg-white/15 rounded-lg px-4 py-2 text-center min-w-[120px]">
+                <div className="text-xs text-blue-200 mb-0.5">Total No of Clients:</div>
+                <div className="text-white font-bold text-lg">{customers.length - 1}</div>
+              </div>
+              <div className="bg-white/15 rounded-lg px-4 py-2 text-center">
+                <div className="text-xs text-blue-200 mb-0.5 animate-pulse">Select Client</div>
+                <select
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                  className="bg-transparent text-white border-none outline-none text-sm font-medium cursor-pointer [&>option]:text-gray-900 w-full text-center"
+                >
+                  {customers.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <button onClick={() => setDarkMode(!darkMode)} className="p-3 rounded-full bg-white/20 hover:bg-white/30">
+                {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -336,18 +383,50 @@ const DashboardComponent = () => {
           <StatCard title="Never Login" value={neverLoggedIn.length} icon={XCircle} color="purple" onClick={() => setSelectedView('neverLoggedIn')} active={selectedView === 'neverLoggedIn'} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="block text-sm font-medium mb-2">Customer</label>
-            <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-gray-700">
-              {customers.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+        {renderAccountList()}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4">Recently Disabled</h3>
+            <div className="max-h-64 overflow-y-auto">
+              {disabledThisRun.length > 0 ? (
+                <table className="min-w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-3 py-2 text-left">Username</th><th className="px-3 py-2 text-left">Domain</th><th className="px-3 py-2 text-left">Time</th></tr></thead>
+                <tbody>{disabledThisRun.slice(0, 10).map((a, i) => <tr key={i} className="border-t"><td className="px-3 py-2">{a.Username}</td><td className="px-3 py-2">{a.DomainName}</td><td className="px-3 py-2 text-sm">{a.TimeStamp}</td></tr>)}</tbody></table>
+              ) : <p className="text-gray-500 text-center py-4">No accounts disabled</p>}
+            </div>
           </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4">Password Age Distribution</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={Object.entries(passwordAgeData).map(([r, c]) => ({ range: r, count: c }))}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="range" /><YAxis /><Tooltip /><Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <LeadEngineerWidget customer={selectedCustomer} data={data} />
           <HistoricalTrendWidget data={data} customer={selectedCustomer} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><AlertTriangle className="mr-2 text-red-500" />FTech Engineer Rankings</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {leadEngineerRankings.length > 0 ? leadEngineerRankings.map((e, i) => (
+                <div key={i} className={`p-3 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-500' : i === 1 ? 'bg-orange-50 border-orange-500' : i === 2 ? 'bg-yellow-50 border-yellow-500' : 'bg-gray-50 border-gray-300'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{e.name}</span>
+                    <span className="font-bold text-red-600">{e.unmaintainedScore}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">Stale: {e.stalePasswords} | Never: {e.neverLoggedIn} | Disabled: {e.disabled}</div>
+                </div>
+              )) : <p className="text-gray-500 text-center py-4">No engineer data</p>}
+            </div>
+          </div>
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Account Types</h3>
@@ -386,45 +465,7 @@ const DashboardComponent = () => {
               </div>
             )}
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-            <h3 className="text-lg font-semibold mb-4">Password Age Distribution</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={Object.entries(passwordAgeData).map(([r, c]) => ({ range: r, count: c }))}>
-                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="range" /><YAxis /><Tooltip /><Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><AlertTriangle className="mr-2 text-red-500" />FTech Engineer Rankings</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {leadEngineerRankings.length > 0 ? leadEngineerRankings.map((e, i) => (
-                <div key={i} className={`p-3 rounded-lg border-l-4 ${i === 0 ? 'bg-red-50 border-red-500' : i === 1 ? 'bg-orange-50 border-orange-500' : i === 2 ? 'bg-yellow-50 border-yellow-500' : 'bg-gray-50 border-gray-300'}`}>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{e.name}</span>
-                    <span className="font-bold text-red-600">{e.unmaintainedScore}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">Stale: {e.stalePasswords} | Never: {e.neverLoggedIn} | Disabled: {e.disabled}</div>
-                </div>
-              )) : <p className="text-gray-500 text-center py-4">No engineer data</p>}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-            <h3 className="text-lg font-semibold mb-4">Recently Disabled</h3>
-            <div className="max-h-64 overflow-y-auto">
-              {disabledThisRun.length > 0 ? (
-                <table className="min-w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-3 py-2 text-left">Username</th><th className="px-3 py-2 text-left">Domain</th><th className="px-3 py-2 text-left">Time</th></tr></thead>
-                <tbody>{disabledThisRun.slice(0, 10).map((a, i) => <tr key={i} className="border-t"><td className="px-3 py-2">{a.Username}</td><td className="px-3 py-2">{a.DomainName}</td><td className="px-3 py-2 text-sm">{a.TimeStamp}</td></tr>)}</tbody></table>
-              ) : <p className="text-gray-500 text-center py-4">No accounts disabled</p>}
-            </div>
-          </div>
-        </div>
-
-        {renderAccountList()}
         <AccountDetailsModal account={selectedAccount} onClose={() => setSelectedAccount(null)} />
       </div>
     </div>

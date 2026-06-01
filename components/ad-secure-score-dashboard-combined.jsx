@@ -669,6 +669,7 @@ export default function App() {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [trendsMap, setTrendsMap] = useState({});
   const fileRef = useRef();
   
 // Load client data from server API
@@ -689,13 +690,27 @@ export default function App() {
         setClients(augmentedClients);
         console.log('Clients loaded:', augmentedClients.length, augmentedClients.map(c => c.name));
         
+        // Also fetch trends from API
+        let trendsData = null;
+        try {
+          const trendsRes = await fetch('/api/ad-secure-trends');
+          trendsData = await trendsRes.json();
+          if (trendsData.clients) {
+            setTrendsMap(trendsData.clients);
+          }
+        } catch (trendsErr) {
+          console.error('Error loading trends:', trendsErr);
+        }
+        
         // If no client selected yet, auto-select the first one
         if (!selectedClientId && augmentedClients.length > 0) {
           const firstClient = augmentedClients[0];
           if (firstClient.data?.findings?.length > 0) {
             const normalizedFindings = normalizeScores(firstClient.data.findings);
             setFindings(normalizedFindings);
-            setHistory(firstClient.data.history || SEED_HISTORY);
+            // Use trends if available
+            const firstTrends = trendsData?.clients?.[firstClient.id]?.trends;
+            setHistory(firstTrends?.length > 0 ? firstTrends : firstClient.data.history || SEED_HISTORY);
             setSelectedClientId(firstClient.id);
             setTab("clients"); // Show overview first
           }
@@ -749,10 +764,12 @@ export default function App() {
     if (client && client.data?.findings?.length > 0) {
       const normalizedFindings = normalizeScores(client.data.findings);
       setFindings(normalizedFindings);
-      setHistory(client.data.history || SEED_HISTORY);
+      // Use trends if available, otherwise client history or seed
+      const clientTrends = trendsMap[clientId]?.trends;
+      setHistory(clientTrends?.length > 0 ? clientTrends : client.data.history || SEED_HISTORY);
       setTab("dashboard");
     }
-  }, [clients]);
+  }, [clients, trendsMap]);
 
   // When selectedClientId changes, update dashboard data
   useEffect(() => {
@@ -761,9 +778,11 @@ export default function App() {
     if (client && client.data?.findings?.length > 0) {
       const normalizedFindings = normalizeScores(client.data.findings);
       setFindings(normalizedFindings);
-      setHistory(client.data.history || SEED_HISTORY);
+      // Use trends if available, otherwise client history or seed
+      const clientTrends = trendsMap[selectedClientId]?.trends;
+      setHistory(clientTrends?.length > 0 ? clientTrends : client.data.history || SEED_HISTORY);
     }
-  }, [selectedClientId, clients]);
+  }, [selectedClientId, clients, trendsMap]);
 
   // Handler for selecting a client from the ClientsOverview
   const handleClientSelect = useCallback((clientId) => {
@@ -862,6 +881,23 @@ export default function App() {
                 scores: data.scores
               })
             });
+            // Save trend data
+            const overallScore = data.scores?.overall;
+            const collectedAt = data.meta?.collectedAt;
+            if (overallScore != null && collectedAt) {
+              await fetch('/api/ad-secure-trends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  clientId,
+                  clientName,
+                  domain: data.meta?.domain || '',
+                  date: collectedAt,
+                  overallScore: typeof overallScore === 'number' ? overallScore : parseFloat(String(overallScore).replace(',', '.')) || 0,
+                  categoryScores: data.scores?.categories || {}
+                })
+              });
+            }
             // Reload client list from server
             loadClientData();
           } catch (saveErr) {
@@ -902,6 +938,7 @@ export default function App() {
   const trendData = [...history.map(h => ({
     month: h.date,
     score: h.overallScore,
+    risk: 100 - h.overallScore,
     ...h.categoryScores
   }))];
 
@@ -1555,12 +1592,17 @@ ${findings.map(f=>`<tr>
                       <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.4}/>
                       <stop offset="95%" stopColor="#00d4ff" stopOpacity={0.05}/>
                     </linearGradient>
+                    <linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.03}/>
+                    </linearGradient>
                   </defs>
                   <CartesianGrid stroke="#334155" strokeDasharray="3 3"/>
                   <XAxis dataKey="month" tick={{fill:"#e2e8f0",fontSize:11}} axisLine={false} tickLine={false}/>
                   <YAxis domain={[0,100]} tick={{fill:"#94a3b8",fontSize:10}} axisLine={false} tickLine={false}/>
-                  <Tooltip contentStyle={{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:8,fontSize:11}} formatter={v=>[`${v}/100`,"Score"]}/>
+                  <Tooltip contentStyle={{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:8,fontSize:11}} formatter={(v,n)=>{const labels={score:"Secure Score",risk:"Overall Risk"}; return [`${v}/100`,labels[n]||n];}}/>
                   <Area type="monotone" dataKey="score" stroke="#00d4ff" strokeWidth={3} fill="url(#scoreGrad)" dot={{fill:"#00d4ff",r:4}}/>
+                  <Area type="monotone" dataKey="risk" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" fill="url(#riskGrad)" dot={{fill:"#ef4444",r:3}}/>
                 </AreaChart>
               </ResponsiveContainer>
             </div>
