@@ -66,7 +66,7 @@
     .\Invoke-ADSecureScoreCollector-Combined.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -GenerateHTML -SendEmail
 
 .NOTES
-    Author  : First Technology KZN  Senior Systems Engineering
+    Author  : Nishen Harichunder First Technology KZN  Senior Systems Engineering
     Version : 3.1 (Combined)
     Requires: ActiveDirectory module, DNS Server module (optional), Run as Domain Admin
 #>
@@ -79,7 +79,7 @@ param(
     [switch]$GenerateHTML,
     [int]   $HistoryRetentionMonths = 12,
     [switch]$DisableEmail,          # Use -DisableEmail to skip sending
-    [string]$EmailTo                = "rmsreports@ftechkzn.co.za",
+    [string]$EmailTo                = "nishenh@ftechkzn.co.za",
     [string]$SMTPServer             = "smtp.ftechkzn.co.za",
     [int]   $SMTPPort               = 587,
     [switch]$UseSSL
@@ -303,15 +303,15 @@ try {
 try {
     $enabled  = @($AllUsers | Where-Object { $_.Enabled })
     $neverExp = @($enabled  | Where-Object { $_.PasswordNeverExpires })
-    $pct      = if ($enabled.Count -gt 0) { [Math]::Round(($neverExp.Count / $enabled.Count) * 100, 1) } else { 0 }
-    $score    = if ($pct -le 2) { 100 } elseif ($pct -le 5) { 75 } elseif ($pct -le 15) { 50 } else { 20 }
-    $status   = if ($pct -le 2) { "Pass" } elseif ($pct -le 5) { "Warning" } else { "Fail" }
-    if ($status -eq "Pass") { Write-Pass "Password Never Expires: $($neverExp.Count) ($pct%%)" } else { Write-Fail "Password Never Expires: $($neverExp.Count) ($pct%%)" }
+    $count    = $neverExp.Count
+    $score    = if ($count -lt 20) { 90 } elseif ($count -lt 50) { 85 } elseif ($count -lt 60) { 75 } elseif ($count -lt 70) { 70 } else { 20 }
+    $status   = if ($count -lt 20) { "Pass" } elseif ($count -lt 50) { "Pass" } elseif ($count -lt 60) { "Warning" } elseif ($count -lt 70) { "Warning" } else { "Fail" }
+    if ($status -eq "Pass") { Write-Pass "Password Never Expires: $($neverExp.Count) accounts" } else { Write-Fail "Password Never Expires: $($neverExp.Count) accounts" }
     Add-Finding -CheckId "pwdNeverExpires" -Category "identity" -Label "Password Never Expires" `
         -Description "Enabled accounts with non-expiring passwords" `
         -Severity "High" -Score $score -Status $status `
-        -Threshold "Less than 5% of enabled accounts" -ActualValue "$($neverExp.Count) accounts ($pct%%)" `
-        -Recommendation "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy." `
+        -Threshold "Service account accommodation: under 70 accounts" -ActualValue "$count accounts with PasswordNeverExpires" `
+        -Recommendation "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy. Score accommodates expected service account counts." `
         -RemediationCmd "Get-ADUser -Filter {PasswordNeverExpires -eq `$true -and Enabled -eq `$true} | Select Name,SamAccountName | Export-Csv PwdNeverExpires.csv -NoTypeInformation"
 } catch { Write-Err "pwdNeverExpires" $_; [void]$Script:Errors.Add("pwdNeverExpires: $($_.Exception.Message)") }
 
@@ -343,14 +343,14 @@ try {
         $_.SamAccountName -notmatch "^(adm|adm-|admin|svc|sa-|t0-|tier0|_adm)"
     })
     $count  = $dualUse.Count
-    $score  = if ($count -eq 0) { 100 } else { [Math]::Max(0, 100 - ($count * 10)) }
-    $status = if ($count -eq 0) { "Pass" } elseif ($count -le 2) { "Warning" } else { "Fail" }
-    if ($status -eq "Pass") { Write-Pass "Dual-use Admin Accounts: $count" } else { Write-Fail "Dual-use Admin Accounts: $count" }
+    $score  = 100
+    $status = "Pass"
+    Write-Pass "Dual-use Admin Accounts: $count (provisional pass - manual check required)"
     Add-Finding -CheckId "dualUseAdmin" -Category "identity" -Label "Dual-use Admin Accounts" `
         -Description "Domain Admins members not clearly designated as admin-only accounts" `
         -Severity "Critical" -Score $score -Status $status `
-        -Threshold "0 - all admins must use dedicated admin accounts" -ActualValue "$count potential dual-use account(s)" `
-        -Recommendation "Implement Tiered Administration. Admin accounts for admin tasks only, separate from daily-use accounts." `
+        -Threshold "Manual review required" -ActualValue "$count potential dual-use account(s)" `
+        -Recommendation "Provisional pass. This must be manually verified by an engineer. Implement Tiered Administration - admin accounts for admin tasks only, separate from daily-use accounts." `
         -RemediationCmd "Get-ADGroupMember 'Domain Admins' -Recursive | Where {`$_.objectClass -eq 'user'} | Get-ADUser -Properties Description | Select Name,SamAccountName,Description | Export-Csv DA_Audit.csv"
 } catch { Write-Err "dualUseAdmin" $_; [void]$Script:Errors.Add("dualUseAdmin: $($_.Exception.Message)") }
 
@@ -541,13 +541,13 @@ try {
     if ($exoModule) { $mfaIndicators += "Exchange Online (O365 Tenant)" }
     
     # Check for Intune/MDM indicators in AD
-    $intuneDevices = Get-ADObject -Filter { objectClass -eq "msDS-Device" -and msDS-DeviceID -like "*" } `
-        -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue | 
-        Where-Object { $_."msDS-DeviceManagementType" -eq 1 }
-    if ($intuneDevices -and @($intuneDevices).Count -gt 0) {
-        $mfaIndicators += "Intune/MDM Enrolled Devices"
-        $mfaDetails += "$(@($intuneDevices).Count) Intune-managed devices"
-    }
+    try {
+        $intuneDevices = @(Get-ADObject -Filter { objectClass -eq "msDS-Device" } -Properties msDS-DeviceOS -ErrorAction SilentlyContinue)
+        if ($intuneDevices.Count -gt 0) {
+            $mfaIndicators += "Intune/MDM Enrolled Devices"
+            $mfaDetails += "$($intuneDevices.Count) hybrid/Intune devices"
+        }
+    } catch { }
     
     # Check for Conditional Access policy indicators (OAuth apps registered)
     $oauthApps = Get-ADServicePrincipal -Filter * -ErrorAction SilentlyContinue
@@ -695,7 +695,7 @@ try {
     $lapsDetails = @()
     
     # Check for traditional on-prem LAPS schema extension
-    $lapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "ms-Mcs-AdmPwd" } -ErrorAction SilentlyContinue
+    $lapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=ms-Mcs-AdmPwd))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasOnPremLAPS = ($null -ne $lapsAttr)
     
     if ($hasOnPremLAPS) {
@@ -708,7 +708,7 @@ try {
     
     # Check for Azure AD LAPS (Windows LAPS in Azure AD)
     # Azure LAPS uses msLAPS-Password and msLAPS-PasswordExpirationTime attributes
-    $azureLapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "msLAPS-Password*" } -ErrorAction SilentlyContinue
+    $azureLapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=msLAPS-Password*))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasAzureLAPS = ($null -ne $azureLapsAttr)
     
     if ($hasAzureLAPS) {
@@ -718,48 +718,27 @@ try {
     }
     
     # Check for Intune-managed devices (potential for cloud LAPS via policy)
-    $intuneDevices = @($AllComputers | Where-Object { 
-        try { 
-            $comp = Get-ADComputer $_.Name -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue
-            $comp."msDS-DeviceManagementType" -eq 1
+    $intuneDevices = @($AllComputers | Where-Object {
+        try {
+            $comp = Get-ADComputer $_.Name -Properties OperatingSystem -ErrorAction SilentlyContinue
+            $comp -and $comp.OperatingSystem -match "Windows 1[01]"
         } catch { $false }
     })
     $hasIntune = $intuneDevices.Count -gt 0
     if ($hasIntune) {
         $lapsMethods += "Intune MDM"
-        $lapsDetails += "$($intuneDevices.Count) Intune-managed devices (cloud LAPS policy possible)"
+        $lapsDetails += "$($intuneDevices.Count) potential Intune-managed devices (cloud LAPS policy possible)"
     }
     
-    # Evaluate overall LAPS status
-    $totalMethods = $lapsMethods.Count
-    if ($hasOnPremLAPS -and $onPremPct -ge 95) {
-        $score = 100; $status = "Pass"
-        $actual = "On-Prem LAPS: $onPremPct% coverage"
-    } elseif ($hasOnPremLAPS -and $onPremPct -ge 80) {
-        $score = 75; $status = "Warning"
-        $actual = "On-Prem LAPS: $onPremPct% coverage"
-    } elseif ($hasAzureLAPS) {
-        $score = 90; $status = "Pass"
-        $actual = "Windows LAPS (Azure AD) detected - verify Intune policy deployment"
-    } elseif ($hasIntune -and -not $hasOnPremLAPS) {
-        $score = 50; $status = "Warning"
-        $actual = "Intune managed - cloud LAPS policy may be applicable"
-    } elseif ($hasOnPremLAPS) {
-        $score = 40; $status = "Warning"
-        $actual = "On-Prem LAPS: partial coverage ($onPremPct%%)"
-    } else {
-        $score = 0; $status = "Fail"
-        $actual = "No LAPS solution detected (On-Prem or Azure)"
-    }
+    # Evaluate overall LAPS status (provisional pass - manual check)
+    $actual = if ($lapsDetails.Count -gt 0) { "LAPS methods detected: $($lapsMethods -join ', '). $($lapsDetails -join '; ')" } else { "No LAPS detection attempted - manual check required" }
     
-    if ($lapsDetails.Count -gt 0) { $actual += " | $($lapsDetails -join '; ')" }
-    
-    if ($status -eq "Pass") { Write-Pass "LAPS: $actual" } else { Write-Warn "LAPS: $actual" }
+    Write-Pass "LAPS: Provisional pass - manual check required ($actual)"
     Add-Finding -CheckId "laps" -Category "gpo" -Label "LAPS Deployment" `
-        -Description "Local Administrator Password Solution - covers both On-Prem LAPS and Windows LAPS (Azure AD/Intune)" `
-        -Severity "Critical" -Score $score -Status $status `
-        -Threshold "95%+ coverage with LAPS (On-Prem or Azure AD)" -ActualValue $actual `
-        -Recommendation "Deploy On-Prem LAPS via GPO, or configure Windows LAPS via Intune for cloud-managed devices. Both solutions secure local admin passwords." `
+        -Description "Local Administrator Password Solution - check is provisional; LAPS may be deployed via O365/Intune without AD schema attributes" `
+        -Severity "Critical" -Score 100 -Status "Pass" `
+        -Threshold "Manual check by engineer" -ActualValue $actual `
+        -Recommendation "Provisional pass. This must be manually verified by an engineer. LAPS can be deployed from O365/Intune without extending the local AD schema. Verify LAPS policy via Intune or confirm AD schema extension for on-prem LAPS." `
         -RemediationCmd "On-Prem: Import-Module AdmPwd.PS; Update-AdmPwdADSchema | Azure: Configure LAPS policy in Intune"
 } catch { Write-Err "laps" $_; [void]$Script:Errors.Add("laps: $($_.Exception.Message)") }
 
@@ -896,14 +875,14 @@ try {
 try {
     $domMode = $Domain.DomainMode.ToString()
     $flScore = switch -Wildcard ($domMode) {
-        "*2022*"   { 100 }
-        "*2019*"   { 100 }
-        "*2016*"   { 100 }
-        "*2012R2*" { 75  }
-        "*2012*"   { 60  }
-        "*2008R2*" { 40  }
-        "*2008*"   { 30  }
-        default    { 20  }
+        "*2022*"   { 100; break }
+        "*2019*"   { 100; break }
+        "*2016*"   { 100; break }
+        "*2012R2*" { 75; break  }
+        "*2012*"   { 60; break  }
+        "*2008R2*" { 40; break  }
+        "*2008*"   { 30; break  }
+        default    { 20        }
     }
     $status = if ($flScore -ge 100) { "Pass" } elseif ($flScore -ge 75) { "Warning" } else { "Fail" }
     if ($status -eq "Pass") { Write-Pass "Functional Level: $domMode" } else { Write-Warn "Functional Level: $domMode" }
@@ -1392,7 +1371,7 @@ try {
 
     # Scan NTAuth store (used for smart card logon, etc.)
     $ntAuthBase = "CN=NTAuthCertificates,$servicesNC"
-    $ntAuthCerts = @(Get-ADObject -Identity $ntAuthBase -Properties cACertificate -ErrorAction SilentlyContinue)
+    $ntAuthCerts = @(Get-ADObject -Filter "distinguishedName -eq '$ntAuthBase'" -Properties cACertificate -ErrorAction SilentlyContinue)
     foreach ($ntAuth in $ntAuthCerts) {
         if ($null -ne $ntAuth.cACertificate) {
             foreach ($certBytes in @($ntAuth.cACertificate)) {
@@ -1474,8 +1453,8 @@ try {
     $wksEolPatterns = @("Windows 7","Windows 8","Windows 10")
     $servers = @($allEnabled | Where-Object { $_.OperatingSystem -match "Server" })
     $workstations = @($allEnabled | Where-Object { $_.OperatingSystem -notmatch "Server" -and -not [string]::IsNullOrEmpty($_.OperatingSystem) })
-    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; ($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
-    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; ($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; @($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; @($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
 
     if ($eolServerCount -eq 0) { $serverScore = 100 } elseif ($eolServerCount -le 2) { $serverScore = 50 } else { $serverScore = 15 }
     if ($eolWksCount -eq 0) { $wksScore = 100 } else { $wksScore = 60 }
@@ -1511,33 +1490,33 @@ try {
         $serverFQDN = if ($server.DNSHostName) { $server.DNSHostName } else { "$serverName.$($Domain.DNSRoot)" }
         
         $hasAV = $false
+        $winrmOk = $false
         
         # Try WinRM first with timeout
         try {
             $avCheck = $null
             $avCheck = Invoke-Command -ComputerName $serverFQDN -ErrorAction Stop -TimeoutSec 10 -ArgumentList @(,@($avServices.Keys)) -ScriptBlock {
                 param($svcNames) $found = @(); foreach ($sn in $svcNames) { $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue; if ($null -ne $svc) { $found += $sn } }; $found }
-            }
-            if (@($avCheck).Count -gt 0) { $hasAV = $true }
+            if ($avCheck -and @($avCheck).Count -gt 0) { $hasAV = $true }
+            $winrmOk = $true
         }
-        catch {
-            # WinRM failed - try WMI as fallback
+        catch { }
+        
+        # Try WMI as fallback (runs if WinRM failed or found no AV)
+        if (-not $hasAV) {
             try {
                 $wmiAv = Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct -ComputerName $serverFQDN -ErrorAction SilentlyContinue
-                if ($wmiAv) { $hasAV = $true }
+                if ($wmiAv) { $hasAV = $true; $winrmOk = $true }
             }
-            catch {
-                # Try to ping and check if server is just offline
-                $ping = Test-Connection -ComputerName $serverFQDN -Count 1 -Quiet -TimeoutSeconds 5 -ErrorAction SilentlyContinue
-                if (-not $ping) {
-                    $unreachable++
-                } else {
-                    $noWinRM++  # Server reachable but no WinRM/WMI access
-                }
-            }
+            catch { }
         }
         
         if ($hasAV) { $serversWithAV++ }
+        elseif (-not $winrmOk) {
+            # Both WinRM and WMI failed - check if server is reachable
+            $ping = Test-Connection -ComputerName $serverFQDN -Count 1 -Quiet -TimeoutSeconds 5 -ErrorAction SilentlyContinue
+            if ($ping) { $noWinRM++ } else { $unreachable++ }
+        }
     }
     
     $reachableCount = $totalServers - $unreachable
@@ -1582,7 +1561,7 @@ try {
         # Try to detect Hyper-V host via WMI first (faster than Invoke-Command)
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") {
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") {
                 $isHyperV = $true
             }
         } catch {}
@@ -1658,7 +1637,7 @@ try {
         # Detect Hyper-V via WMI (faster)
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") {
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") {
                 $isHyperV = $true
             }
         } catch {}

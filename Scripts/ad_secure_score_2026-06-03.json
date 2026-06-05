@@ -1,0 +1,1948 @@
+{
+  "meta": {
+    "collectorVersion": "11.0",
+    "collectedAt": "2026-06-03",
+    "collectedAtFull": "03 June 2026 11:18",
+    "domain": "internal.ashtongraham.co.uk",
+    "domainController": "ALAZ-DC01.internal.ashtongraham.co.uk",
+    "domainMode": "Windows2012R2Domain",
+    "forestMode": "Windows2012R2Forest",
+    "totalUsers": 701,
+    "totalComputers": 582,
+    "totalDCs": 5,
+    "errors": [
+      "mfaCoverage: The term 'Get-ADServicePrincipal' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.",
+      "caCertExpiry: Directory object not found."
+    ]
+  },
+  "scores": {
+    "overall": 72.0,
+    "categories": {
+      "hygiene": 54.0,
+      "dchealth": 87.0,
+      "gpo": 88.0,
+      "infrastructure": 55.0,
+      "password": 89.0,
+      "monitoring": 91.0,
+      "identity": 44.0
+    },
+    "weights": {
+      "dchealth": 18,
+      "password": 18,
+      "identity": 22,
+      "gpo": 18,
+      "monitoring": 5,
+      "hygiene": 9,
+      "infrastructure": 10
+    }
+  },
+  "findings": [
+    {
+      "checkId": "kerberoastable",
+      "category": "identity",
+      "label": "Kerberoastable SPNs",
+      "description": "Privileged accounts with SPN (vulnerable to Kerberoast attack)",
+      "severity": "Critical",
+      "score": 20,
+      "status": "Fail",
+      "threshold": "0 privileged accounts with SPN",
+      "actualValue": "4 account(s)",
+      "recommendation": "Remove SPNs from privileged accounts. Use gMSA for services.",
+      "remediationCmd": "Get-ADUser -Filter {Enabled -eq $true} -Properties ServicePrincipalName,MemberOf | Where {$_.ServicePrincipalName -and ($_.MemberOf -match 'Domain Admins')} | Select Name,SamAccountName,ServicePrincipalName",
+      "details": [
+        {
+          "Name": "Administrator",
+          "SamAccountName": "Administrator",
+          "ServicePrincipalName": [
+            "MSSQLSvc/ASTW-APP04.internal.ashtongraham.co.uk:1433",
+            "MSSQLSvc/AKCJ1008.internal.ashtongraham.co.uk:1433",
+            "MSSQLSvc/AKCJ1008.internal.ashtongraham.co.uk",
+            "ldap/intranet.internal.ashtongraham.co.uk:50000",
+            "ldap/INTRANET:50000",
+            "E3514235-4B06-11D1-AB04-00C04FC2DCD2-ADAM/intranet.internal.ashtongraham.co.uk:50000",
+            "E3514235-4B06-11D1-AB04-00C04FC2DCD2-ADAM/INTRANET:50000"
+          ]
+        },
+        {
+          "Name": "BigHand_SVC",
+          "SamAccountName": "BigHand_SVC",
+          "ServicePrincipalName": [
+            "bhservices/bighandteamtracker.internal.ashtongraham.co.uk",
+            "bhservices/bighandbroker.internal.ashtongraham.co.uk",
+            "bhservices/bighandservices.internal.ashtongraham.co.uk"
+          ]
+        },
+        {
+          "Name": "SQLServices",
+          "SamAccountName": "SQLServices",
+          "ServicePrincipalName": [
+            "MSSQLSvc/ASTW-SQL02.internal.ashtongraham.co.uk:1433",
+            "MSSQLSvc/ASTW-SQL02.internal.ashtongraham.co.uk",
+            "MSSQLSvc/ASTW-SQL02.internal.ashtongraham.co.uk:62479",
+            "MSSQLSvc/ASTW-SQL02.internal.ashtongraham.co.uk:SHAREPOINT",
+            "MSSQLSvc/ASTW-SQL03.internal.ashtongraham.co.uk:1433",
+            "MSSQLSvc/ASTW-SQL03.internal.ashtongraham.co.uk"
+          ]
+        },
+        {
+          "Name": "svc_ADFSPepermint",
+          "SamAccountName": "svc_ADFSPepermint",
+          "ServicePrincipalName": [
+            "host/adfs.ashtonslegal.co.uk"
+          ]
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "pwdNeverExpires",
+      "category": "identity",
+      "label": "Password Never Expires",
+      "description": "Enabled accounts with non-expiring passwords",
+      "severity": "High",
+      "score": 70,
+      "status": "Warning",
+      "threshold": "Service account accommodation: under 70 accounts",
+      "actualValue": "66 accounts with PasswordNeverExpires",
+      "recommendation": "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy. Score accommodates expected service account counts.",
+      "remediationCmd": "Get-ADUser -Filter {PasswordNeverExpires -eq $true -and Enabled -eq $true} | Select Name,SamAccountName | Export-Csv PwdNeverExpires.csv -NoTypeInformation",
+      "details": [
+        {
+          "Name": "Administrator",
+          "SamAccountName": "Administrator"
+        },
+        {
+          "Name": "MimecastMSE",
+          "SamAccountName": "MimecastMSE"
+        },
+        {
+          "Name": "IWAM_GL-EXCH1",
+          "SamAccountName": "IWAM_GL-EXCH1"
+        },
+        {
+          "Name": "BigHand_SVC",
+          "SamAccountName": "BigHand_SVC"
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin"
+        },
+        {
+          "Name": "PTLAdmin",
+          "SamAccountName": "PTLAdmin"
+        },
+        {
+          "Name": "Peppermint Admin",
+          "SamAccountName": "PeppermintAdmin"
+        },
+        {
+          "Name": "SQLServices",
+          "SamAccountName": "SQLServices"
+        },
+        {
+          "Name": "BH Admin",
+          "SamAccountName": "BighandSA"
+        },
+        {
+          "Name": "IWAM_AG-MAIL1",
+          "SamAccountName": "IWAM_AG-MAIL1"
+        },
+        {
+          "Name": "IWAM_AG-MAIL2",
+          "SamAccountName": "IWAM_AG-MAIL2"
+        },
+        {
+          "Name": "IWAM_AG-BACKUP",
+          "SamAccountName": "IWAM_AG-BACKUP"
+        },
+        {
+          "Name": "IWAM_FLXSVR",
+          "SamAccountName": "IWAM_FLXSVR"
+        },
+        {
+          "Name": "IT Support",
+          "SamAccountName": "ITSupport"
+        },
+        {
+          "Name": "portal-noreply",
+          "SamAccountName": "portal-noreply"
+        },
+        {
+          "Name": "SVC_NSAccount",
+          "SamAccountName": "SVC_NSAccount"
+        },
+        {
+          "Name": "mimecast",
+          "SamAccountName": "mimecast"
+        },
+        {
+          "Name": "ServiceMGR-Share",
+          "SamAccountName": "ServiceMGR-Share"
+        },
+        {
+          "Name": "BigHand Reporting",
+          "SamAccountName": "BH3Reports"
+        },
+        {
+          "Name": "Svc_MimecastLDAP",
+          "SamAccountName": "Svc_MimecastLDAP"
+        },
+        {
+          "Name": "Svc_SSRS2016",
+          "SamAccountName": "Svc_SSRS2016"
+        },
+        {
+          "Name": "svc-egres",
+          "SamAccountName": "svc-egres"
+        },
+        {
+          "Name": "Svc_AzureBackup",
+          "SamAccountName": "Svc_AzureBackup"
+        },
+        {
+          "Name": "HPScan",
+          "SamAccountName": "HPScan"
+        },
+        {
+          "Name": "lansweeper",
+          "SamAccountName": "lansweeper"
+        },
+        {
+          "Name": "Svc_HyperVBackup",
+          "SamAccountName": "Svc_HyperVBackup"
+        },
+        {
+          "Name": "AXA SFTP Service",
+          "SamAccountName": "AXA_SFTP_SVC"
+        },
+        {
+          "Name": "Kofax",
+          "SamAccountName": "Kofax"
+        },
+        {
+          "Name": "mimecast mso",
+          "SamAccountName": "mimecastmso"
+        },
+        {
+          "Name": "SQL Service Account",
+          "SamAccountName": "SQL_SVC"
+        },
+        {
+          "Name": "BigHand",
+          "SamAccountName": "bighand"
+        },
+        {
+          "Name": "IT Service Accounts",
+          "SamAccountName": "ITServiceAccounts"
+        },
+        {
+          "Name": "Svc_Net2Admin",
+          "SamAccountName": "Svc_Net2Admin"
+        },
+        {
+          "Name": "Peppermint Document Production",
+          "SamAccountName": "PeppDocProduction"
+        },
+        {
+          "Name": "powerbiadmin",
+          "SamAccountName": "powerbiadmin"
+        },
+        {
+          "Name": "Securus-SD-WAN LDAP",
+          "SamAccountName": "SVC_Securus_SDWAN"
+        },
+        {
+          "Name": "Bighand recurringtasks",
+          "SamAccountName": "BighandRecurringtask"
+        },
+        {
+          "Name": "Bighand Tasks",
+          "SamAccountName": "BighandTasks"
+        },
+        {
+          "Name": "CSC Residential",
+          "SamAccountName": "cforesidential"
+        },
+        {
+          "Name": "Lansweeper Service Account",
+          "SamAccountName": "Lansweeper_SVC"
+        },
+        {
+          "Name": "AAD_17dd14a2bf1b",
+          "SamAccountName": "AAD_17dd14a2bf1b"
+        },
+        {
+          "Name": "MSOL_e2f9b4b7df35",
+          "SamAccountName": "MSOL_e2f9b4b7df35"
+        },
+        {
+          "Name": "Comxo",
+          "SamAccountName": "Comxo"
+        },
+        {
+          "Name": "svc_ADFSPepermint",
+          "SamAccountName": "svc_ADFSPepermint"
+        },
+        {
+          "Name": "Svc-nable",
+          "SamAccountName": "svc-nable"
+        },
+        {
+          "Name": "Svc-rapidfire",
+          "SamAccountName": "Svc-rapidfire"
+        },
+        {
+          "Name": "sql_svc_progressDB",
+          "SamAccountName": "sql_svc_progressDB"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc"
+        },
+        {
+          "Name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin"
+        },
+        {
+          "Name": "FTechEvoTier1_Svc",
+          "SamAccountName": "FTechEvoTier1_Svc"
+        },
+        {
+          "Name": "FTechEvoTier2_Svc",
+          "SamAccountName": "FTechEvoTier2_Svc"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc"
+        },
+        {
+          "Name": "FTechEvoTier4_Svc",
+          "SamAccountName": "FTechEvoTier4_Svc"
+        },
+        {
+          "Name": "intune_admin",
+          "SamAccountName": "intune_admin"
+        },
+        {
+          "Name": "HealthMailbox53fe815c66584ff689c02513974a34bd",
+          "SamAccountName": "HealthMailbox53fe815"
+        },
+        {
+          "Name": "HealthMailboxd1a72c13a5bf465780c36e122da40651",
+          "SamAccountName": "HealthMailboxd1a72c1"
+        },
+        {
+          "Name": "HealthMailboxac08729aace74934b8f477ea60f7d3cd",
+          "SamAccountName": "HealthMailboxac08729"
+        },
+        {
+          "Name": "HealthMailbox8db760dd3209457c848b23fa7cda1c91",
+          "SamAccountName": "HealthMailbox8db760d"
+        },
+        {
+          "Name": "HealthMailbox9043666eca804bdf86b5bcf1e823623d",
+          "SamAccountName": "HealthMailbox9043666"
+        },
+        {
+          "Name": "HealthMailboxf0b3229dcf28434d8843b37675bcc8cc",
+          "SamAccountName": "HealthMailboxf0b3229"
+        },
+        {
+          "Name": "HealthMailbox9dc7d03bf9e34b4689714e64228f14e2",
+          "SamAccountName": "HealthMailbox9dc7d03"
+        },
+        {
+          "Name": "HealthMailbox425885e03a6e4bd09ab3f18047be3ae3",
+          "SamAccountName": "HealthMailbox425885e"
+        },
+        {
+          "Name": "HealthMailbox4895ba6eb55542dca94ae3c314f45ff9",
+          "SamAccountName": "HealthMailbox4895ba6"
+        },
+        {
+          "Name": "HealthMailbox55e0aef5d8ed47a389dd7f127e7028d9",
+          "SamAccountName": "HealthMailbox55e0aef"
+        },
+        {
+          "Name": "HealthMailbox6d176d3e496e4ac1b076f8816f2f30a7",
+          "SamAccountName": "HealthMailbox6d176d3"
+        },
+        {
+          "Name": "AD_Audit_svc",
+          "SamAccountName": "ad_audit_svc"
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "staleAdmins",
+      "category": "identity",
+      "label": "Stale Admin Accounts",
+      "description": "Privileged accounts with no logon in 90+ days",
+      "severity": "Critical",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "0 stale admin accounts",
+      "actualValue": "11 stale account(s)",
+      "recommendation": "Disable or remove stale admin accounts immediately. Implement quarterly reviews.",
+      "remediationCmd": "$cutoff=(Get-Date).AddDays(-90)\nGet-ADGroupMember 'Domain Admins' -Recursive | Where {$_.objectClass -eq 'user'} | Get-ADUser -Properties LastLogonDate | Where {$_.LastLogonDate -lt $cutoff} | Disable-ADAccount",
+      "details": [
+        {
+          "Name": "MimecastMSE",
+          "SamAccountName": "MimecastMSE",
+          "LastLogonDate": "2024-09-04T15:04:45.3326815+01:00"
+        },
+        {
+          "Name": "IWAM_GL-EXCH1",
+          "SamAccountName": "IWAM_GL-EXCH1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Luke Hurst (Admin)",
+          "SamAccountName": "a-lh",
+          "LastLogonDate": "2026-02-27T13:29:41.3662791+00:00"
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin",
+          "LastLogonDate": "2022-03-21T16:13:52.1920543+00:00"
+        },
+        {
+          "Name": "Paul Whittingham",
+          "SamAccountName": "whittingham_p",
+          "LastLogonDate": "2024-09-17T11:33:52.893194+01:00"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc",
+          "LastLogonDate": "2026-02-06T16:04:39.1066903+00:00"
+        },
+        {
+          "Name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin",
+          "LastLogonDate": "2026-02-25T18:48:29.0362316+00:00"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc",
+          "LastLogonDate": "2025-12-15T05:11:49.5583108+00:00"
+        },
+        {
+          "Name": "intune_admin",
+          "SamAccountName": "intune_admin",
+          "LastLogonDate": "2025-12-11T17:07:52.4897822+00:00"
+        },
+        {
+          "Name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin",
+          "LastLogonDate": "2026-01-16T12:24:19.557169+00:00"
+        },
+        {
+          "Name": "Victoria Beeby",
+          "SamAccountName": "a-vb",
+          "LastLogonDate": null
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dualUseAdmin",
+      "category": "identity",
+      "label": "Dual-use Admin Accounts",
+      "description": "Domain Admins members not clearly designated as admin-only accounts",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Manual review required",
+      "actualValue": "28 potential dual-use account(s)",
+      "recommendation": "Provisional pass. This must be manually verified by an engineer. Implement Tiered Administration - admin accounts for admin tasks only, separate from daily-use accounts.",
+      "remediationCmd": "Get-ADGroupMember 'Domain Admins' -Recursive | Where {$_.objectClass -eq 'user'} | Get-ADUser -Properties Description | Select Name,SamAccountName,Description | Export-Csv DA_Audit.csv",
+      "details": [
+        {
+          "Name": "BigHand_SVC",
+          "SamAccountName": "BigHand_SVC"
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin"
+        },
+        {
+          "Name": "Steven Feltham-Pye (Admin)",
+          "SamAccountName": "a-sfp"
+        },
+        {
+          "Name": "Oli Stockman (Admin)",
+          "SamAccountName": "a-os"
+        },
+        {
+          "Name": "Peppermint Admin",
+          "SamAccountName": "PeppermintAdmin"
+        },
+        {
+          "Name": "SQLServices",
+          "SamAccountName": "SQLServices"
+        },
+        {
+          "Name": "BH Admin",
+          "SamAccountName": "BighandSA"
+        },
+        {
+          "Name": "NPCXSQLAgent",
+          "SamAccountName": "npcxsqlagent"
+        },
+        {
+          "Name": "NPCXSQLSrv",
+          "SamAccountName": "npcxsqlsrv"
+        },
+        {
+          "Name": "Rynhardt van Vuuren (Admin)",
+          "SamAccountName": "a-rvv"
+        },
+        {
+          "Name": "Josh Teague (Admin)",
+          "SamAccountName": "a-jt"
+        },
+        {
+          "Name": "Anthony Brown (Admin)",
+          "SamAccountName": "a-ab"
+        },
+        {
+          "Name": "Lansweeper Service Account",
+          "SamAccountName": "Lansweeper_SVC"
+        },
+        {
+          "Name": "SPDocPreview",
+          "SamAccountName": "SPDocPreview"
+        },
+        {
+          "Name": "Sorren Day (Admin)",
+          "SamAccountName": "a-sd"
+        },
+        {
+          "Name": "Nishen Harichunder (First Tech)",
+          "SamAccountName": "nhadmin"
+        },
+        {
+          "Name": "Oliver Govender (First Tech)",
+          "SamAccountName": "OGADMIN"
+        },
+        {
+          "Name": "Lincoln Phillips-Morris (Admin)",
+          "SamAccountName": "a-lpm"
+        },
+        {
+          "Name": "sql_svc_progressDB",
+          "SamAccountName": "sql_svc_progressDB"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc"
+        },
+        {
+          "Name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin"
+        },
+        {
+          "Name": "Mitch Skitt (Admin)",
+          "SamAccountName": "a-ms"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc"
+        },
+        {
+          "Name": "FTechEvoTier4_Svc",
+          "SamAccountName": "FTechEvoTier4_Svc"
+        },
+        {
+          "Name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin"
+        },
+        {
+          "Name": "AD_Audit_svc",
+          "SamAccountName": "ad_audit_svc"
+        },
+        {
+          "Name": "Victoria Beeby",
+          "SamAccountName": "a-vb"
+        },
+        {
+          "Name": "PTLCXAdmin",
+          "SamAccountName": "PTLCXAdmin"
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "protectedUsers",
+      "category": "identity",
+      "label": "Protected Users Group",
+      "description": "Tier-0 admin accounts enrolled in the Protected Users security group",
+      "severity": "High",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "100% of Tier-0 admins",
+      "actualValue": "33 of 34 Tier-0 admins (97%%)",
+      "recommendation": "Add all Domain Admins, Enterprise Admins, Schema Admins to Protected Users group. Test compatibility first.",
+      "remediationCmd": "Get-ADGroupMember 'Domain Admins' -Recursive | Where {$_.objectClass -eq 'user'} | ForEach-Object { Add-ADGroupMember 'Protected Users' -Members $_.SamAccountName }",
+      "details": [
+        {
+          "Name": "Stuart Ferguson (First Tech)",
+          "SamAccountName": "SFADMIN"
+        },
+        {
+          "Name": "Duwayne Padayachi (First Tech)",
+          "SamAccountName": "DPADMIN"
+        },
+        {
+          "Name": "Oliver Govender (First Tech)",
+          "SamAccountName": "OGADMIN"
+        },
+        {
+          "Name": "Lance Butler (First Tech)",
+          "SamAccountName": "LBADMIN"
+        },
+        {
+          "Name": "Mohammed Ismail (First Tech)",
+          "SamAccountName": "mohammedI_ftadmin"
+        },
+        {
+          "Name": "Sanele Mthethwa  (First Tech)",
+          "SamAccountName": "sanelem_ftadmin"
+        },
+        {
+          "Name": "Mthokozisi Ncumatha  (First Tech)",
+          "SamAccountName": "mthokozisin_ftadmin"
+        },
+        {
+          "Name": "Laancen Govender",
+          "SamAccountName": "lgadmin"
+        },
+        {
+          "Name": "Shailen Sewrajbally (First Tech)",
+          "SamAccountName": "shailens_ftadmin"
+        },
+        {
+          "Name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin"
+        },
+        {
+          "Name": "Kyle Naidoo (First Tech)",
+          "SamAccountName": "KNADMIN"
+        },
+        {
+          "Name": "Joshua Govender (First Tech)",
+          "SamAccountName": "JoshuaG_FTadmin"
+        },
+        {
+          "Name": "Asanda Gabela (First Tech)",
+          "SamAccountName": "asandag_ftadmin"
+        },
+        {
+          "Name": "Realin Naidoo (First Tech)",
+          "SamAccountName": "realinn_ftadmin"
+        },
+        {
+          "Name": "Luyanda Godfrey (First Tech)",
+          "SamAccountName": "luyandag_ftadmin"
+        },
+        {
+          "Name": "Xolani Mkulise (First Tech)",
+          "SamAccountName": "xolanim_ftadmin"
+        },
+        {
+          "Name": "Anesh Maharaj (First Tech)",
+          "SamAccountName": "aneshm_ftadmin"
+        },
+        {
+          "Name": "Ayanda Mthethwa (First Tech)",
+          "SamAccountName": "ayandam_ftadmin"
+        },
+        {
+          "Name": "Nkululeko Bhengu (First Tech)",
+          "SamAccountName": "nkululekob_ftadmin"
+        },
+        {
+          "Name": "Phelelani Gama (First Tech)",
+          "SamAccountName": "phelelanig_ftadmin"
+        },
+        {
+          "Name": "Sinazo Jafta (First Tech)",
+          "SamAccountName": "SinazoJ_FTadmin"
+        },
+        {
+          "Name": "Pearl Maphumulo (First Tech)",
+          "SamAccountName": "PearlM_FTadmin"
+        },
+        {
+          "Name": "Tristan Sooklall (First Tech)",
+          "SamAccountName": "TristanS_FTadmin"
+        },
+        {
+          "Name": "Sello Musi (First Tech)",
+          "SamAccountName": "SelloM_FTadmin"
+        },
+        {
+          "Name": "Anele Miya (First Tech)",
+          "SamAccountName": "AneleM_FTadmin"
+        },
+        {
+          "Name": "Zuko Zungu (First Tech)",
+          "SamAccountName": "ZukoZ_FTadmin"
+        },
+        {
+          "Name": "Sohail Ramnarain (First Tech)",
+          "SamAccountName": "SohailR_FTadmin"
+        },
+        {
+          "Name": "Myron Chinnasami (First Tech)",
+          "SamAccountName": "MyronC_FTadmin"
+        },
+        {
+          "Name": "Saieshan Pillay (First Tech)",
+          "SamAccountName": "Saieshanp_ftadmin"
+        },
+        {
+          "Name": "Zinhle Sikhosana  (First Tech)",
+          "SamAccountName": "ZinhleS_FTadmin"
+        },
+        {
+          "Name": "Noelen Moonsamy (First Tech)",
+          "SamAccountName": "NoelenM_FTadmin"
+        },
+        {
+          "Name": "Sheridan Moonsamy (First Tech)",
+          "SamAccountName": "SheridanM_ftadmin"
+        },
+        {
+          "Name": "Yashica Rohith",
+          "SamAccountName": "YRohith"
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "defaultAdmin",
+      "category": "identity",
+      "label": "Default Admin Account",
+      "description": "Built-in Administrator (RID-500) should be renamed and disabled",
+      "severity": "High",
+      "score": 0,
+      "status": "Fail",
+      "threshold": "Renamed and Disabled",
+      "actualValue": "Name: Administrator, Enabled: True",
+      "recommendation": "Rename the built-in Administrator account and disable it.",
+      "remediationCmd": "$domSID=(Get-ADDomain).DomainSID.Value\nRename-ADObject -Identity (Get-ADUser \"$domSID-500\").DistinguishedName -NewName 'Acct-Disabled-500'\nDisable-ADAccount -Identity \"$domSID-500\"",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "pwdNotRequired",
+      "category": "identity",
+      "label": "Password Not Required (Legacy)",
+      "description": "Accounts with PASSWD_NOTREQD flag - can authenticate with blank password",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 enabled accounts with PASSWD_NOTREQD flag",
+      "actualValue": "0 enabled accounts with PASSWD_NOTREQD flag. 0 disabled account(s) still carry the flag.",
+      "recommendation": "Clear the PASSWD_NOTREQD flag on all affected accounts.",
+      "remediationCmd": "Get-ADUser -Filter * -Properties userAccountControl | Where-Object { ($_.userAccountControl -band 32) -ne 0 } | Export-Csv C:\\Temp\\PwdNotRequired_Audit.csv",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "adminGroupBloat",
+      "category": "identity",
+      "label": "Admin Group Membership Bloat",
+      "description": "Excessive membership in Domain Admins, Enterprise Admins, Schema Admins groups",
+      "severity": "High",
+      "score": 10,
+      "status": "Fail",
+      "threshold": "Domain Admins <= 5 named accounts",
+      "actualValue": "Domain Admins: 33 | Enterprise Admins: 1 | Schema Admins: 0",
+      "recommendation": "Reduce Domain Admins to minimum required accounts.",
+      "remediationCmd": "foreach ($grp in @('Domain Admins','Enterprise Admins','Schema Admins')) { Get-ADGroupMember $grp -Recursive | Where {$_.objectClass -eq 'user'} | Get-ADUser -Properties LastLogonDate | Select Name,SamAccountName,LastLogonDate }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "serviceAcctAudit",
+      "category": "identity",
+      "label": "Service Account Audit (MSA/gMSA)",
+      "description": "Regular user accounts used as service accounts",
+      "severity": "Medium",
+      "score": 20,
+      "status": "Fail",
+      "threshold": "0 regular user accounts used as service accounts",
+      "actualValue": "31 regular-account service accounts detected | 2 gMSA accounts in use | Accounts: IWAM_GL-EXCH1, BigHand_SVC, SQLServices, IWAM_AG-MAIL1, IWAM_AG-MAIL2, IWAM_AG-BACKUP, IWAM_FLXSVR, ITSupport",
+      "recommendation": "Migrate service accounts to Group Managed Service Accounts (gMSA).",
+      "remediationCmd": "Get-ADUser -Filter * -Properties PasswordNeverExpires,ServicePrincipalName | Where-Object { $_.Enabled -and $_.PasswordNeverExpires -and ($_.SamAccountName -match '^(svc|sa_|sa-|service|app_)') } | Select Name,SamAccountName",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "minPwdLength",
+      "category": "password",
+      "label": "Minimum Password Length",
+      "description": "Default Domain Password Policy minimum password length",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "14+ characters (100%), 12 characters (50%), 11 or below (0%)",
+      "actualValue": "14 characters",
+      "recommendation": "Set minimum password length to 14+ characters via Default Domain Policy.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -MinPasswordLength 14",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "fgpp",
+      "category": "password",
+      "label": "Fine-Grained Password Policy",
+      "description": "Password Settings Objects (PSO) targeting admin accounts",
+      "severity": "High",
+      "score": 60,
+      "status": "Warning",
+      "threshold": "PSO applied to all admin groups",
+      "actualValue": "Total PSOs: 1; Admin-targeted: 0",
+      "recommendation": "Create a stricter PSO for admin accounts (min 20 chars, lockout after 3 attempts).",
+      "remediationCmd": "New-ADFineGrainedPasswordPolicy -Name 'PSO-Admins' -Precedence 10 -MinPasswordLength 20 -LockoutThreshold 3",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "reversibleEncrypt",
+      "category": "password",
+      "label": "Reversible Encryption",
+      "description": "Accounts with AllowReversiblePasswordEncryption enabled",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 accounts",
+      "actualValue": "0 account(s)",
+      "recommendation": "Disable reversible password encryption on all affected accounts immediately.",
+      "remediationCmd": "Get-ADUser -Filter {AllowReversiblePasswordEncryption -eq $true} | Set-ADUser -AllowReversiblePasswordEncryption $false",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "asrepRoastable",
+      "category": "password",
+      "label": "AS-REP Roastable Accounts",
+      "description": "Accounts with Kerberos pre-authentication disabled",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 accounts",
+      "actualValue": "0 account(s)",
+      "recommendation": "Enable Kerberos pre-authentication on all accounts.",
+      "remediationCmd": "Get-ADUser -Filter {DoesNotRequirePreAuth -eq $true} | Set-ADUser -KerberosEncryptionType AES256",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "pwdAge",
+      "category": "password",
+      "label": "Password Age Compliance",
+      "description": "Enabled accounts with password unchanged for more than 365 days",
+      "severity": "High",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "Less than 2% of enabled accounts",
+      "actualValue": "16 accounts (3.6%%)",
+      "recommendation": "Force password reset for non-compliant accounts. Enforce maximum password age policy.",
+      "remediationCmd": "Get-ADUser -Filter {Enabled -eq $true} -Properties PasswordLastSet | Where {$_.PasswordLastSet -lt (Get-Date).AddDays(-365)} | Set-ADUser -ChangePasswordAtLogon $true",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "lockoutPolicy",
+      "category": "password",
+      "label": "Account Lockout Policy",
+      "description": "Account lockout threshold configuration",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "Lockout after <=5 attempts",
+      "actualValue": "Threshold: 5 attempts | Duration: 15min | Observation: 15min",
+      "recommendation": "Set lockout threshold to 5 attempts or fewer.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -LockoutThreshold 5 -LockoutDuration '00:15:00' -LockoutObservationWindow '00:15:00'",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "pwdComplexity",
+      "category": "password",
+      "label": "Password Complexity Policy",
+      "description": "Password complexity requirement",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Complexity: Enabled | Min length: 14+",
+      "actualValue": "Complexity: True | Min length: 14 | Max age: 180d",
+      "recommendation": "Enable password complexity. Set minimum length to 14+.",
+      "remediationCmd": "Set-ADDefaultDomainPasswordPolicy -Identity 'internal.ashtongraham.co.uk' -ComplexityEnabled $true -MinPasswordLength 14 -MaxPasswordAge '90.00:00:00'",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "ddpModified",
+      "category": "gpo",
+      "label": "Default Domain Policy Modified",
+      "description": "Default Domain Policy contains settings beyond Kerberos and password policy",
+      "severity": "Medium",
+      "score": 40,
+      "status": "Warning",
+      "threshold": "DDP used only for domain-wide password and Kerberos policy",
+      "actualValue": "29 settings detected",
+      "recommendation": "Move non-password/Kerberos settings from DDP to dedicated GPOs.",
+      "remediationCmd": "Get-GPOReport -Name 'Default Domain Policy' -ReportType HTML -Path 'C:\\Temp\\DDP-Report.html'",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "orphanedGPO",
+      "category": "gpo",
+      "label": "Orphaned GPOs",
+      "description": "GPOs with no OU or site links",
+      "severity": "Low",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 unlinked GPOs",
+      "actualValue": "0 unlinked GPO(s)",
+      "recommendation": "Review and remove orphaned GPOs.",
+      "remediationCmd": "Get-GPO -All | Where {([xml](Get-GPOReport -Guid $_.Id -ReportType Xml)).GPO.LinksTo -eq $null} | Select DisplayName | Export-Csv OrphanedGPOs.csv",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "serviceAccountLogonRestrict",
+      "category": "gpo",
+      "label": "Service Account Interactive Logon",
+      "description": "Service accounts should be restricted from interactive logon and RDP access to servers",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Service accounts denied interactive/RDP logon via GPO",
+      "actualValue": "Service accounts protected via GPO: Default Domain Controllers Policy, 2024 - Computer - Restrict RDP Access to DA accounts, 2026 - Computer  - Deny - Logon - Service - Acc and security group(s): Service Accounts, SvcAccounts-DenyLogon, SvcAccounts_Deny_Logon_Interactive",
+      "recommendation": "Create a GPO that denies 'Allow log on locally' and 'Allow log on through Remote Desktop Services' for service accounts or a dedicated security group containing service accounts.",
+      "remediationCmd": "New-ADGroup -Name 'ServiceAccounts-NoInteractiveLogon' -GroupScope Global; Set-GPPermissions -Name 'Deny Interactive Logon' -TargetGroup 'ServiceAccounts-NoInteractiveLogon' -Permission Deny",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "laps",
+      "category": "gpo",
+      "label": "LAPS Deployment",
+      "description": "Local Administrator Password Solution - check is provisional; LAPS may be deployed via O365/Intune without AD schema attributes",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Manual check by engineer",
+      "actualValue": "LAPS methods detected: Intune MDM (proxy). 535 Win10/11 devices - cloud LAPS policy possible (proxy indicator)",
+      "recommendation": "Provisional pass. This must be manually verified by an engineer. LAPS can be deployed from O365/Intune without extending the local AD schema. Verify LAPS policy via Intune or confirm AD schema extension for on-prem LAPS.",
+      "remediationCmd": "On-Prem: Import-Module AdmPwd.PS; Update-AdmPwdADSchema | Azure: Configure LAPS policy in Intune",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "smbv1",
+      "category": "gpo",
+      "label": "SMBv1 Disabled",
+      "description": "SMBv1 protocol enabled on domain controllers (EternalBlue/WannaCry risk)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Disabled on all systems",
+      "actualValue": "Local DC SMBv1: Disabled",
+      "recommendation": "Disable SMBv1 via GPO and directly on all servers.",
+      "remediationCmd": "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "ntlmv1",
+      "category": "gpo",
+      "label": "NTLMv1 Disabled",
+      "description": "LAN Manager Authentication Level should be 5 (NTLMv2 only)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "LmCompatibilityLevel = 5",
+      "actualValue": "LmCompatibilityLevel = 5",
+      "recommendation": "Set LmCompatibilityLevel to 5 via GPO under Security Options.",
+      "remediationCmd": "Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name 'LmCompatibilityLevel' -Value 5",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "auditPolicy",
+      "category": "gpo",
+      "label": "Advanced Audit Policy",
+      "description": "Advanced Audit Policy configured across all 9 Windows audit categories",
+      "severity": "High",
+      "score": 70,
+      "status": "Warning",
+      "threshold": "All 9 audit categories configured",
+      "actualValue": "8 of 9 categories detected",
+      "recommendation": "Enable all Advanced Audit Policy categories via GPO using CIS Benchmark Level 1.",
+      "remediationCmd": "$cats=@('Account Logon','Account Management','Logon/Logoff','Object Access','Policy Change','Privilege Use','System')\nforeach ($c in $cats) { auditpol /set /category:\"$c\" /success:enable /failure:enable }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "appLocker",
+      "category": "gpo",
+      "label": "AppLocker / WDAC",
+      "description": "Application control policy deployment",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "Applied to all servers and privileged workstations",
+      "actualValue": "AppIDSvc: Stopped; GPO: 1 found",
+      "recommendation": "Deploy AppLocker in audit mode first, then enforce. WDAC preferred for newer OS.",
+      "remediationCmd": "Set-Service AppIDSvc -StartupType Automatic\nStart-Service AppIDSvc\nGet-AppLockerPolicy -Effective | Format-List",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "wmiFilterOrphans",
+      "category": "gpo",
+      "label": "GPO WMI Filter Health",
+      "description": "GPOs with broken WMI filter references",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 GPOs with broken WMI filter references",
+      "actualValue": "1 GPOs use WMI filters | 0 broken filter links",
+      "recommendation": "Remove broken WMI filter links from affected GPOs.",
+      "remediationCmd": "Get-GPO -All | Where {$_.WmiFilter} | Select DisplayName,@{N='Filter';E={$_.WmiFilter.Name}}",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "gpoBlockConflict",
+      "category": "gpo",
+      "label": "GPO Enforce / Block Inheritance",
+      "description": "OUs with Block Inheritance active",
+      "severity": "Low",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "0 OUs using Block Inheritance",
+      "actualValue": "2 OUs with Block Inheritance",
+      "recommendation": "Document all OUs with Block Inheritance.",
+      "remediationCmd": "Get-ADOrganizationalUnit -Filter * -Properties gPOptions | Where-Object { $_.gPOptions -band 1 } | Select DistinguishedName",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "fsmoRoles",
+      "category": "dchealth",
+      "label": "FSMO Role Health",
+      "description": "All 5 FSMO role holders responding and reachable",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All 5 FSMO holders online",
+      "actualValue": "5/5 FSMO holders responding",
+      "recommendation": "Ensure all FSMO holders are online and healthy.",
+      "remediationCmd": "netdom query fsmo",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "replErrors",
+      "category": "dchealth",
+      "label": "AD Replication Errors",
+      "description": "Active Directory replication error count (repadmin /replsummary)",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 replication errors",
+      "actualValue": "0 error indicator(s)",
+      "recommendation": "Run repadmin /replsummary and repadmin /showrepl to identify failing partners.",
+      "remediationCmd": "repadmin /replsummary\nrepadmin /showrepl",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dfsr",
+      "category": "dchealth",
+      "label": "DFSR Replication (SYSVOL)",
+      "description": "SYSVOL replication mechanism - DFSR is modern, FRS is deprecated",
+      "severity": "High",
+      "score": 60,
+      "status": "Warning",
+      "threshold": "DFSR only - no FRS components",
+      "actualValue": "DFSR: True | FRS members: 8",
+      "recommendation": "Migrate from FRS to DFSR using dfsrmig tool.",
+      "remediationCmd": "dfsrmig /GetGlobalState\ndfsrmig /GetMigrationState",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "flevel",
+      "category": "dchealth",
+      "label": "Domain/Forest Functional Level",
+      "description": "AD Domain and Forest functional level",
+      "severity": "High",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "Windows Server 2016 or higher",
+      "actualValue": "Domain: Windows2012R2Domain | Forest: Windows2012R2Forest",
+      "recommendation": "Upgrade functional level to 2016+ after ensuring all DCs are on 2016+.",
+      "remediationCmd": "Set-ADDomainMode -Identity 'internal.ashtongraham.co.uk' -DomainMode Windows2016Domain",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dcEOL",
+      "category": "dchealth",
+      "label": "DC OS Version / EOL Check",
+      "description": "Domain Controllers running end-of-life Windows Server versions",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All DCs on Windows Server 2016 or newer",
+      "actualValue": "All DCs on supported OS",
+      "recommendation": "Upgrade or replace EOL DCs immediately.",
+      "remediationCmd": "Get-ADDomainController -Filter * | ForEach-Object { Get-ADComputer $_.Name -Properties OperatingSystem } | Select-Object Name,OperatingSystem | Sort-Object OperatingSystem",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dnsScavenge",
+      "category": "dchealth",
+      "label": "DNS Scavenging",
+      "description": "DNS aging and scavenging enabled on primary forward lookup zones",
+      "severity": "Medium",
+      "score": 25,
+      "status": "Fail",
+      "threshold": "All primary zones with aging enabled",
+      "actualValue": "0/9 zones (0%%)",
+      "recommendation": "Enable aging on all AD-integrated zones. Set 7-day no-refresh, 7-day refresh intervals.",
+      "remediationCmd": "Get-DnsServerZone -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' | Where-Object {-not $_.IsReverseLookupZone -and $_.ZoneType -eq 'Primary'} | ForEach-Object { Set-DnsServerZoneAging -Name $_.ZoneName -Aging $true -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "ntp",
+      "category": "dchealth",
+      "label": "NTP Time Synchronisation",
+      "description": "Domain time synchronisation hierarchy",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "PDC Emulator syncing to external NTP",
+      "actualValue": "Source: VM IC Time Synchronization Provider | NtpServer configured: True",
+      "recommendation": "Configure PDC Emulator to sync to external NTP (pool.ntp.org).",
+      "remediationCmd": "w32tm /config /manualpeerlist:'0.pool.ntp.org,1.pool.ntp.org' /syncfromflags:manual /reliable:YES /update\nRestart-Service w32tm\nw32tm /resync /force",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "tombstone",
+      "category": "dchealth",
+      "label": "Tombstone Lifetime",
+      "description": "AD tombstone lifetime - affects backup restore validity",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "180 days or more",
+      "actualValue": "200 days",
+      "recommendation": "Set tombstone lifetime to 180 days.",
+      "remediationCmd": "$configNC=(Get-ADRootDSE).configurationNamingContext\nSet-ADObject -Identity \"CN=Directory Service,CN=Windows NT,CN=Services,$configNC\" -Replace @{tombstoneLifetime=180}",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dcRedundancy",
+      "category": "dchealth",
+      "label": "DC Redundancy",
+      "description": "Number of domain controllers and their AD site distribution",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "3+ DCs across 2+ AD sites",
+      "actualValue": "5 DCs across 5 AD sites. | Sites: ALIP-DC01[Ipswich] | ALFH-DC01[Fornham] | ALCA-DC01[Cambridge] | ALAZ-DC01[Azure] | ALNO-DC01[Norwich]",
+      "recommendation": "Minimum 2 DCs required. Best practice: 3+ DCs across 2+ sites.",
+      "remediationCmd": "Get-ADDomainController -Filter * | Select Name,Site,IPv4Address",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dnsZoneSync",
+      "category": "dchealth",
+      "label": "DNS Zone Sync",
+      "description": "DNS zone presence and SOA serial consistency across DNS DCs",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "All zones present on all DNS DCs",
+      "actualValue": "All sonicwall.com axa.com ashtonkcjclients.co.uk TrustAnchors ashtonkcjtest2.co.uk internal.ashtongraham.co.uk privatelink.file.core.windows.net ashtonslegal.co.uk ashtonkcj.co.uk zones in sync across 5 DNS DCs.",
+      "recommendation": "Ensure all DCs hosting DNS have identical zone sets.",
+      "remediationCmd": "foreach ($dc in (Get-ADDomainController -Filter *).HostName) { Get-DnsServerZone -ComputerName $dc | Select ZoneName }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dcNicDns",
+      "category": "dchealth",
+      "label": "DC NIC DNS Configuration",
+      "description": "DC network adapter DNS server settings audited against best practices",
+      "severity": "High",
+      "score": 70,
+      "status": "Warning",
+      "threshold": "No loopback/public DNS as primary, min 2 entries",
+      "actualValue": "1 minor DNS NIC violations detected.",
+      "recommendation": "Primary DNS should be another DC's IP. Never use public DNS on DCs.",
+      "remediationCmd": "Get-WmiObject Win32_NetworkAdapterConfiguration -ComputerName $dc | Where {$_.IPEnabled} | Select DNSServerSearchOrder",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "dcDiagnostics",
+      "category": "dchealth",
+      "label": "DCDiag Health Check",
+      "description": "dcdiag quick DC health validation",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "0 dcdiag failures",
+      "actualValue": "Tests passed: 0 | Failed: 0 | Log: C:\\FTSupport\\adreports\\SecureScore\\dcdiag_2026-06-03.log",
+      "recommendation": "Investigate any dcdiag failures immediately.",
+      "remediationCmd": "dcdiag /v /test:replications /test:netlogons /test:services /test:fsmocheck",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "sysvolNetlogon",
+      "category": "dchealth",
+      "label": "SYSVOL / NETLOGON Shares",
+      "description": "SYSVOL and NETLOGON share accessibility on all DCs",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Both SYSVOL and NETLOGON accessible on all DCs",
+      "actualValue": "SYSVOL: 5/5 OK | NETLOGON: 5/5 OK",
+      "recommendation": "SYSVOL/NETLOGON inaccessible means GPOs are not delivered.",
+      "remediationCmd": "Test-Path '\\\\\\\\DC01\\\\SYSVOL'; Test-Path '\\\\\\\\DC01\\\\NETLOGON'",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "staleComputers",
+      "category": "hygiene",
+      "label": "Stale Computer Accounts",
+      "description": "Enabled computer accounts with no logon in 90+ days",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Less than 3% of enabled computers",
+      "actualValue": "13 stale (2.8%%)",
+      "recommendation": "Disable then delete stale computer accounts after 30-day grace period.",
+      "remediationCmd": "Get-ADComputer -Filter {Enabled -eq $true} -Properties LastLogonDate | Where-Object {$_.LastLogonDate -lt (Get-Date).AddDays(-90)} | Disable-ADAccount",
+      "details": [
+        {
+          "Name": "ASTW-SQL02",
+          "SamAccountName": "ASTW-SQL02$",
+          "LastLogonDate": "2026-01-31T06:46:24.310039+00:00"
+        },
+        {
+          "Name": "ALFH-HPV03",
+          "SamAccountName": "ALFH-HPV03$",
+          "LastLogonDate": "2025-12-10T09:31:42.7750207+00:00"
+        },
+        {
+          "Name": "ALL-8LRXMOGYSJJ",
+          "SamAccountName": "ALL-8LRXMOGYSJJ$",
+          "LastLogonDate": "2026-02-26T08:58:38.0070053+00:00"
+        },
+        {
+          "Name": "ALL-SIMT6KJJJM8",
+          "SamAccountName": "ALL-SIMT6KJJJM8$",
+          "LastLogonDate": "2026-01-29T09:32:20.3105231+00:00"
+        },
+        {
+          "Name": "ALL-VD8JDIQ3B27",
+          "SamAccountName": "ALL-VD8JDIQ3B27$",
+          "LastLogonDate": "2026-02-16T06:20:27.8691392+00:00"
+        },
+        {
+          "Name": "ALL-6ZNV54IZGNL",
+          "SamAccountName": "ALL-6ZNV54IZGNL$",
+          "LastLogonDate": "2026-01-29T09:31:42.7227089+00:00"
+        },
+        {
+          "Name": "ALL-2SGU1QL6LR1",
+          "SamAccountName": "ALL-2SGU1QL6LR1$",
+          "LastLogonDate": "2026-01-29T09:31:23.3879496+00:00"
+        },
+        {
+          "Name": "peppcxarchivedmatter",
+          "SamAccountName": "archivedmatter$",
+          "LastLogonDate": "2025-02-04T13:43:28.893322+00:00"
+        },
+        {
+          "Name": "ALL-ENKZCYOPO56",
+          "SamAccountName": "ALL-ENKZCYOPO56$",
+          "LastLogonDate": "2026-01-29T09:31:36.235102+00:00"
+        },
+        {
+          "Name": "ALL-LXKCNNKODFO",
+          "SamAccountName": "ALL-LXKCNNKODFO$",
+          "LastLogonDate": "2026-01-22T09:29:59.6969284+00:00"
+        },
+        {
+          "Name": "ALL-IU5LJJ78UWB",
+          "SamAccountName": "ALL-IU5LJJ78UWB$",
+          "LastLogonDate": "2026-02-16T08:29:15.0630774+00:00"
+        },
+        {
+          "Name": "ALL-ZHZV714TQT0",
+          "SamAccountName": "ALL-ZHZV714TQT0$",
+          "LastLogonDate": "2026-01-26T09:06:41.783996+00:00"
+        },
+        {
+          "Name": "ALL-PTMKI63ZRFB",
+          "SamAccountName": "ALL-PTMKI63ZRFB$",
+          "LastLogonDate": "2026-02-18T09:08:23.4125037+00:00"
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "duplicateSPN",
+      "category": "hygiene",
+      "label": "Duplicate SPNs",
+      "description": "Duplicate Service Principal Names in AD",
+      "severity": "High",
+      "score": 50,
+      "status": "Warning",
+      "threshold": "0 duplicate SPNs",
+      "actualValue": "1 duplicate SPN(s)",
+      "recommendation": "Run 'setspn -X -F' to identify. Remove duplicates from non-owner accounts.",
+      "remediationCmd": "setspn -X -F",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "inactiveUsers",
+      "category": "hygiene",
+      "label": "Inactive User Accounts",
+      "description": "Enabled user accounts with no logon in 60+ days",
+      "severity": "Medium",
+      "score": 35,
+      "status": "Fail",
+      "threshold": "Less than 5% of enabled users",
+      "actualValue": "62 accounts (12.1%%)",
+      "recommendation": "Implement automated 60-day inactivity policy. Notify manager, disable, delete after 30-day hold.",
+      "remediationCmd": "Search-ADAccount -AccountInactive -TimeSpan (New-TimeSpan -Days 60) -UsersOnly | Where-Object {$_.Enabled} | Select-Object Name,LastLogonDate",
+      "details": [
+        {
+          "Name": "MimecastMSE",
+          "SamAccountName": "MimecastMSE",
+          "LastLogonDate": "2024-09-04T15:04:45.3326815+01:00"
+        },
+        {
+          "Name": "IWAM_GL-EXCH1",
+          "SamAccountName": "IWAM_GL-EXCH1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Luke Hurst (Admin)",
+          "SamAccountName": "a-lh",
+          "LastLogonDate": "2026-02-27T13:29:41.3662791+00:00"
+        },
+        {
+          "Name": "BigHand Admin",
+          "SamAccountName": "BigHand Admin",
+          "LastLogonDate": "2022-03-21T16:13:52.1920543+00:00"
+        },
+        {
+          "Name": "PTLAdmin",
+          "SamAccountName": "PTLAdmin",
+          "LastLogonDate": "2025-08-18T12:35:37.3469672+01:00"
+        },
+        {
+          "Name": "Deborah Dennis",
+          "SamAccountName": "dennis_d",
+          "LastLogonDate": "2022-07-21T11:15:16.5707203+01:00"
+        },
+        {
+          "Name": "IWAM_AG-MAIL1",
+          "SamAccountName": "IWAM_AG-MAIL1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_AG-MAIL2",
+          "SamAccountName": "IWAM_AG-MAIL2",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_AG-BACKUP",
+          "SamAccountName": "IWAM_AG-BACKUP",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IWAM_FLXSVR",
+          "SamAccountName": "IWAM_FLXSVR",
+          "LastLogonDate": "2010-04-20T11:59:25.4439159+01:00"
+        },
+        {
+          "Name": "Paul Whittingham",
+          "SamAccountName": "whittingham_p",
+          "LastLogonDate": "2024-09-17T11:33:52.893194+01:00"
+        },
+        {
+          "Name": "Mary Pearce",
+          "SamAccountName": "pearce_m",
+          "LastLogonDate": "2025-05-29T10:13:15.8303632+01:00"
+        },
+        {
+          "Name": "Tom Cook",
+          "SamAccountName": "cook_t",
+          "LastLogonDate": "2024-07-24T08:03:48.8951166+01:00"
+        },
+        {
+          "Name": "IT Support",
+          "SamAccountName": "ITSupport",
+          "LastLogonDate": "2020-11-21T01:59:30.2170467+00:00"
+        },
+        {
+          "Name": "portal-noreply",
+          "SamAccountName": "portal-noreply",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Sameena Manzar",
+          "SamAccountName": "manzar_s",
+          "LastLogonDate": "2025-05-19T09:01:15.5118239+01:00"
+        },
+        {
+          "Name": "SVC_NSAccount",
+          "SamAccountName": "SVC_NSAccount",
+          "LastLogonDate": "2014-12-06T17:30:57.6810017+00:00"
+        },
+        {
+          "Name": "mimecast",
+          "SamAccountName": "mimecast",
+          "LastLogonDate": "2018-12-30T13:43:21.7051792+00:00"
+        },
+        {
+          "Name": "ServiceMGR-Share",
+          "SamAccountName": "ServiceMGR-Share",
+          "LastLogonDate": "2025-09-29T12:04:51.0675773+01:00"
+        },
+        {
+          "Name": "BigHand Reporting",
+          "SamAccountName": "BH3Reports",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Tom Bailey",
+          "SamAccountName": "bailey_t",
+          "LastLogonDate": "2026-03-31T22:56:21.2672448+01:00"
+        },
+        {
+          "Name": "Document Production",
+          "SamAccountName": "doc_production",
+          "LastLogonDate": "2018-07-12T14:01:32.9950186+01:00"
+        },
+        {
+          "Name": "svc-egres",
+          "SamAccountName": "svc-egres",
+          "LastLogonDate": "2021-10-28T09:42:34.2703954+01:00"
+        },
+        {
+          "Name": "lansweeper",
+          "SamAccountName": "lansweeper",
+          "LastLogonDate": "2022-05-24T13:50:00.5936804+01:00"
+        },
+        {
+          "Name": "Natalie Clarke",
+          "SamAccountName": "clarke_n",
+          "LastLogonDate": "2026-03-05T09:58:32.9221416+00:00"
+        },
+        {
+          "Name": "mimecast mso",
+          "SamAccountName": "mimecastmso",
+          "LastLogonDate": "2020-07-16T14:14:02.7913479+01:00"
+        },
+        {
+          "Name": "SQL Service Account",
+          "SamAccountName": "SQL_SVC",
+          "LastLogonDate": "2025-10-26T23:14:13.9651674+00:00"
+        },
+        {
+          "Name": "BigHand",
+          "SamAccountName": "bighand",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "IT Service Accounts",
+          "SamAccountName": "ITServiceAccounts",
+          "LastLogonDate": "2024-06-03T14:25:00.868702+01:00"
+        },
+        {
+          "Name": "Kimberley Maddison-Haines",
+          "SamAccountName": "Maddison_K",
+          "LastLogonDate": "2025-07-29T09:12:10.1114335+01:00"
+        },
+        {
+          "Name": "Bighand recurringtasks",
+          "SamAccountName": "BighandRecurringtask",
+          "LastLogonDate": "2022-11-10T11:32:55.9065422+00:00"
+        },
+        {
+          "Name": "Bighand Tasks",
+          "SamAccountName": "BighandTasks",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "CSC Residential",
+          "SamAccountName": "cforesidential",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Emma Starr",
+          "SamAccountName": "a-es",
+          "LastLogonDate": "2025-04-12T18:11:21.7134689+01:00"
+        },
+        {
+          "Name": "Hayley Caulfield",
+          "SamAccountName": "clarke_h",
+          "LastLogonDate": "2025-09-29T12:31:09.6785888+01:00"
+        },
+        {
+          "Name": "MSOL_e2f9b4b7df35",
+          "SamAccountName": "MSOL_e2f9b4b7df35",
+          "LastLogonDate": "2026-03-30T09:21:39.4020101+01:00"
+        },
+        {
+          "Name": "Rebecca Redit",
+          "SamAccountName": "redit_r",
+          "LastLogonDate": "2025-12-04T14:11:21.6063501+00:00"
+        },
+        {
+          "Name": "Duwayne Padayachi (First Tech)",
+          "SamAccountName": "DPADMIN",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Asanda Gabela (First Tech)",
+          "SamAccountName": "asandag_ftadmin",
+          "LastLogonDate": "2026-02-16T16:30:51.8352021+00:00"
+        },
+        {
+          "Name": "Luyanda Godfrey (First Tech)",
+          "SamAccountName": "luyandag_ftadmin",
+          "LastLogonDate": "2026-01-28T08:02:16.4988837+00:00"
+        },
+        {
+          "Name": "Anesh Maharaj (First Tech)",
+          "SamAccountName": "aneshm_ftadmin",
+          "LastLogonDate": "2026-03-13T21:39:21.7519856+00:00"
+        },
+        {
+          "Name": "Ayanda Mthethwa (First Tech)",
+          "SamAccountName": "ayandam_ftadmin",
+          "LastLogonDate": "2026-03-20T18:01:55.3501596+00:00"
+        },
+        {
+          "Name": "VeeamBackup_svc",
+          "SamAccountName": "VeeamBackup_svc",
+          "LastLogonDate": "2026-02-06T16:04:39.1066903+00:00"
+        },
+        {
+          "Name": "Evo_Domain_Admin",
+          "SamAccountName": "EvoDomainAdmin",
+          "LastLogonDate": "2026-02-25T18:48:29.0362316+00:00"
+        },
+        {
+          "Name": "FTechEvoTier1_Svc",
+          "SamAccountName": "FTechEvoTier1_Svc",
+          "LastLogonDate": "2025-12-04T07:53:57.7844497+00:00"
+        },
+        {
+          "Name": "FTechEvoTier2_Svc",
+          "SamAccountName": "FTechEvoTier2_Svc",
+          "LastLogonDate": "2025-12-02T15:40:38.9906791+00:00"
+        },
+        {
+          "Name": "FTechEvoTier3_Svc",
+          "SamAccountName": "FTechEvoTier3_Svc",
+          "LastLogonDate": "2025-12-15T05:11:49.5583108+00:00"
+        },
+        {
+          "Name": "intune_admin",
+          "SamAccountName": "intune_admin",
+          "LastLogonDate": "2025-12-11T17:07:52.4897822+00:00"
+        },
+        {
+          "Name": "Creasen Pillay (First Tech Engineer)",
+          "SamAccountName": "cpadmin",
+          "LastLogonDate": "2026-01-16T12:24:19.557169+00:00"
+        },
+        {
+          "Name": "HealthMailbox53fe815c66584ff689c02513974a34bd",
+          "SamAccountName": "HealthMailbox53fe815",
+          "LastLogonDate": "2026-04-04T00:53:09.7013699+01:00"
+        },
+        {
+          "Name": "HealthMailboxd1a72c13a5bf465780c36e122da40651",
+          "SamAccountName": "HealthMailboxd1a72c1",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailboxac08729aace74934b8f477ea60f7d3cd",
+          "SamAccountName": "HealthMailboxac08729",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox8db760dd3209457c848b23fa7cda1c91",
+          "SamAccountName": "HealthMailbox8db760d",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox9043666eca804bdf86b5bcf1e823623d",
+          "SamAccountName": "HealthMailbox9043666",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailboxf0b3229dcf28434d8843b37675bcc8cc",
+          "SamAccountName": "HealthMailboxf0b3229",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox9dc7d03bf9e34b4689714e64228f14e2",
+          "SamAccountName": "HealthMailbox9dc7d03",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox425885e03a6e4bd09ab3f18047be3ae3",
+          "SamAccountName": "HealthMailbox425885e",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox4895ba6eb55542dca94ae3c314f45ff9",
+          "SamAccountName": "HealthMailbox4895ba6",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "HealthMailbox55e0aef5d8ed47a389dd7f127e7028d9",
+          "SamAccountName": "HealthMailbox55e0aef",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Victoria Beeby",
+          "SamAccountName": "a-vb",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Mark Wrinch",
+          "SamAccountName": "Wrinch_M",
+          "LastLogonDate": null
+        },
+        {
+          "Name": "Yashica Rohith",
+          "SamAccountName": "YRohith",
+          "LastLogonDate": null
+        }
+      ],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "guestAccount",
+      "category": "hygiene",
+      "label": "Guest Account Secured",
+      "description": "Built-in Guest (RID-501) account should be disabled and optionally renamed",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Disabled and ideally renamed from default 'Guest'",
+      "actualValue": "Name: AshtonsUser, Enabled: False | Status: Disabled, Renamed (AshtonsUser)",
+      "recommendation": "Disable and rename the Guest account. Renaming prevents automated attacks targeting default account names.",
+      "remediationCmd": "$domSID=(Get-ADDomain).DomainSID.Value\nRename-ADObject -Identity \"$domSID-501\" -NewName 'Acct-Disabled-501'\nDisable-ADAccount -Identity \"$domSID-501\"",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "krbtgt",
+      "category": "hygiene",
+      "label": "KRBTGT Password Age",
+      "description": "Age of the KRBTGT account password - Golden Ticket mitigation",
+      "severity": "High",
+      "score": 15,
+      "status": "Fail",
+      "threshold": "Changed within last 180 days (90 recommended)",
+      "actualValue": "720 days since last change",
+      "recommendation": "Reset KRBTGT password TWICE (10+ hours apart) every 180 days.",
+      "remediationCmd": "$newPwd = ConvertTo-SecureString ([System.Web.Security.Membership]::GeneratePassword(32,8)) -AsPlainText -Force\nSet-ADAccountPassword -Identity krbtgt -Reset -NewPassword $newPwd",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "emptyOUs",
+      "category": "hygiene",
+      "label": "Empty Organisational Units",
+      "description": "OUs with no child objects",
+      "severity": "Low",
+      "score": 60,
+      "status": "Fail",
+      "threshold": "0 empty OUs",
+      "actualValue": "15 empty OU(s) found",
+      "recommendation": "Review empty OUs and remove if no longer needed.",
+      "remediationCmd": "Get-ADOrganizationalUnit -Filter * | ForEach-Object { $children = @(Get-ADObject -SearchBase $_.DistinguishedName -SearchScope OneLevel -Filter *); if ($children.Count -eq 0) { Write-Host $_.DistinguishedName } }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "adminSDHolderOrphans",
+      "category": "hygiene",
+      "label": "AdminSDHolder Orphaned Accounts",
+      "description": "Accounts with AdminCount=1 residue but no longer members of any privileged group",
+      "severity": "Medium",
+      "score": 15,
+      "status": "Fail",
+      "threshold": "0 accounts with orphaned AdminCount=1 flag",
+      "actualValue": "59 account(s) with AdminCount=1 but not in any privileged group",
+      "recommendation": "Clear AdminCount=1 on accounts no longer in privileged groups.",
+      "remediationCmd": "Get-ADUser -Filter {AdminCount -eq 1} -Properties AdminCount,MemberOf | Where-Object { -not ($_.MemberOf -match 'Domain Admins|Enterprise Admins|Schema Admins|Administrators') } | Select Name,SamAccountName",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "eventLogSize",
+      "category": "monitoring",
+      "label": "Security Event Log Size",
+      "description": "Maximum Security event log size on domain controllers",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "600MB - 1.2GB with archiving and backup in place",
+      "actualValue": "834MB configured",
+      "recommendation": "Optimal range is 600MB-1.2GB with auto-archive enabled. Balance retention with storage and backup capacity.",
+      "remediationCmd": "wevtutil sl Security /ms:1073741824",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "logRetention",
+      "category": "monitoring",
+      "label": "Log Retention Policy",
+      "description": "Security event log retention and archiving configuration",
+      "severity": "High",
+      "score": 90,
+      "status": "Pass",
+      "threshold": "AutoBackup or SIEM forwarding; 90+ day retention",
+      "actualValue": "Log mode: AutoBackup",
+      "recommendation": "Enable auto-archive for Security logs. Forward to SIEM for 90-day minimum retention.",
+      "remediationCmd": "wevtutil sl Security /rt:true /ab:true",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "siemForwarding",
+      "category": "monitoring",
+      "label": "SIEM / Log Forwarding",
+      "description": "Windows Event Forwarding or SIEM agent for centralised log collection (informational check)",
+      "severity": "Low",
+      "score": 75,
+      "status": "Warning",
+      "threshold": "SIEM forwarding recommended but not critical for AD security score",
+      "actualValue": "No WEF or SIEM forwarding detected (informational - consider deploying)",
+      "recommendation": "Consider deploying WEF or SIEM agent for enhanced log retention and correlation. Not required for AD security baseline.",
+      "remediationCmd": "winrm quickconfig\nwecutil cs subscription.xml",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "avCoverage",
+      "category": "monitoring",
+      "label": "AV / Defender Coverage",
+      "description": "Windows Defender/AV active on domain controllers with real-time monitoring",
+      "severity": "Critical",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "Running with real-time protection on all DCs",
+      "actualValue": "Engine: Windows Defender | Running: True | Real-time: True | Mode: Normal",
+      "recommendation": "Ensure Defender/AV runs on all DCs with real-time protection. Add AD exclusions per KB822158.",
+      "remediationCmd": "Invoke-Command -ComputerName 'ALAZ-DC01.internal.ashtongraham.co.uk' -ScriptBlock { Set-MpPreference -DisableRealtimeMonitoring $false }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "gpoCertExpiry",
+      "category": "infrastructure",
+      "label": "GPO Certificate Expiry",
+      "description": "Certificates deployed via GPO  expiry audit",
+      "severity": "Medium",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "No expired certs in GPO distribution",
+      "actualValue": "2 GPO(s) with certificate policies found.",
+      "recommendation": "Review certificate-deploying GPOs before expiry.",
+      "remediationCmd": "Get-GPO -All | ForEach-Object { $rpt = Get-GPOReport -Guid $_.Id -ReportType Xml; if ($rpt -match 'PublicKeyPolicies') { Write-Host $_.DisplayName } }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "legacyOS",
+      "category": "infrastructure",
+      "label": "Legacy / EOL Operating Systems",
+      "description": "End-of-life OS detection across all domain computers",
+      "severity": "High",
+      "score": 33,
+      "status": "Fail",
+      "threshold": "0 EOL systems",
+      "actualValue": "EOL Servers: 5 | EOL Workstations: 1",
+      "recommendation": "EOL servers require L4 engagement. Upgrade EOL workstations to Windows 11.",
+      "remediationCmd": "Get-ADComputer -Filter {Enabled -eq $true} -Properties OperatingSystem | Where-Object { $_.OperatingSystem -match '2008|2012|Windows 7|Windows 8' } | Select Name,OperatingSystem",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "serverAvCoverage",
+      "category": "infrastructure",
+      "label": "Server AV / EDR Coverage",
+      "description": "Antivirus and EDR coverage across domain-joined servers",
+      "severity": "High",
+      "score": 30,
+      "status": "Fail",
+      "threshold": "95%+ of servers with AV/EDR",
+      "actualValue": "AV Coverage: 0 / 37 servers (0%) [Reachable: 37, Unreachable: 0, No-Remote: 0]",
+      "recommendation": "Deploy AV/EDR to ALL servers. Unprotected servers are highest-risk assets.",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} | ForEach-Object { try { Invoke-Command -ComputerName $_.Name -ScriptBlock { Get-Service -Name WinDefend } -ErrorAction SilentlyContinue } catch {} }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "serverUptime",
+      "category": "infrastructure",
+      "label": "Server Uptime / Reboot Required",
+      "description": "Servers requiring reboot due to high uptime (excludes Hyper-V hosts)",
+      "severity": "High",
+      "score": 100,
+      "status": "Pass",
+      "threshold": "< 10% servers needing reboot",
+      "actualValue": "Servers needing reboot: 0 / 37 (0%) | Checked: 0 | Exempt Hyper-V: 26 | Critical(60d+): 0 | High(30d+): 0 | Medium(14d+): 0 | Unreachable: 11",
+      "recommendation": "Reboot servers with high uptime. Hyper-V hosts are exempt (typically rebooted every 2-3 months).",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} -Properties LastLogonDate | ForEach-Object { $wmi = Get-WmiObject -ComputerName $_.Name -Class Win32_OperatingSystem -ErrorAction SilentlyContinue; if ($wmi) { $days = ((Get-Date) - ($wmi.ConvertToDateTime($wmi.LastBootUpTime))).Days; if ($days -gt 14) { $_.Name + ' - ' + $days + ' days' } } }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "serverWindowsUpdate",
+      "category": "infrastructure",
+      "label": "Windows Update / Patching Status",
+      "description": "Servers with overdue Windows updates (excludes Hyper-V hosts)",
+      "severity": "High",
+      "score": 65,
+      "status": "Warning",
+      "threshold": "< 10% servers with overdue updates",
+      "actualValue": "Servers needing updates: 4 / 37 (10.8%) | Checked: 7 | Exempt Hyper-V: 27 | Critical(30d+): 0 | High(21d+): 0 | Medium(14d+): 4 | Unreachable: 0",
+      "recommendation": "Deploy pending Windows updates. Hyper-V hosts are exempt from strict checks (typically patched on host reboot schedule).",
+      "remediationCmd": "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} | ForEach-Object { try { $sessions = New-PSSession -ComputerName $_.Name -ErrorAction SilentlyContinue; if ($sessions) { $lastUpdate = Invoke-Command -Session $sessions -ScriptBlock { try { $session = New-Object -ComObject Microsoft.Update.Session; $searcher = $session.CreateUpdateSearcher(); $history = $searcher.QueryHistory(0,1) | Select-Object -First 1; if ($history) { $history.Date } } catch {} }; Remove-PSSession $sessions } } catch {} }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "wsusCompliance",
+      "category": "infrastructure",
+      "label": "Windows Update Compliance",
+      "description": "Server patch compliance - days since last Windows Update applied",
+      "severity": "High",
+      "score": 35,
+      "status": "Fail",
+      "threshold": "All servers patched within 30 days",
+      "actualValue": "Servers checked: 34/37 | >30d overdue: 4",
+      "recommendation": "Servers >30 days without patches require immediate attention.",
+      "remediationCmd": "Get-ADComputer -Filter {Enabled -eq $true} -Properties OperatingSystem | Where {$_.OperatingSystem -match 'Server'}",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    },
+    {
+      "checkId": "rdpNLA",
+      "category": "infrastructure",
+      "label": "RDP Network Level Authentication",
+      "description": "NLA requires authentication before RDP session opens",
+      "severity": "High",
+      "score": 25,
+      "status": "Fail",
+      "threshold": "NLA enabled on all DCs and servers",
+      "actualValue": "NLA compliant: 0 | Non-compliant: 34",
+      "recommendation": "Enable NLA on all servers especially DCs.",
+      "remediationCmd": "Invoke-Command -ComputerName SERVERNAME -ScriptBlock { Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name 'UserAuthenticationRequired' -Value 1 }",
+      "details": [],
+      "collectedAt": "2026-06-03"
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-03-30",
+      "overallScore": 63.0,
+      "categoryScores": {
+        "gpo": 83.0,
+        "identity": 23.0,
+        "infrastructure": 50.0,
+        "password": 72.0,
+        "hygiene": 60.0,
+        "monitoring": 91.0,
+        "dchealth": 86.0
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 3,
+      "highFails": 6
+    },
+    {
+      "date": "2026-04-20",
+      "overallScore": 69.0,
+      "categoryScores": {
+        "infrastructure": 78.0,
+        "monitoring": 88.0,
+        "identity": 34.0,
+        "gpo": 81.0,
+        "dchealth": 86.0,
+        "password": 75.0,
+        "hygiene": 60.0
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 3,
+      "highFails": 7
+    },
+    {
+      "date": "2026-06-02",
+      "overallScore": 72.0,
+      "categoryScores": {
+        "hygiene": 54.0,
+        "dchealth": 87.0,
+        "gpo": 88.0,
+        "infrastructure": 55.0,
+        "password": 89.0,
+        "monitoring": 91.0,
+        "identity": 44.0
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 7
+    },
+    {
+      "date": "2026-06-03",
+      "overallScore": 72.0,
+      "categoryScores": {
+        "hygiene": 54.0,
+        "dchealth": 87.0,
+        "gpo": 88.0,
+        "infrastructure": 55.0,
+        "password": 89.0,
+        "monitoring": 91.0,
+        "identity": 44.0
+      },
+      "domain": "internal.ashtongraham.co.uk",
+      "criticalFails": 2,
+      "highFails": 7
+    }
+  ]
+}

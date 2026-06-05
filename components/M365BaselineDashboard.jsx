@@ -139,7 +139,7 @@ export default function M365BaselineDashboard() {
     const name = window.prompt('Enter client name:');
     if (!name || !name.trim()) return;
     const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    setClients(prev => [...prev.filter(c => c.clientId !== id), { clientId: id, clientName: name.trim() }]);
+    setClients(prev => [...prev.filter(c => c.clientId !== id), { clientId: id, clientName: name.trim().toUpperCase() }]);
     setSelectedClientId(id);
   };
 
@@ -194,7 +194,7 @@ export default function M365BaselineDashboard() {
     const { overall } = computeCompliance(mergedItems);
     const payload = {
       clientId: selectedClientId,
-      clientName: clientData.clientName || selectedClientId,
+      clientName: (clientData.clientName || selectedClientId).toUpperCase(),
       licenseTier: clientData.licenseTier || 'standard',
       items: mergedItems,
       overallCompliance: overall
@@ -220,7 +220,7 @@ export default function M365BaselineDashboard() {
         fetch('/api/m365-trends', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientId: selectedClientId, clientName: clientData.clientName || selectedClientId, date: today, overallCompliance: overall, items: mergedItems })
+          body: JSON.stringify({ clientId: selectedClientId, clientName: (clientData.clientName || selectedClientId).toUpperCase(), date: today, overallCompliance: overall, items: mergedItems })
         }).then(r => r.json()).then(trendResult => {
           if (trendResult.trends) setAllTrends(prev => ({ ...prev, [selectedClientId]: trendResult.trends }));
         }).catch(() => {});
@@ -332,7 +332,7 @@ export default function M365BaselineDashboard() {
               >
                 <option value="">All Clients</option>
                 {clients.map(c => (
-                  <option key={c.clientId} value={c.clientId}>{c.clientName}</option>
+                  <option key={c.clientId} value={c.clientId}>{c.clientName?.toUpperCase()}</option>
                 ))}
               </select>
             </div>
@@ -425,7 +425,7 @@ export default function M365BaselineDashboard() {
                         <div className="flex items-center space-x-3">
                           <div className={`w-2 h-2 rounded-full ${(c.overallCompliance || 0) >= 80 ? 'bg-green-500' : (c.overallCompliance || 0) >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} />
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.clientName}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.clientName?.toUpperCase()}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Tier: {c.licenseTier || 'standard'}{c.lastUpdated ? ` · Updated: ${c.lastUpdated}` : ''}</p>
                           </div>
                         </div>
@@ -686,7 +686,7 @@ export default function M365BaselineDashboard() {
                     <div>
                       <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Baseline Compliance Report</h2>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Client: {selectedClient?.clientName} | Generated: {new Date().toISOString().slice(0, 10)}
+                        Client: {selectedClient?.clientName?.toUpperCase()} | Generated: {new Date().toISOString().slice(0, 10)}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">

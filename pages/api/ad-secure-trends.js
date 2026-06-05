@@ -26,6 +26,7 @@ function deriveClientId(file, domain) {
     clientName = clientName.replace(/\s+/g, ' ').trim();
   }
 
+  if (clientName) clientName = clientName.toUpperCase();
   const clientId = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '');
   return { clientId, clientName };
 }
@@ -45,9 +46,9 @@ function seedTrendsFromClients() {
       const domain = content.meta?.domain || '';
       const { clientId, clientName } = deriveClientId(file, domain);
       
-      if (!trends.clients[clientId]) {
-        trends.clients[clientId] = { name: clientName || domain || file.replace('.json', ''), domain, trends: [] };
-      }
+        if (!trends.clients[clientId]) {
+          trends.clients[clientId] = { name: (clientName || domain || file.replace('.json', '')).toUpperCase(), domain, trends: [] };
+        }
 
       // Collect from history array if present
       if (content.history && Array.isArray(content.history)) {
@@ -134,12 +135,10 @@ export default function handler(req, res) {
 
         const trends = readTrends();
 
-        if (!trends.clients[clientId]) {
-          trends.clients[clientId] = { name: clientName || clientId, domain: domain || '', trends: [] };
-        }
-
-        // Update name/domain if provided
-        if (clientName) trends.clients[clientId].name = clientName;
+    if (!trends.clients[clientId]) {
+      trends.clients[clientId] = { name: (clientName || clientId).toUpperCase(), domain: domain || '', trends: [] };
+    }
+    if (clientName) trends.clients[clientId].name = clientName.toUpperCase();
         if (domain) trends.clients[clientId].domain = domain;
 
         // Check if entry for this date already exists

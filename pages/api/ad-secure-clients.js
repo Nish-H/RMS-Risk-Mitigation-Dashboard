@@ -48,6 +48,8 @@ export default function handler(req, res) {
             clientName = file.replace('.json', '');
           }
           
+          clientName = clientName.toUpperCase();
+          
           const clientId = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '');
           console.log('[ad-secure-clients] FINAL clientId:', clientId, 'clientName:', clientName);
           

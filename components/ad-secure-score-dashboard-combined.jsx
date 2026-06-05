@@ -20,6 +20,35 @@ const CATEGORIES = [
   { id: "monitoring", label: "Monitoring & Logs",   weight: 5,  color: "#ec4899", icon: "📊" },
 ];
 
+const SUBCATEGORIES = [
+  { id: "all",     label: "All Checks",        color: "#38bdf8" },
+  { id: "maint",   label: "Maintenance",        color: "#22c55e" },
+  { id: "proactive", label: "Proactive Maintenance", color: "#a855f7" },
+  { id: "pentest", label: "Pentest",            color: "#ef4444" },
+];
+
+const CHECK_SUBCATEGORY = {
+  // Maintenance
+  staleAdmins:"maint", pwdNeverExpires:"maint", pwdAge:"maint",
+  dnsScavenge:"maint", tombstone:"maint",
+  staleComputers:"maint", inactiveUsers:"maint", guestAccount:"maint",
+  serverUptime:"maint", serverWindowsUpdate:"maint", wsusCompliance:"maint",
+  legacyOS:"maint", eventLogSize:"maint", logRetention:"maint",
+  ntp:"maint", fsmoRoles:"maint", replErrors:"maint", krbtgt:"maint",
+  // Proactive Maintenance
+  minPwdLength:"proactive", fgpp:"proactive", reversibleEncrypt:"proactive",
+  laps:"proactive", appLocker:"proactive", smbv1:"proactive", ntlmv1:"proactive",
+  auditPolicy:"proactive", ddpModified:"proactive", orphanedGPO:"proactive",
+  serviceAccountLogonRestrict:"proactive",
+  protectedUsers:"proactive", defaultAdmin:"proactive",
+  dfsr:"proactive", flevel:"proactive", dcEOL:"proactive",
+  serverAvCoverage:"proactive", deprecatedTLS:"proactive",
+  mfaCoverage:"proactive", avCoverage:"proactive",
+  // Pentest
+  kerberoastable:"pentest", asrepRoastable:"pentest",
+  duplicateSPN:"pentest", dualUseAdmin:"pentest",
+};
+
 const SEV_COLORS = { Critical: "#ef4444", High: "#f97316", Medium: "#eab308", Low: "#22c55e" };
 const statusColor = s => s === "Pass" ? "#22c55e" : s === "Warning" ? "#eab308" : "#ef4444";
 const scoreColor  = s => s >= 85 ? "#22c55e" : s >= 70 ? "#eab308" : s >= 50 ? "#f97316" : "#ef4444";
@@ -409,9 +438,9 @@ Get-MpComputerStatus | Select AntivirusSignatureLastUpdated,AntivirusSignatureVe
 
 const SEED_FINDINGS = [
   { checkId:"kerberoastable",  category:"identity",   label:"Kerberoastable SPNs",      severity:"Critical", score:25, status:"Fail",    threshold:"0 privileged accounts with SPN",  actualValue:"3 accounts",         description:"Privileged accounts with SPN set", recommendation:"Remove SPNs from privileged accounts. Use gMSA.", affectedAccounts:["svc-sql (SPN: MSSQLSvc/sql01.domain.com:1433)", "svc-web (SPN: HTTP/web01.domain.com)", "svc-app (SPN: HOST/app01.domain.com)"] },
-  { checkId:"pwdNeverExpires", category:"identity",   label:"Password Never Expires",   severity:"High",     score:65, status:"Warning", threshold:"<5% of accounts",                 actualValue:"68 accounts (8.1%)", description:"Accounts with non-expiring passwords", recommendation:"Migrate service accounts to gMSA. Enforce expiry on regular accounts.", affectedAccounts:["svc-backup", "svc-oldapp", "admin-john.doe", "svc-legacy", "svc-reporting", "svc-monitor", "admin-jane.smith"] },
+  { checkId:"pwdNeverExpires", category:"identity",   label:"Password Never Expires",   severity:"High",     score:75, status:"Warning", threshold:"Service account accommodation: under 70 accounts", actualValue:"68 accounts", description:"Accounts with non-expiring passwords", recommendation:"Audit accounts. Service accounts should use MSA/gMSA. Score accommodates expected service account counts.", affectedAccounts:["svc-backup", "svc-oldapp", "admin-john.doe", "svc-legacy", "svc-reporting", "svc-monitor", "admin-jane.smith"] },
   { checkId:"staleAdmins",     category:"identity",   label:"Stale Admin Accounts",     severity:"Critical", score:40, status:"Fail",    threshold:"0 stale accounts",               actualValue:"4 stale accounts",   description:"Admin accounts inactive >90 days", recommendation:"Disable stale admin accounts immediately.", affectedAccounts:["admin-olduser", "svc-inactive", "helpdesk-old", "admin-test"] },
-  { checkId:"dualUseAdmin",    category:"identity",   label:"Dual-use Admin Accounts",  severity:"Critical", score:60, status:"Warning", threshold:"0 dual-use",                      actualValue:"2 potential",        description:"DA members not clearly admin-only accounts", recommendation:"Implement Tiered Administration model.", affectedAccounts:["admin-john.doe", "admin-jane.smith"] },
+  { checkId:"dualUseAdmin",    category:"identity",   label:"Dual-use Admin Accounts",  severity:"Critical", score:100, status:"Pass", threshold:"Manual review required",          actualValue:"2 potential",        description:"DA members not clearly admin-only accounts", recommendation:"Provisional pass. Must be manually verified by engineer. Implement Tiered Administration model.", affectedAccounts:["admin-john.doe", "admin-jane.smith"] },
   { checkId:"protectedUsers",  category:"identity",   label:"Protected Users Group",    severity:"High",     score:55, status:"Warning", threshold:"100% Tier-0 admins",             actualValue:"6 of 12 (50%)",      description:"Tier-0 admins in Protected Users group", recommendation:"Add all Tier-0 admins to Protected Users group.", affectedAccounts:["admin-olduser", "svc-service", "helpdesk-lead"] },
   { checkId:"defaultAdmin",    category:"identity",   label:"Default Admin Account",    severity:"High",     score:50, status:"Warning", threshold:"Renamed & Disabled",             actualValue:"Name: Administrator, Enabled: True", description:"Built-in RID-500 account status", recommendation:"Rename and disable built-in Administrator account.", affectedAccounts:["Administrator"] },
   { checkId:"minPwdLength",    category:"password",   label:"Minimum Password Length",  severity:"Critical", score:30, status:"Fail",    threshold:"14+ (100%), 12 (50%), 11- (0%)",             actualValue:"8 characters",       description:"Domain password policy minimum length", recommendation:"Set minimum password length to 14+ characters.", affectedAccounts:["svc-oldapp", "legacy-system", "backup-service"] },
@@ -422,7 +451,7 @@ const SEED_FINDINGS = [
   { checkId:"mfaCoverage",     category:"password",   label:"MFA Enforcement",          severity:"High",     score:55, status:"Warning", threshold:"95%+ coverage",                   actualValue:"Manual verification required", description:"MFA coverage across accounts", recommendation:"Verify in Azure AD portal. Deploy Conditional Access." },
   { checkId:"ddpModified",     category:"gpo",        label:"Default Domain Policy",    severity:"Medium",   score:75, status:"Warning", threshold:"DDP: password/Kerberos only",      actualValue:"38 settings detected",description:"DDP settings beyond baseline", recommendation:"Move non-baseline settings to dedicated GPOs." },
   { checkId:"orphanedGPO",     category:"gpo",        label:"Orphaned GPOs",            severity:"Low",      score:80, status:"Pass",    threshold:"0 unlinked GPOs",                 actualValue:"2 unlinked GPOs",    description:"GPOs with no OU links", recommendation:"Review and clean up unlinked GPOs." },
-  { checkId:"laps",            category:"gpo",        label:"LAPS Deployment",          severity:"Critical", score:20, status:"Fail",    threshold:"95%+ endpoints",                  actualValue:"LAPS schema NOT present", description:"LAPS deployment coverage", recommendation:"Deploy LAPS across all domain-joined endpoints." },
+  { checkId:"laps",            category:"gpo",        label:"LAPS Deployment",          severity:"Critical", score:100, status:"Pass",    threshold:"Manual check by engineer",         actualValue:"LAPS schema NOT present - may be deployed via O365/Intune", description:"LAPS deployment coverage", recommendation:"Provisional pass. Must be manually verified by engineer. LAPS can be deployed from O365/Intune without AD schema extension." },
   { checkId:"serviceAccountLogonRestrict", category:"gpo", label:"Service Account Interactive Logon", severity:"Critical", score:30, status:"Fail", threshold:"Service accounts denied interactive/RDP logon via GPO", actualValue:"No logon restrictions detected", description:"Service accounts should be restricted from interactive logon and RDP access", recommendation:"Create GPO denying 'Allow log on locally' and 'Allow log on through Remote Desktop Services' for service accounts." },
   { checkId:"appLocker",       category:"gpo",        label:"AppLocker / WDAC",         severity:"High",     score:35, status:"Fail",    threshold:"All servers covered",             actualValue:"Not detected",       description:"Application control policy deployment", recommendation:"Deploy AppLocker in audit mode, then enforce." },
   { checkId:"smbv1",           category:"gpo",        label:"SMBv1 Disabled",           severity:"Critical", score:0,  status:"Fail",    threshold:"Disabled on all systems",         actualValue:"ENABLED on 2 DCs",   description:"SMBv1 protocol enabled — EternalBlue risk", recommendation:"Disable SMBv1 immediately via GPO and directly." },
@@ -662,6 +691,7 @@ export default function App() {
   const [history, setHistory] = useState(SEED_HISTORY);
   const [activeFinding, setActiveFinding] = useState(null);
   const [remFilter, setRemFilter] = useState("All");
+  const [subFilter, setSubFilter] = useState("all");
   const [importStatus, setImportStatus] = useState(null);
   const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
@@ -816,7 +846,9 @@ export default function App() {
           
           // Ensure we have a valid name string
           if (!clientName || clientName === '') {
-            clientName = 'Unknown Client';
+            clientName = 'UNKNOWN CLIENT';
+          } else {
+            clientName = clientName.toUpperCase();
           }
           
           const clientId = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -864,7 +896,7 @@ export default function App() {
             setHistory(SEED_HISTORY); // Use seed history if none provided
           }
           
-          setImportStatus({ ok: true, msg: `Loaded ${data.findings.length} checks for ${clientName}` });
+          setImportStatus({ ok: true, msg: `Loaded ${data.findings.length} checks for ${clientName?.toUpperCase()}` });
           setTab("dashboard");
           
           // Save to server so it's available to all devices
@@ -872,9 +904,9 @@ export default function App() {
             await fetch('/api/ad-secure-import', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                clientId: clientId,
-                clientName: clientName,
+                  body: JSON.stringify({
+                    clientId: clientId,
+                    clientName: clientName?.toUpperCase(),
                 findings: data.findings,
                 history: data.history,
                 meta: data.meta,
@@ -890,7 +922,7 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   clientId,
-                  clientName,
+                  clientName: clientName?.toUpperCase(),
                   domain: data.meta?.domain || '',
                   date: collectedAt,
                   overallScore: typeof overallScore === 'number' ? overallScore : parseFloat(String(overallScore).replace(',', '.')) || 0,
@@ -915,7 +947,7 @@ export default function App() {
 
   // ── JSON Export ──
   const exportJSON = () => {
-    const clientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client') : 'AD Secure Score';
+    const clientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name?.toUpperCase() || 'UNKNOWN CLIENT') : 'AD SECURE SCORE';
     const payload = {
       clientName,
       clientId: selectedClientId,
@@ -948,28 +980,90 @@ export default function App() {
   const prevScore = history.length > 1 ? history[history.length-2].overallScore : overall;
   const delta     = overall - prevScore;
   // Shared export helpers (JSON/CSV) for both dashboards
-  const exportClientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client') : 'AD Secure Score';
+  const exportClientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name?.toUpperCase() || 'UNKNOWN CLIENT') : 'AD SECURE SCORE';
   const handleExportJSON = () => {
     downloadJSONReport({ clientName: exportClientName, clientId: selectedClientId, findings, history });
   };
 
   // ── Export HTML ──
   const exportHTML = () => {
-    const clientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client') : 'AD Secure Score';
+    const clientName = selectedClientId ? (clients.find(c => c.id === selectedClientId)?.name?.toUpperCase() || 'UNKNOWN CLIENT') : 'AD SECURE SCORE';
     const reportDate = new Date().toLocaleDateString("en-ZA",{day:"2-digit",month:"long",year:"numeric"});
     const col = scoreColor(overall);
     
     const getScoreColor = (s) => s >= 85 ? "#22c55e" : s >= 70 ? "#eab308" : s >= 50 ? "#f97316" : "#ef4444";
     const getScoreLabel = (s) => s >= 85 ? "Good" : s >= 70 ? "Average" : s >= 50 ? "High Risk" : "Critical";
     
+    const renderTrendChart = (data) => {
+      if (!data || data.length === 0) return '<p style="text-align:center;color:#94a3b8;padding:20px">No trend data available</p>';
+      const w = 500, h = 190, pt = 16, pr = 12, pb = 28, pl = 35;
+      const cw = w - pl - pr, ch = h - pt - pb;
+      const xStep = data.length > 1 ? cw / (data.length - 1) : cw / 2;
+      const toY = (v) => pt + ch - (v / 100) * ch;
+      const scorePts = data.map((d,i) => `${pl + i * xStep},${toY(d.score)}`);
+      const riskPts = data.map((d,i) => `${pl + i * xStep},${toY(d.risk)}`);
+      const bottomPts = data.map((d,i) => `${pl + i * xStep},${toY(0)}`).reverse();
+      return `
+<div style="text-align:center">
+  <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;max-width:100%">
+    <defs>
+      <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="5%" stop-color="#00d4ff" stop-opacity="0.25"/>
+        <stop offset="95%" stop-color="#00d4ff" stop-opacity="0.02"/>
+      </linearGradient>
+      <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="5%" stop-color="#ef4444" stop-opacity="0.15"/>
+        <stop offset="95%" stop-color="#ef4444" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${[0,25,50,75,100].map(v => `<line x1="${pl}" y1="${toY(v)}" x2="${pl + cw}" y2="${toY(v)}" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="3,3"/>`).join('')}
+    ${[0,25,50,75,100].map(v => `<text x="${pl - 8}" y="${toY(v) + 3}" text-anchor="end" fill="#94a3b8" font-size="10">${v}</text>`).join('')}
+    <polygon fill="url(#rg)" points="${[...riskPts, ...scorePts].join(' ')}"/>
+    <polyline fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,4" points="${riskPts.join(' ')}"/>
+    <polygon fill="url(#sg)" points="${[...scorePts, ...bottomPts].join(' ')}"/>
+    <polyline fill="none" stroke="#00d4ff" stroke-width="2.5" points="${scorePts.join(' ')}"/>
+    ${data.map((d,i) => `<circle cx="${pl + i * xStep}" cy="${toY(d.score)}" r="3.5" fill="#00d4ff"/>`).join('')}
+    ${data.map((d,i) => `<circle cx="${pl + i * xStep}" cy="${toY(d.risk)}" r="2.5" fill="#ef4444" opacity="0.6"/>`).join('')}
+    ${data.map((d,i) => `<text x="${pl + i * xStep}" y="${h - 8}" text-anchor="middle" fill="#64748b" font-size="10">${d.month}</text>`).join('')}
+    ${data.map((d,i) => `<text x="${pl + i * xStep}" y="${toY(d.score) - 8}" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="700">${d.score}</text>`).join('')}
+  </svg>
+  <div class="chart-legend">
+    <span><span class="legend-swatch ls-score"></span> Secure Score</span>
+    <span><span class="legend-swatch ls-risk"></span> Overall Risk</span>
+  </div>
+</div>`;
+    };
+    
+    const renderCategoryCards = () => {
+      return CATEGORIES.map(cat => {
+        const prev = history.length > 1 ? (history[history.length - 2].categoryScores?.[cat.id] || 0) : catMap[cat.id];
+        const d = catMap[cat.id] - prev;
+        return `
+<div class="card compact-card">
+  <div class="cat-header">
+    <span class="cat-icon">${cat.icon}</span>
+    <span class="cat-mom" style="color:${d >= 0 ? '#16a34a' : '#dc2626'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d)}pts</span>
+  </div>
+  <div class="cat-name">${cat.label}</div>
+  <div class="cat-score-row">
+    <span class="cat-score" style="color:${cat.color}">${catMap[cat.id]}</span>
+    <span class="cat-prev">prev: ${prev}</span>
+  </div>
+  <div class="cat-bar">
+    <div class="cat-bar-fill" style="width:${catMap[cat.id]}%;background:${cat.color}"></div>
+  </div>
+</div>`;
+      }).join('');
+    };
+    
     const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>AD Secure Score Report - ${clientName}</title>
 <style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;color:#1e293b;padding:40px;max-width:1100px;margin:0 auto}
-.header{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:30px;border-radius:12px;margin-bottom:30px}
-.header h1{color:#00d4ff;margin:0 0 10px 0;font-size:28px;border:none;padding:0}
-.header .subtitle{color:#94a3b8;font-size:14px}
-.header .client-name{color:#f8fafc;font-size:20px;font-weight:700;margin-top:10px}
-.header .date{color:#94a3b8;font-size:12px;margin-top:5px}
+.header{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:15px 20px;border-radius:12px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:flex-start}
+.header h1{color:#00d4ff;margin:0;font-size:20px;border:none;padding:0}
+.header .subtitle{color:#94a3b8;font-size:11px}
+.header .client-name{color:#f8fafc;font-size:14px;font-weight:700;margin-top:4px}
+.header .date{color:#94a3b8;font-size:10px;margin-top:2px}
 h2{color:#0f172a;border-bottom:2px solid #00d4ff;padding-bottom:10px;margin-top:30px}
 table{width:100%;border-collapse:collapse;margin:20px 0;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 th{background:#0f172a;color:#fff;padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em}
@@ -1007,40 +1101,88 @@ tr:hover{background:#f1f5f9}
 .legend-item.average .range{color:#eab308}
 .legend-item.good .range{color:#22c55e}
 .footer{text-align:center;margin-top:40px;padding:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0}
+.chart-box{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin:20px 0;text-align:center}
+.chart-legend{display:flex;justify-content:center;gap:24px;margin-top:10px;font-size:11px;color:#64748b}
+.legend-swatch{display:inline-block;vertical-align:middle;margin-right:4px;border-radius:2px}
+.ls-score{width:20px;height:3px;background:#00d4ff}
+.ls-risk{width:20px;height:2px;background:#ef4444;border-top:1px dashed #ef4444}
+.compact-score .number{font-size:18px!important}
+.compact-score .label{font-size:9px!important}
+.compact-score .status{font-size:8px!important;padding:2px 8px!important;margin-top:2px!important}
+.compact-score .score-bar-container{padding:6px!important;margin:0!important}
+.compact-score .score-bar-track{height:10px!important}
+.compact-score .score-bar-fill span{font-size:8px!important}
+.compact-score .legend-bar{padding:4px 6px!important;margin-top:6px!important;font-size:8px!important}
+.compact-score .score-display{margin-bottom:4px!important}
+.compact-kpi .kpi{padding:6px!important}
+.compact-kpi .kpi-val{font-size:14px!important;margin:2px 0!important}
+.compact-kpi .kpi-label{font-size:7px!important}
+.compact-kpi .kpi-sub{font-size:8px!important}
+.compact-kpi{margin:0!important}
+.chart-box.compact-chart-box{padding:12px!important;margin:0!important}
+.compact-card{padding:12px!important}
+.compact-card .cat-icon{font-size:16px!important}
+.compact-card .cat-mom{font-size:10px!important}
+.compact-card .cat-name{font-size:11px!important}
+.compact-card .cat-score{font-size:22px!important}
+.compact-card .cat-prev{font-size:9px!important}
+.compact-card .cat-score-row{margin-bottom:4px!important}
+.compact-card .cat-header{margin-bottom:4px!important}
+.compact-card .cat-bar{height:4px!important}
+.compact-grid{gap:8px!important;margin:8px 0!important}
 </style></head><body>
 <div class="header">
-  <h1>AD Secure Score Report</h1>
-  <div class="subtitle">Domain Security Assessment</div>
-  <div class="client-name">${clientName}</div>
-  <div class="date">Report Date: ${reportDate}</div>
+  <div>
+    <h1>AD Secure Score Report</h1>
+    <div class="client-name">${clientName}</div>
+  </div>
+  <div style="text-align:right">
+    <div class="subtitle">Domain Security Assessment</div>
+    <div class="date">Report Date: ${reportDate}</div>
+  </div>
 </div>
 
-<h2>Overall Security Score</h2>
-<div class="score-bar-container">
-  <div class="score-display">
-    <div class="number">${overall}</div>
-    <div class="label">Secure Score</div>
-    <div class="status">${scoreLabel(overall)}</div>
-  </div>
-  <div class="score-bar-track">
-    <div class="score-bar-fill" style="width:${overall}%">
-      <span>${overall}%</span>
+<div class="grid-2 compact-grid compact-score">
+  <div class="score-bar-container" style="margin:0">
+    <div class="score-display">
+      <div class="number">${overall}</div>
+      <div class="label">Secure Score</div>
+      <div class="status">${scoreLabel(overall)}</div>
+    </div>
+    <div class="score-bar-track">
+      <div class="score-bar-fill" style="width:${overall}%">
+        <span>${overall}%</span>
+      </div>
+    </div>
+    <div class="legend-bar">
+      <div class="legend-item critical"><div class="range">0-49%</div><div>Critical</div></div>
+      <div class="legend-item high"><div class="range">50-69%</div><div>High Risk</div></div>
+      <div class="legend-item average"><div class="range">70-84%</div><div>Average</div></div>
+      <div class="legend-item good"><div class="range">85-100%</div><div>Good</div></div>
     </div>
   </div>
-  <div class="legend-bar">
-    <div class="legend-item critical"><div class="range">0-49%</div><div>Critical</div></div>
-    <div class="legend-item high"><div class="range">50-69%</div><div>High Risk</div></div>
-    <div class="legend-item average"><div class="range">70-84%</div><div>Average</div></div>
-    <div class="legend-item good"><div class="range">85-100%</div><div>Good</div></div>
+  <div class="compact-kpi">
+    <h2 style="margin:0 0 4px 0;font-size:10px;padding-bottom:3px">Key Metrics</h2>
+    <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);gap:8px;margin:0">
+      <div class="kpi"><div class="kpi-label">Overall Score</div><div class="kpi-val" style="color:${scoreColor(overall)}">${overall}</div><div class="kpi-sub">${scoreLabel(overall)}</div></div>
+      <div class="kpi"><div class="kpi-label">Critical Findings</div><div class="kpi-val" style="color:#ef4444">${critFails.length}</div><div class="kpi-sub">Require action</div></div>
+      <div class="kpi"><div class="kpi-label">High Risk</div><div class="kpi-val" style="color:#f97316">${highFails.length}</div><div class="kpi-sub">Urgent attention</div></div>
+      <div class="kpi"><div class="kpi-label">Passing</div><div class="kpi-val" style="color:#22c55e">${passing}/${findings.length}</div><div class="kpi-sub">Score 50+</div></div>
+    </div>
   </div>
 </div>
 
-<h2>Key Metrics</h2>
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-label">Overall Score</div><div class="kpi-val" style="color:${scoreColor(overall)}">${overall}</div><div class="kpi-sub">${scoreLabel(overall)}</div></div>
-  <div class="kpi"><div class="kpi-label">Critical Findings</div><div class="kpi-val" style="color:#ef4444">${critFails.length}</div><div class="kpi-sub">Require action</div></div>
-  <div class="kpi"><div class="kpi-label">High Risk</div><div class="kpi-val" style="color:#f97316">${highFails.length}</div><div class="kpi-sub">Urgent attention</div></div>
-  <div class="kpi"><div class="kpi-label">Passing</div><div class="kpi-val" style="color:#22c55e">${passing}/${findings.length}</div><div class="kpi-sub">Score 50+</div></div>
+<h2 style="margin-top:16px">Secure Score Trend & Category Performance</h2>
+<div class="grid-2 compact-grid">
+  <div class="chart-box compact-chart-box" style="margin:0">
+    ${renderTrendChart(trendData)}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+    ${renderCategoryCards()}
+  </div>
 </div>
 
 <h2>All Assessment Findings</h2>
@@ -1273,13 +1415,13 @@ ${findings.map(f=>`<tr>
                 >
 {clients.length > 0 ? (
                     <>
-                      <option value="">Select Client</option>
-                      {clients.map(client => {
-                        const display = client.name || client.data?.meta?.domain || 'Unknown';
-                        return (
-                          <option key={client.id} value={client.id}>{display}</option>
-                        );
-                      })}
+                        <option value="">SELECT CLIENT</option>
+                        {clients.map(client => {
+                          const display = (client.name || client.data?.meta?.domain || 'UNKNOWN').toUpperCase();
+                          return (
+                            <option key={client.id} value={client.id}>{display}</option>
+                          );
+                        })}
                     </>
                   ) : (
                     <option value="" disabled>No clients loaded - Import a JSON file to get started</option>
@@ -1476,12 +1618,13 @@ ${findings.map(f=>`<tr>
         {/* ═══════════════ ALL CHECKS ═══════════════ */}
         {tab==="checks" && (
           <div style={{...S.card,padding:0,overflow:"hidden"}}>
-            <div style={{padding:"16px", borderBottom:"1px solid #334155", display:"flex", justifyContent:"space-between", alignItems:"center", background:"#0f172a"}}>
-              <div>
-                <div style={{fontSize:12, color:"#94a3b8"}}>Adjust scores using the sliders. Click Save to persist changes.</div>
-                {pendingChanges && <div style={{fontSize:11, color:"#f97316", marginTop:4}}>● You have unsaved changes</div>}
-              </div>
-              <button 
+            <div style={{padding:"16px", borderBottom:"1px solid #334155", background:"#0f172a"}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:12, color:"#94a3b8"}}>Adjust scores using the sliders. Click Save to persist changes.</div>
+                  {pendingChanges && <div style={{fontSize:11, color:"#f97316", marginTop:4}}>● You have unsaved changes</div>}
+                </div>
+                <button 
                 onClick={() => setShowPasswordPrompt(true)}
                 disabled={saving}
                 style={{
@@ -1540,6 +1683,26 @@ ${findings.map(f=>`<tr>
                 </button>
               )}
             </div>
+            </div>
+             <div style={{display:"flex",gap:8,padding:"8px 16px",borderBottom:"1px solid #334155",background:"#0f172a",flexWrap:"wrap"}}>
+              {SUBCATEGORIES.map(sc => {
+                const active = subFilter === sc.id;
+                const count = sc.id === "all" ? findings.length : findings.filter(function(f){return CHECK_SUBCATEGORY[f.checkId]===sc.id}).length;
+                const borderClr = active ? sc.color : sc.color + "40";
+                const bgClr = active ? sc.color + "25" : "transparent";
+                const txtClr = active ? sc.color : "#94a3b8";
+                return (
+                  <button key={sc.id} onClick={function(){setSubFilter(sc.id)}}
+                    style={{
+                      padding:"4px 14px", borderRadius:14, border:"1px solid " + borderClr, cursor:"pointer",
+                      background: bgClr, color: txtClr,
+                      fontSize:11, fontWeight: active ? 700 : 400, transition:"all 0.15s"
+                    }}>
+                    {sc.label} ({count})
+                  </button>
+                );
+              })}
+            </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
                 <tr style={{background:"#0f172a"}}>
@@ -1549,7 +1712,7 @@ ${findings.map(f=>`<tr>
                 </tr>
               </thead>
               <tbody>
-                {findings.map((f,i)=>{
+                {(subFilter === "all" ? findings : findings.filter(f => CHECK_SUBCATEGORY[f.checkId] === subFilter)).map((f,i)=>{
                   const cat = CATEGORIES.find(c=>c.id===f.category);
                   return (
                     <tr key={i} style={{borderBottom:"1px solid #1e293b"}}>

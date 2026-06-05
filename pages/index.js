@@ -23,6 +23,24 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        let visitorId = localStorage.getItem('rms_visitor_id');
+        if (!visitorId) {
+            visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            localStorage.setItem('rms_visitor_id', visitorId);
+        }
+        fetch('/api/tracker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                visitorId,
+                page: window.location.pathname,
+                referrer: document.referrer || '',
+                userAgent: navigator.userAgent
+            })
+        }).catch(() => {});
+    }, []);
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             {/* Top Bar */}

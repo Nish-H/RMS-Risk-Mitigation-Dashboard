@@ -19,7 +19,7 @@ function deriveClientNameFromDomain(domain) {
   raw = raw.replace(/[^a-z0-9]/g, '');
   if (!raw) return '';
   // Title case the name (simple, robust for alphanumeric tokens)
-  const name = raw.charAt(0).toUpperCase() + raw.slice(1);
+  const name = raw.toUpperCase();
   return name;
 }
 

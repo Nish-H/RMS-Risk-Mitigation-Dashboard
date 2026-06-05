@@ -7,7 +7,8 @@ export default function handler(req, res) {
   }
 
   try {
-    const { clientId, clientName, findings, history, meta, scores } = req.body;
+    const { clientId, findings, history, meta, scores } = req.body;
+    const clientName = (req.body.clientName || '').toUpperCase();
     
     if (!findings || !Array.isArray(findings)) {
       return res.status(400).json({ error: 'Invalid data: missing findings array' });

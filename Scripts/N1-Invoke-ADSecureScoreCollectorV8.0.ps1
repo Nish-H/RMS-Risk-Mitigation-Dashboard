@@ -303,15 +303,15 @@ try {
 try {
     $enabled  = @($AllUsers | Where-Object { $_.Enabled })
     $neverExp = @($enabled  | Where-Object { $_.PasswordNeverExpires })
-    $pct      = if ($enabled.Count -gt 0) { [Math]::Round(($neverExp.Count / $enabled.Count) * 100, 1) } else { 0 }
-    $score    = if ($pct -le 2) { 100 } elseif ($pct -le 5) { 75 } elseif ($pct -le 15) { 50 } else { 20 }
-    $status   = if ($pct -le 2) { "Pass" } elseif ($pct -le 5) { "Warning" } else { "Fail" }
-    if ($status -eq "Pass") { Write-Pass "Password Never Expires: $($neverExp.Count) ($pct%%)" } else { Write-Fail "Password Never Expires: $($neverExp.Count) ($pct%%)" }
+    $count    = $neverExp.Count
+    $score    = if ($count -lt 20) { 90 } elseif ($count -lt 50) { 85 } elseif ($count -lt 60) { 75 } elseif ($count -lt 70) { 70 } else { 20 }
+    $status   = if ($count -lt 20) { "Pass" } elseif ($count -lt 50) { "Pass" } elseif ($count -lt 60) { "Warning" } elseif ($count -lt 70) { "Warning" } else { "Fail" }
+    if ($status -eq "Pass") { Write-Pass "Password Never Expires: $($neverExp.Count) accounts" } else { Write-Fail "Password Never Expires: $($neverExp.Count) accounts" }
     Add-Finding -CheckId "pwdNeverExpires" -Category "identity" -Label "Password Never Expires" `
         -Description "Enabled accounts with non-expiring passwords" `
         -Severity "High" -Score $score -Status $status `
-        -Threshold "Less than 5% of enabled accounts" -ActualValue "$($neverExp.Count) accounts ($pct%%)" `
-        -Recommendation "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy." `
+        -Threshold "Service account accommodation: under 70 accounts" -ActualValue "$count accounts with PasswordNeverExpires" `
+        -Recommendation "Audit accounts. Service accounts should use MSA/gMSA. Regular accounts must comply with password policy. Score accommodates expected service account counts." `
         -RemediationCmd "Get-ADUser -Filter {PasswordNeverExpires -eq `$true -and Enabled -eq `$true} | Select Name,SamAccountName | Export-Csv PwdNeverExpires.csv -NoTypeInformation"
 } catch { Write-Err "pwdNeverExpires" $_; [void]$Script:Errors.Add("pwdNeverExpires: $($_.Exception.Message)") }
 
@@ -343,14 +343,14 @@ try {
         $_.SamAccountName -notmatch "^(adm|adm-|admin|svc|sa-|t0-|tier0|_adm)"
     })
     $count  = $dualUse.Count
-    $score  = if ($count -eq 0) { 100 } else { [Math]::Max(0, 100 - ($count * 10)) }
-    $status = if ($count -eq 0) { "Pass" } elseif ($count -le 2) { "Warning" } else { "Fail" }
-    if ($status -eq "Pass") { Write-Pass "Dual-use Admin Accounts: $count" } else { Write-Fail "Dual-use Admin Accounts: $count" }
+    $score  = 100
+    $status = "Pass"
+    Write-Pass "Dual-use Admin Accounts: $count (provisional pass - manual check required)"
     Add-Finding -CheckId "dualUseAdmin" -Category "identity" -Label "Dual-use Admin Accounts" `
         -Description "Domain Admins members not clearly designated as admin-only accounts" `
         -Severity "Critical" -Score $score -Status $status `
-        -Threshold "0 - all admins must use dedicated admin accounts" -ActualValue "$count potential dual-use account(s)" `
-        -Recommendation "Implement Tiered Administration. Admin accounts for admin tasks only, separate from daily-use accounts." `
+        -Threshold "Manual review required" -ActualValue "$count potential dual-use account(s)" `
+        -Recommendation "Provisional pass. This must be manually verified by an engineer. Implement Tiered Administration - admin accounts for admin tasks only, separate from daily-use accounts." `
         -RemediationCmd "Get-ADGroupMember 'Domain Admins' -Recursive | Where {`$_.objectClass -eq 'user'} | Get-ADUser -Properties Description | Select Name,SamAccountName,Description | Export-Csv DA_Audit.csv"
 } catch { Write-Err "dualUseAdmin" $_; [void]$Script:Errors.Add("dualUseAdmin: $($_.Exception.Message)") }
 
@@ -730,36 +730,15 @@ try {
         $lapsDetails += "$($intuneDevices.Count) Intune-managed devices (cloud LAPS policy possible)"
     }
     
-    # Evaluate overall LAPS status
-    $totalMethods = $lapsMethods.Count
-    if ($hasOnPremLAPS -and $onPremPct -ge 95) {
-        $score = 100; $status = "Pass"
-        $actual = "On-Prem LAPS: $onPremPct% coverage"
-    } elseif ($hasOnPremLAPS -and $onPremPct -ge 80) {
-        $score = 75; $status = "Warning"
-        $actual = "On-Prem LAPS: $onPremPct% coverage"
-    } elseif ($hasAzureLAPS) {
-        $score = 90; $status = "Pass"
-        $actual = "Windows LAPS (Azure AD) detected - verify Intune policy deployment"
-    } elseif ($hasIntune -and -not $hasOnPremLAPS) {
-        $score = 50; $status = "Warning"
-        $actual = "Intune managed - cloud LAPS policy may be applicable"
-    } elseif ($hasOnPremLAPS) {
-        $score = 40; $status = "Warning"
-        $actual = "On-Prem LAPS: partial coverage ($onPremPct%%)"
-    } else {
-        $score = 0; $status = "Fail"
-        $actual = "No LAPS solution detected (On-Prem or Azure)"
-    }
+    # Evaluate overall LAPS status (provisional pass - manual check)
+    $actual = if ($lapsDetails.Count -gt 0) { "LAPS methods detected: $($lapsMethods -join ', '). $($lapsDetails -join '; ')" } else { "No LAPS detection attempted - manual check required" }
     
-    if ($lapsDetails.Count -gt 0) { $actual += " | $($lapsDetails -join '; ')" }
-    
-    if ($status -eq "Pass") { Write-Pass "LAPS: $actual" } else { Write-Warn "LAPS: $actual" }
+    Write-Pass "LAPS: Provisional pass - manual check required ($actual)"
     Add-Finding -CheckId "laps" -Category "gpo" -Label "LAPS Deployment" `
-        -Description "Local Administrator Password Solution - covers both On-Prem LAPS and Windows LAPS (Azure AD/Intune)" `
-        -Severity "Critical" -Score $score -Status $status `
-        -Threshold "95%+ coverage with LAPS (On-Prem or Azure AD)" -ActualValue $actual `
-        -Recommendation "Deploy On-Prem LAPS via GPO, or configure Windows LAPS via Intune for cloud-managed devices. Both solutions secure local admin passwords." `
+        -Description "Local Administrator Password Solution - check is provisional; LAPS may be deployed via O365/Intune without AD schema attributes" `
+        -Severity "Critical" -Score 100 -Status "Pass" `
+        -Threshold "Manual check by engineer" -ActualValue $actual `
+        -Recommendation "Provisional pass. This must be manually verified by an engineer. LAPS can be deployed from O365/Intune without extending the local AD schema. Verify LAPS policy via Intune or confirm AD schema extension for on-prem LAPS." `
         -RemediationCmd "On-Prem: Import-Module AdmPwd.PS; Update-AdmPwdADSchema | Azure: Configure LAPS policy in Intune"
 } catch { Write-Err "laps" $_; [void]$Script:Errors.Add("laps: $($_.Exception.Message)") }
 

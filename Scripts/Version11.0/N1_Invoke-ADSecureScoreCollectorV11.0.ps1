@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    AD Secure Score Data Collector  COMBINED VERSION v10.0
+    AD Secure Score Data Collector  COMBINED VERSION v11.0
     First Technology KwaZulu-Natal  MSP Domain Assessment Framework
     Author: Nishen Harichunder - L4 RMS Engineering
 
@@ -11,21 +11,19 @@
     domain environment. Outputs a structured JSON file consumed by the AD Secure Score
     Dashboard and HTML Report Generator.
 
-    Version 10.0 Changes (April 2026):
-    - Merged v9.0 and v3.0 (v4.0) scripts
-    - Added lockoutPolicy and pwdComplexity from v3.0
-    - Enhanced AV scanning with multiple fallback methods (WMI, Registry, Service check)
-    - Enhanced Windows Update check with multiple fallback methods (COM, Registry, Hotfix)
-    - Added WMI Filter Orphans, GPO Block/Enforce Conflict from v3.0
-    - Added DCDiag, SYSVOL/NETLOGON checks from v3.0
-    - Added Empty OUs, AdminSDHolder Orphans from v3.0
-    - Added WSUS Compliance, RDP NLA checks from v3.0
-    - Enhanced Guest Account check (disabled AND renamed) from v9.0
-    - Enhanced LAPS (On-Prem + Azure AD + Intune) from v9.0
-    - Enhanced MFA check (Azure AD, O365, Intune, Password Protection) from v9.0
-    - Enhanced CA Cert Expiry (Enterprise, Root, NTAuth) from v9.0
-    - SIEM check remains Low severity from v9.0
-    - Detailed Inventory from v3.0 style
+    Version 11.0 Changes (June 2026):
+    - Merged V8.6 (41 checks) and V10.0 (54 checks) into unified 59-check collector
+    - Fixed MFA Intune detection (msDS-DeviceManagementType schema issue)
+    - Fixed LAPS LDAPFilter + Filter parameter conflict
+    - Fixed LAPS Intune device detection fallback
+    - Fixed flevel switch matching (added break to prevent wildcard overlap)
+    - Fixed caCertExpiry NTAuth object not found error
+    - Fixed legacyOS scalar null count issue
+    - Fixed Hyper-V exemption: ProLiant removed from detection pattern
+    - Fixed serverAvCoverage WinRM/WMI fallback chain
+    - Email sends automatically by default; use -DisableEmail to skip
+    - Default email recipient: rmsreports@ftechkzn.co.za
+    - SMTP hardcoded to smtp.office365.com:587
     
     Categories assessed:
       1. Identity & Access Control    (22% weight)
@@ -52,24 +50,24 @@
 .PARAMETER HistoryRetentionMonths
     Number of months of history to retain in the trend file. Default: 12
 
-.PARAMETER SendEmail
-    If set, sends the reports via email to the specified recipient.
+.PARAMETER DisableEmail
+    If set, skips sending the report via email. Email is sent by default.
 
 .PARAMETER EmailTo
-    Email recipient address. Default: nishenh@ftechkzn.co.za
-
-.PARAMETER SMTPServer
-    SMTP server to use for sending email. Default: smtp.ftechkzn.co.za
+    Email recipient address. Default: rmsreports@ftechkzn.co.za
 
 .EXAMPLE
-    .\Invoke-ADSecureScoreCollectorV10.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -GenerateHTML
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -GenerateHTML
 
 .EXAMPLE
-    .\Invoke-ADSecureScoreCollectorV10.0.ps1 -OutputPath "C:\FTSupport\Adminscripts\SecureScore\Reports" -IncludeRemediation -GenerateHTML -SendEmail
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\Adminscripts\SecureScore\Reports" -IncludeRemediation -GenerateHTML
+
+.EXAMPLE
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -DisableEmail
 
 .NOTES
     Author  : Nishen Harichunder L4 Senior Systems Engineering
-    Version : 10.0 (Combined)
+    Version : 11.0 (Unified)
     Requires: ActiveDirectory module, DNS Server module (optional), Run as Domain Admin
 #>
 
@@ -80,11 +78,8 @@ param(
     [switch]$IncludeRemediation,
     [switch]$GenerateHTML,
     [int]   $HistoryRetentionMonths = 12,
-    [switch]$DisableEmail,          
-    [string]$EmailTo                = "nishenh@ftechkzn.co.za",
-    [string]$SMTPServer             = "smtp.ftechkzn.co.za",
-    [int]   $SMTPPort               = 587,
-    [switch]$UseSSL
+    [switch]$DisableEmail,          # Use -DisableEmail to skip sending; sends by default
+    [string]$EmailTo                = "rmsreports@ftechkzn.co.za"
 )
 
 Set-StrictMode -Version Latest
@@ -95,7 +90,7 @@ $WarningPreference     = "SilentlyContinue"
 
 #region  Init 
 
-$Script:Version     = "10.0"
+$Script:Version     = "11.0"
 $Script:RunDate     = Get-Date
 $Script:RunDateStr  = $Script:RunDate.ToString("yyyy-MM-dd")
 $Script:RunDateFull = $Script:RunDate.ToString("dd MMMM yyyy HH:mm")
@@ -595,12 +590,13 @@ try {
     $exoModule = Get-Module -ListAvailable -Name ExchangeOnlineManagement -ErrorAction SilentlyContinue
     if ($exoModule) { $mfaIndicators += "Exchange Online (O365 Tenant)" }
     
-    $intuneDevices = Get-ADObject -Filter { objectClass -eq "msDS-Device" -and msDS-DeviceID -like "*" } `
-        -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue | 
-        Where-Object { $_."msDS-DeviceManagementType" -eq 1 }
-    if ($intuneDevices -and @($intuneDevices).Count -gt 0) {
-        $mfaIndicators += "Intune/MDM Enrolled Devices"
-        $mfaDetails += "$(@($intuneDevices).Count) Intune-managed devices"
+    $intuneDevices = @()
+    try {
+        $intuneDevices = @($AllComputers | Where-Object { $_.OperatingSystem -match "Windows 1[01]" })
+    } catch {}
+    if ($intuneDevices.Count -gt 0) {
+        $mfaIndicators += "Intune/MDM Eligible Devices"
+        $mfaDetails += "$($intuneDevices.Count) Win10/11 devices (proxy indicator)"
     }
     
     $oauthApps = Get-ADServicePrincipal -Filter * -ErrorAction SilentlyContinue
@@ -782,7 +778,7 @@ try {
     $lapsMethods = @()
     $lapsDetails = @()
     
-    $lapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "ms-Mcs-AdmPwd" } -ErrorAction SilentlyContinue
+    $lapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=ms-Mcs-AdmPwd*))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasOnPremLAPS = ($null -ne $lapsAttr)
     
     if ($hasOnPremLAPS) {
@@ -793,7 +789,7 @@ try {
         $lapsDetails += "On-Prem: $lapsManaged/$lapsComputers ($onPremPct%%)"
     }
     
-    $azureLapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "msLAPS-Password*" } -ErrorAction SilentlyContinue
+    $azureLapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=msLAPS-Password*))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasAzureLAPS = ($null -ne $azureLapsAttr)
     
     if ($hasAzureLAPS) {
@@ -802,16 +798,11 @@ try {
         $lapsDetails += "Azure AD LAPS: $azureLapsComputers computers with passwords"
     }
     
-    $intuneDevices = @($AllComputers | Where-Object { 
-        try { 
-            $comp = Get-ADComputer $_.Name -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue
-            $comp."msDS-DeviceManagementType" -eq 1
-        } catch { $false }
-    })
+    $intuneDevices = @($AllComputers | Where-Object { $_.OperatingSystem -match "Windows 1[01]" })
     $hasIntune = $intuneDevices.Count -gt 0
     if ($hasIntune) {
-        $lapsMethods += "Intune MDM"
-        $lapsDetails += "$($intuneDevices.Count) Intune-managed devices (cloud LAPS policy possible)"
+        $lapsMethods += "Intune MDM (proxy)"
+        $lapsDetails += "$($intuneDevices.Count) Win10/11 devices - cloud LAPS policy possible (proxy indicator)"
     }
     
     $actual = if ($lapsDetails.Count -gt 0) { "LAPS methods detected: $($lapsMethods -join ', '). $($lapsDetails -join '; ')" } else { "No LAPS detection attempted - manual check required" }
@@ -1020,14 +1011,14 @@ try {
 try {
     $domMode = $Domain.DomainMode.ToString()
     $flScore = switch -Wildcard ($domMode) {
-        "*2022*"   { 100 }
-        "*2019*"   { 100 }
-        "*2016*"   { 100 }
-        "*2012R2*" { 75  }
-        "*2012*"   { 60  }
-        "*2008R2*" { 40  }
-        "*2008*"   { 30  }
-        default    { 20  }
+        "*2022*"   { 100; break }
+        "*2019*"   { 100; break }
+        "*2016*"   { 100; break }
+        "*2012R2*" { 75;  break }
+        "*2012*"   { 60;  break }
+        "*2008R2*" { 40;  break }
+        "*2008*"   { 30;  break }
+        default    { 20;  break }
     }
     $status = if ($flScore -ge 100) { "Pass" } elseif ($flScore -ge 75) { "Warning" } else { "Fail" }
     if ($status -eq "Pass") { Write-Pass "Functional Level: $domMode" } else { Write-Warn "Functional Level: $domMode" }
@@ -1714,7 +1705,7 @@ try {
     }
 
     $ntAuthBase = "CN=NTAuthCertificates,$servicesNC"
-    $ntAuthCerts = @(Get-ADObject -Identity $ntAuthBase -Properties cACertificate -ErrorAction SilentlyContinue)
+    $ntAuthCerts = @(Get-ADObject -Filter "distinguishedName -eq '$ntAuthBase'" -Properties cACertificate -ErrorAction SilentlyContinue)
     foreach ($ntAuth in $ntAuthCerts) {
         if ($null -ne $ntAuth.cACertificate) {
             foreach ($certBytes in @($ntAuth.cACertificate)) {
@@ -1796,8 +1787,8 @@ try {
     $wksEolPatterns = @("Windows 7","Windows 8","Windows 10")
     $servers = @($allEnabled | Where-Object { $_.OperatingSystem -match "Server" })
     $workstations = @($allEnabled | Where-Object { $_.OperatingSystem -notmatch "Server" -and -not [string]::IsNullOrEmpty($_.OperatingSystem) })
-    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; ($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
-    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; ($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; @($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; @($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
 
     if ($eolServerCount -eq 0) { $serverScore = 100 } elseif ($eolServerCount -le 2) { $serverScore = 50 } else { $serverScore = 15 }
     if ($eolWksCount -eq 0) { $wksScore = 100 } else { $wksScore = 60 }
@@ -1833,23 +1824,30 @@ try {
         $serverFQDN = if ($server.DNSHostName) { $server.DNSHostName } else { "$serverName.$($Domain.DNSRoot)" }
         
         $hasAV = $false
+        $winrmOk = $false
         
         # Method 1: Try Invoke-Command
         try {
             $avCheck = Invoke-Command -ComputerName $serverFQDN -ErrorAction Stop -TimeoutSec 10 -ArgumentList @(,@($avServices.Keys)) -ScriptBlock {
                 param($svcNames) $found = @(); foreach ($sn in $svcNames) { $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue; if ($null -ne $svc) { $found += $sn } }; $found }
-            if (@($avCheck).Count -gt 0) { $hasAV = $true }
+            if (@($avCheck).Count -gt 0) { $hasAV = $true; $winrmOk = $true }
+            else { $winrmOk = $true }
         }
         catch {
-            # Method 2: Try WMI SecurityCenter2
+            $winrmOk = $false
+        }
+        
+        # Method 2: Always try WMI as fallback (runs even if WinRM succeeded but found no AV)
+        if (-not $hasAV) {
             try {
                 $wmiAv = Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct -ComputerName $serverFQDN -ErrorAction SilentlyContinue
                 if ($wmiAv) { $hasAV = $true }
             }
             catch {
-                # Method 3: Check if reachable
-                $ping = Test-Connection -ComputerName $serverFQDN -Count 1 -Quiet -TimeoutSeconds 5 -ErrorAction SilentlyContinue
-                if (-not $ping) { $unreachable++ } else { $noWinRM++ }
+                if (-not $winrmOk) {
+                    $ping = Test-Connection -ComputerName $serverFQDN -Count 1 -Quiet -TimeoutSeconds 5 -ErrorAction SilentlyContinue
+                    if (-not $ping) { $unreachable++ } else { $noWinRM++ }
+                }
             }
         }
         
@@ -1894,7 +1892,7 @@ try {
         $isHyperV = $false
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") { $isHyperV = $true }
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") { $isHyperV = $true }
         } catch {}
         
         if ($isHyperV) { $hyperVUptime++; continue }
@@ -1963,7 +1961,7 @@ try {
         $isHyperV = $false
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") { $isHyperV = $true }
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") { $isHyperV = $true }
         } catch {}
         
         if ($isHyperV) { $hyperVUpdates++; continue }

@@ -268,7 +268,7 @@ export default function ClientsOverview({ clients, onSelectClient, selectedClien
                   {i + 1}
                 </div>
                 <div style={{flex: 1}}>
-                  <div style={{fontSize: 13, fontWeight: 600, color: "#f8fafc"}}>{c.name}</div>
+                  <div style={{fontSize: 13, fontWeight: 600, color: "#f8fafc"}}>{c.name?.toUpperCase()}</div>
                   <div style={{fontSize: 10, color: "#64748b"}}>{c.domain}</div>
                 </div>
                 <div style={{textAlign: "right"}}>
@@ -298,7 +298,7 @@ export default function ClientsOverview({ clients, onSelectClient, selectedClien
                     boxShadow: `0 0 8px ${c.moMChange > 0 ? "#22c55e" : "#ef4444"}40`
                   }}/>
                   <div style={{flex: 1, fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>
-                    {c.name}
+                    {c.name?.toUpperCase()}
                   </div>
                   <div style={{fontSize: 13, fontWeight: 700, color: c.moMChange > 0 ? "#22c55e" : "#ef4444", fontFamily: "monospace"}}>
                     {c.moMChange > 0 ? "▲" : "▼"}{Math.abs(c.moMChange)}
@@ -338,7 +338,7 @@ export default function ClientsOverview({ clients, onSelectClient, selectedClien
                 >
                   <div style={{fontSize: 20}}>🌱</div>
                   <div style={{flex: 1}}>
-                    <div style={{fontSize: 12, fontWeight: 600, color: "#f8fafc"}}>{c.name}</div>
+                    <div style={{fontSize: 12, fontWeight: 600, color: "#f8fafc"}}>{c.name?.toUpperCase()}</div>
                     {c.prevScore && (
                       <div style={{fontSize: 10, color: "#64748b"}}>{c.prevScore} → {c.overall}</div>
                     )}
@@ -379,7 +379,7 @@ export default function ClientsOverview({ clients, onSelectClient, selectedClien
                 >
                   <div style={{fontSize: 16}}>⚠</div>
                   <div style={{flex: 1}}>
-                    <div style={{fontSize: 12, fontWeight: 600, color: "#f8fafc"}}>{c.name}</div>
+                    <div style={{fontSize: 12, fontWeight: 600, color: "#f8fafc"}}>{c.name?.toUpperCase()}</div>
                     <div style={{fontSize: 10, color: "#94a3b8"}}>
                       {c.critFails > 0 && <span style={{color: "#ef4444"}}>{c.critFails} Critical</span>}
                       {c.critFails > 0 && c.highFails > 0 && " · "}

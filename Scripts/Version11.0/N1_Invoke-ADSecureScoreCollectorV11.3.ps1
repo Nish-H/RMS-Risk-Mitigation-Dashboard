@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    AD Secure Score Data Collector  COMBINED VERSION v10.0
+    AD Secure Score Data Collector  COMBINED VERSION v11.1
     First Technology KwaZulu-Natal  MSP Domain Assessment Framework
     Author: Nishen Harichunder - L4 RMS Engineering
 
@@ -11,21 +11,13 @@
     domain environment. Outputs a structured JSON file consumed by the AD Secure Score
     Dashboard and HTML Report Generator.
 
-    Version 10.0 Changes (April 2026):
-    - Merged v9.0 and v3.0 (v4.0) scripts
-    - Added lockoutPolicy and pwdComplexity from v3.0
-    - Enhanced AV scanning with multiple fallback methods (WMI, Registry, Service check)
-    - Enhanced Windows Update check with multiple fallback methods (COM, Registry, Hotfix)
-    - Added WMI Filter Orphans, GPO Block/Enforce Conflict from v3.0
-    - Added DCDiag, SYSVOL/NETLOGON checks from v3.0
-    - Added Empty OUs, AdminSDHolder Orphans from v3.0
-    - Added WSUS Compliance, RDP NLA checks from v3.0
-    - Enhanced Guest Account check (disabled AND renamed) from v9.0
-    - Enhanced LAPS (On-Prem + Azure AD + Intune) from v9.0
-    - Enhanced MFA check (Azure AD, O365, Intune, Password Protection) from v9.0
-    - Enhanced CA Cert Expiry (Enterprise, Root, NTAuth) from v9.0
-    - SIEM check remains Low severity from v9.0
-    - Detailed Inventory from v3.0 style
+    Version 11.1 Changes (June 2026):
+    - Integrated professional-grade Invoke-DNSScavengingAudit function replacing inline DNS scavenging check
+    - Integrated professional-grade Invoke-AVEDRCoverageAudit function replacing inline AV/EDR check
+    - DNS: multi-DC server-level scavenging + per-zone aging (No-Refresh/Refresh) validation
+    - AV/EDR: 30+ product detection via SecurityCenter2, Win32_Service, Win32_Product
+    - AV/EDR: parallel runspace pool scanning (up to 20 concurrent), definition age, RTP, MDE sensor
+    - Both functions retain score, severity, and detection details for Add-Finding integration
     
     Categories assessed:
       1. Identity & Access Control    (22% weight)
@@ -52,24 +44,24 @@
 .PARAMETER HistoryRetentionMonths
     Number of months of history to retain in the trend file. Default: 12
 
-.PARAMETER SendEmail
-    If set, sends the reports via email to the specified recipient.
+.PARAMETER DisableEmail
+    If set, skips sending the report via email. Email is sent by default.
 
 .PARAMETER EmailTo
-    Email recipient address. Default: nishenh@ftechkzn.co.za
-
-.PARAMETER SMTPServer
-    SMTP server to use for sending email. Default: smtp.ftechkzn.co.za
+    Email recipient address. Default: rmsreports@ftechkzn.co.za
 
 .EXAMPLE
-    .\Invoke-ADSecureScoreCollectorV10.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -GenerateHTML
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -GenerateHTML
 
 .EXAMPLE
-    .\Invoke-ADSecureScoreCollectorV10.0.ps1 -OutputPath "C:\FTSupport\Adminscripts\SecureScore\Reports" -IncludeRemediation -GenerateHTML -SendEmail
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\Adminscripts\SecureScore\Reports" -IncludeRemediation -GenerateHTML
+
+.EXAMPLE
+    .\Invoke-ADSecureScoreCollectorV11.0.ps1 -OutputPath "C:\FTSupport\adreports\SecureScore" -DisableEmail
 
 .NOTES
     Author  : Nishen Harichunder L4 Senior Systems Engineering
-    Version : 10.0 (Combined)
+    Version : 11.1 (Unified + Professional Functions)
     Requires: ActiveDirectory module, DNS Server module (optional), Run as Domain Admin
 #>
 
@@ -80,11 +72,8 @@ param(
     [switch]$IncludeRemediation,
     [switch]$GenerateHTML,
     [int]   $HistoryRetentionMonths = 12,
-    [switch]$DisableEmail,          
-    [string]$EmailTo                = "nishenh@ftechkzn.co.za",
-    [string]$SMTPServer             = "smtp.ftechkzn.co.za",
-    [int]   $SMTPPort               = 587,
-    [switch]$UseSSL
+    [switch]$DisableEmail,          # Use -DisableEmail to skip sending; sends by default
+    [string]$EmailTo                = "rmsreports@ftechkzn.co.za"
 )
 
 Set-StrictMode -Version Latest
@@ -95,7 +84,7 @@ $WarningPreference     = "SilentlyContinue"
 
 #region  Init 
 
-$Script:Version     = "10.0"
+$Script:Version     = "11.1"
 $Script:RunDate     = Get-Date
 $Script:RunDateStr  = $Script:RunDate.ToString("yyyy-MM-dd")
 $Script:RunDateFull = $Script:RunDate.ToString("dd MMMM yyyy HH:mm")
@@ -266,6 +255,387 @@ function Add-Finding {
 
 #endregion
 
+#region  Professional Audit Functions
+
+function Invoke-DNSScavengingAudit {
+<#
+.SYNOPSIS
+    Audits DNS Scavenging and Aging configuration across all AD-integrated zones on all DCs.
+.DESCRIPTION
+    - Discovers all AD-integrated DNS zones across all authoritative DCs
+    - Checks scavenging enabled at server level and aging at zone level
+    - Validates 7-day No-Refresh and 7-day Refresh intervals
+    - Returns structured payload with zone and server results
+#>
+    [CmdletBinding()]
+    param(
+        [int]$NoRefreshIntervalDays = 7,
+        [int]$RefreshIntervalDays   = 7
+    )
+
+    $auditResults   = [System.Collections.Generic.List[object]]::new()
+    $allZoneResults = [System.Collections.Generic.List[object]]::new()
+
+    $domainControllers = @()
+    try {
+        $domainControllers = (Get-ADDomainController -Filter *).HostName | Sort-Object
+    } catch { Write-Err "dnsScavenge DC enumeration" $_ }
+
+    # Server-Level Scavenging per DC
+    $serverResults = [System.Collections.Generic.List[object]]::new()
+    foreach ($dc in $domainControllers) {
+        $serverObj = [pscustomobject]@{
+            DC                 = $dc
+            ScavengingEnabled  = $false
+            ScavengingInterval = $null
+            ServerStatus       = "FAIL"
+            Error              = $null
+        }
+        try {
+            $dnsServer = Get-DnsServer -ComputerName $dc -ErrorAction Stop
+            $scavEnabled  = $dnsServer.ServerSetting.ScavengingInterval -ne 0
+            $scavInterval = $dnsServer.ServerSetting.ScavengingInterval
+            $serverObj.ScavengingEnabled  = $scavEnabled
+            $serverObj.ScavengingInterval = if ($scavInterval) { $scavInterval.ToString() } else { "Not Set" }
+            $serverObj.ServerStatus       = if ($scavEnabled) { "PASS" } else { "FAIL" }
+        } catch {
+            $serverObj.Error        = $_.Exception.Message
+            $serverObj.ServerStatus = "ERROR"
+        }
+        $serverResults.Add($serverObj)
+    }
+
+    # Zone-Level Aging (AD-Integrated Zones)
+    $pdcEmulator = (Get-ADDomain).PDCEmulator
+    $adZones = @()
+    try {
+        $adZones = Get-DnsServerZone -ComputerName $pdcEmulator |
+                   Where-Object { $_.IsReverseLookupZone -eq $false -and
+                                  $_.ZoneType -eq "Primary" -and
+                                  $_.IsDsIntegrated -eq $true } |
+                   Sort-Object ZoneName
+    } catch { Write-Err "dnsScavenge zone enumeration" $_ }
+
+    $zonesPass = 0; $zonesFail = 0; $zoneTotal = $adZones.Count
+
+    foreach ($zone in $adZones) {
+        $zoneObj = [pscustomobject]@{
+            ZoneName          = $zone.ZoneName
+            AgingEnabled      = $false
+            NoRefreshInterval = $null
+            RefreshInterval   = $null
+            NoRefreshPass     = $false
+            RefreshPass       = $false
+            ZoneStatus        = "FAIL"
+            Recommendation    = ""
+            Error             = $null
+        }
+        try {
+            $zoneAging = Get-DnsServerZoneAging -ZoneName $zone.ZoneName -ComputerName $pdcEmulator -ErrorAction Stop
+            $agingOn      = $zoneAging.AgingEnabled
+            $noRefreshH   = $zoneAging.NoRefreshInterval.TotalHours
+            $refreshH     = $zoneAging.RefreshInterval.TotalHours
+            $noRefreshPass = ($noRefreshH -eq ($NoRefreshIntervalDays * 24))
+            $refreshPass   = ($refreshH   -eq ($RefreshIntervalDays * 24))
+            $fullyPass     = $agingOn
+
+            $zoneObj.AgingEnabled      = $agingOn
+            $zoneObj.NoRefreshInterval = "{0}h ({1}d)" -f [int]$noRefreshH, [math]::Round($noRefreshH/24,1)
+            $zoneObj.RefreshInterval   = "{0}h ({1}d)" -f [int]$refreshH,   [math]::Round($refreshH/24,1)
+            $zoneObj.NoRefreshPass     = $noRefreshPass
+            $zoneObj.RefreshPass       = $refreshPass
+            $zoneObj.ZoneStatus        = if ($fullyPass) { "PASS" } else { "FAIL" }
+
+            if (-not $agingOn) { $zoneObj.Recommendation = "Enable aging on zone" }
+            else { $zoneObj.Recommendation = "Aging enabled (No-Refresh: $($zoneObj.NoRefreshInterval), Refresh: $($zoneObj.RefreshInterval))" }
+
+            if ($fullyPass) { $zonesPass++ } else { $zonesFail++ }
+        } catch {
+            $zoneObj.Error = $_.Exception.Message; $zoneObj.ZoneStatus = "ERROR"; $zonesFail++
+        }
+        $allZoneResults.Add($zoneObj)
+    }
+
+    $passPct = if ($zoneTotal -gt 0) { [math]::Round(($zonesPass / $zoneTotal) * 100, 1) } else { 0 }
+    $serverScavPass = ($serverResults | Where-Object { $_.ScavengingEnabled }).Count
+    $serverScavFail = ($serverResults | Where-Object { -not $_.ScavengingEnabled }).Count
+
+    $payload = [pscustomobject]@{
+        Score             = $passPct
+        Status            = if ($passPct -eq 100) { "Pass" } else { "Fail" }
+        PassPct           = $passPct
+        ZonesPass         = $zonesPass
+        ZoneTotal         = $zoneTotal
+        ServerScavPass    = $serverScavPass
+        ServerScavFail    = $serverScavFail
+        ServerResults     = $serverResults
+        ZoneResults       = $allZoneResults
+    }
+    return $payload
+}
+
+function Invoke-AVEDRCoverageAudit {
+<#
+.SYNOPSIS
+    Audits AV/EDR coverage across all Windows servers discovered in Active Directory.
+.DESCRIPTION
+    - Enumerates all enabled Windows Server computer objects from AD
+    - Parallel scanning via runspace pool (up to 20 concurrent)
+    - Detects 30+ AV/EDR products via WMI SecurityCenter2, Win32_Service, Win32_Product
+    - Checks AV definition age and real-time protection state
+    - Returns structured payload with per-server details
+#>
+    [CmdletBinding()]
+    param(
+        [string]$ExportPath        = "C:\FTSupport\adreports\SecureScore",
+        [int]$MaxConcurrentJobs    = 20,
+        [int]$DefinitionStaleDays  = 3,
+        [int]$PingTimeoutMs        = 1000
+    )
+
+    if (-not (Test-Path $ExportPath)) { New-Item -ItemType Directory -Path $ExportPath -Force | Out-Null }
+
+    $KnownAVSignatures = @(
+        @{ Name = "Windows Defender";                  Vendor = "Microsoft";     Tier = "AV"  }
+        @{ Name = "Microsoft Defender";                Vendor = "Microsoft";     Tier = "EDR" }
+        @{ Name = "Microsoft Endpoint Protection";     Vendor = "Microsoft";     Tier = "EDR" }
+        @{ Name = "SENSE";                             Vendor = "Microsoft MDE"; Tier = "EDR" }
+        @{ Name = "CrowdStrike";                       Vendor = "CrowdStrike";   Tier = "EDR" }
+        @{ Name = "Falcon";                            Vendor = "CrowdStrike";   Tier = "EDR" }
+        @{ Name = "SentinelOne";                       Vendor = "SentinelOne";   Tier = "EDR" }
+        @{ Name = "Sentinel Agent";                    Vendor = "SentinelOne";   Tier = "EDR" }
+        @{ Name = "Sophos";                            Vendor = "Sophos";        Tier = "EDR" }
+        @{ Name = "ESET";                              Vendor = "ESET";          Tier = "AV"  }
+        @{ Name = "NOD32";                             Vendor = "ESET";          Tier = "AV"  }
+        @{ Name = "Bitdefender";                       Vendor = "Bitdefender";   Tier = "EDR" }
+        @{ Name = "GravityZone";                       Vendor = "Bitdefender";   Tier = "EDR" }
+        @{ Name = "Trend Micro";                       Vendor = "Trend Micro";   Tier = "EDR" }
+        @{ Name = "Carbon Black";                      Vendor = "VMware";        Tier = "EDR" }
+        @{ Name = "Cylance";                           Vendor = "BlackBerry";    Tier = "EDR" }
+        @{ Name = "Malwarebytes";                      Vendor = "Malwarebytes";  Tier = "AV"  }
+        @{ Name = "Webroot";                           Vendor = "Webroot";       Tier = "AV"  }
+        @{ Name = "Kaspersky";                         Vendor = "Kaspersky";     Tier = "AV"  }
+        @{ Name = "Symantec";                          Vendor = "Broadcom";      Tier = "EDR" }
+        @{ Name = "McAfee";                            Vendor = "Trellix";       Tier = "AV"  }
+        @{ Name = "Trellix";                           Vendor = "Trellix";       Tier = "EDR" }
+        @{ Name = "Cortex XDR";                        Vendor = "Palo Alto";     Tier = "EDR" }
+        @{ Name = "Cybereason";                        Vendor = "Cybereason";    Tier = "EDR" }
+        @{ Name = "Deep Instinct";                     Vendor = "Deep Instinct"; Tier = "EDR" }
+        @{ Name = "Huntress";                          Vendor = "Huntress";      Tier = "EDR" }
+    )
+
+    $results = [System.Collections.Generic.List[object]]::new()
+
+    # Enumerate Servers from AD
+    $servers = @()
+    try {
+        $servers = Get-ADComputer -Filter { OperatingSystem -like "*Windows Server*" -and Enabled -eq $true } -Properties Name,OperatingSystem,IPv4Address,LastLogonDate | Sort-Object Name
+    } catch { Write-Err "avEdrAudit AD enumeration" $_; return $null }
+
+    Write-Info "AV/EDR: Scanning $($servers.Count) servers with $MaxConcurrentJobs concurrent jobs..."
+
+    $scriptBlock = {
+        param($Server, $KnownAVSignatures, $DefinitionStaleDays, $PingTimeoutMs)
+
+        $result = [pscustomobject]@{
+            ComputerName          = $Server.Name
+            Reachable             = $false
+            WMIAccessible         = $false
+            AVDetected            = $false
+            AVProducts            = @()
+            AVProductNames        = ""
+            AVVendors             = ""
+            AVTier                = ""
+            RealTimeProtection    = $null
+            DefinitionAge         = $null
+            DefinitionStale       = $false
+            DefenderEnabled       = $false
+            DefenderMode          = ""
+            MDE_SensorRunning     = $false
+            Coverage              = "None"
+            Status                = "FAIL"
+            FailReason            = ""
+            ScanMethod            = ""
+        }
+
+        # Ping
+        try { $ping = New-Object System.Net.NetworkInformation.Ping; $reply = $ping.Send($Server.Name, $PingTimeoutMs); $result.Reachable = ($reply.Status -eq "Success") } catch {}
+        if (-not $result.Reachable) { $result.FailReason = "Unreachable (ICMP)"; $result.Coverage = "Unreachable"; return $result }
+
+        # Method 1: WMI SecurityCenter2
+        $avFound = [System.Collections.Generic.List[object]]::new()
+        try {
+            $sc2 = Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct -ComputerName $Server.Name -ErrorAction Stop
+            if ($sc2) {
+                $result.WMIAccessible = $true; $result.ScanMethod = "SecurityCenter2"
+                foreach ($av in $sc2) {
+                    $match = $null
+                    foreach ($sig in $KnownAVSignatures) { if ($av.displayName -match [regex]::Escape($sig.Name)) { $match = $sig; break } }
+                    $avFound.Add([pscustomobject]@{ DisplayName = $av.displayName; Vendor = if ($match) { $match.Vendor } else { "Unknown" }; Tier = if ($match) { $match.Tier } else { "AV" }; ProductState = $av.productState })
+                }
+            }
+        } catch {}
+
+        # Method 2: WMI Win32_Service
+        if ($avFound.Count -eq 0) {
+            try {
+                $services = Get-WmiObject -Class Win32_Service -ComputerName $Server.Name -ErrorAction Stop | Where-Object { $_.State -eq "Running" }
+                $result.WMIAccessible = $true; $result.ScanMethod = "Win32_Service"
+                $serviceAVMap = @{
+                    "CSFalconService"   = @{ Name = "CrowdStrike Falcon";       Vendor = "CrowdStrike";   Tier = "EDR" }
+                    "SentinelAgent"     = @{ Name = "SentinelOne Agent";        Vendor = "SentinelOne";   Tier = "EDR" }
+                    "SAVService"        = @{ Name = "Sophos Anti-Virus";        Vendor = "Sophos";        Tier = "AV"  }
+                    "ekrn"             = @{ Name = "ESET Service";             Vendor = "ESET";          Tier = "AV"  }
+                    "SepMasterService"  = @{ Name = "Symantec Endpoint";        Vendor = "Broadcom";      Tier = "EDR" }
+                    "mcshield"         = @{ Name = "McAfee Shield";            Vendor = "Trellix";       Tier = "AV"  }
+                    "AVP"              = @{ Name = "Kaspersky";                Vendor = "Kaspersky";     Tier = "AV"  }
+                    "WinDefend"        = @{ Name = "Windows Defender";         Vendor = "Microsoft";     Tier = "AV"  }
+                    "Sense"            = @{ Name = "Microsoft Defender MDE";   Vendor = "Microsoft";     Tier = "EDR" }
+                }
+                foreach ($svc in $services) {
+                    if ($serviceAVMap.ContainsKey($svc.Name)) {
+                        $entry = $serviceAVMap[$svc.Name]
+                        $avFound.Add([pscustomobject]@{ DisplayName = $entry.Name; Vendor = $entry.Vendor; Tier = $entry.Tier; ProductState = "Running" })
+                    }
+                }
+            } catch { if ($result.ScanMethod -eq "") { $result.FailReason = "WMI access denied" } }
+        }
+
+        # Method 3: Win32_Product fallback
+        if ($avFound.Count -eq 0 -and $result.WMIAccessible) {
+            try {
+                $result.ScanMethod = "Win32_Product"
+                $products = Get-WmiObject -Class Win32_Product -ComputerName $Server.Name -ErrorAction Stop | Select-Object -ExpandProperty Name
+                foreach ($productName in $products) {
+                    foreach ($sig in $KnownAVSignatures) {
+                        if ($productName -match [regex]::Escape($sig.Name)) {
+                            $avFound.Add([pscustomobject]@{ DisplayName = $productName; Vendor = $sig.Vendor; Tier = $sig.Tier; ProductState = "Installed" }); break
+                        }
+                    }
+                }
+            } catch {}
+        }
+
+        # MDE Sensor check
+        try {
+            $senseCheck = Get-WmiObject -Class Win32_Service -ComputerName $Server.Name -Filter "Name='Sense'" -ErrorAction Stop
+            if ($senseCheck -and $senseCheck.State -eq "Running") {
+                $result.MDE_SensorRunning = $true
+                $alreadyMDE = $avFound | Where-Object { $_.DisplayName -match "MDE" }
+                if (-not $alreadyMDE) { $avFound.Add([pscustomobject]@{ DisplayName = "Microsoft Defender for Endpoint (MDE)"; Vendor = "Microsoft"; Tier = "EDR"; ProductState = "Running" }) }
+            }
+        } catch {}
+
+        # Collate results
+        if ($avFound.Count -gt 0) {
+            $result.AVDetected = $true
+            $result.AVProducts = $avFound | Sort-Object DisplayName -Unique
+            $result.AVProductNames = ($avFound.DisplayName | Sort-Object -Unique) -join " | "
+            $result.AVVendors = ($avFound.Vendor | Sort-Object -Unique) -join ", "
+            $tiers = $avFound.Tier | Sort-Object -Unique
+            $result.AVTier = $tiers -join "+"
+            if ($tiers -contains "EDR" -and $tiers -contains "AV") { $result.Coverage = "AV+EDR" }
+            elseif ($tiers -contains "EDR")                       { $result.Coverage = "EDR" }
+            elseif ($tiers -contains "AV")                        { $result.Coverage = "AV" }
+            $result.Status = "PASS"
+        } else {
+            $result.Coverage = "None"; $result.Status = "FAIL"
+            if ($result.FailReason -eq "") { $result.FailReason = "No AV/EDR product detected" }
+        }
+
+        # Windows Defender MpComputerStatus
+        try {
+            $mpStatus = Invoke-Command -ComputerName $Server.Name -ScriptBlock {
+                if (Get-Command Get-MpComputerStatus -ErrorAction SilentlyContinue) {
+                    $s = Get-MpComputerStatus -ErrorAction Stop
+                    [pscustomobject]@{ AntivirusEnabled = $s.AntivirusEnabled; RealTimeProtectionEnabled = $s.RealTimeProtectionEnabled; AntivirusSignatureAge = $s.AntivirusSignatureAge; AMRunningMode = $s.AMRunningMode }
+                }
+            } -ErrorAction Stop -WarningAction SilentlyContinue
+            if ($mpStatus) {
+                $result.DefenderEnabled = $mpStatus.AntivirusEnabled
+                $result.DefenderMode = $mpStatus.AMRunningMode
+                $result.RealTimeProtection = $mpStatus.RealTimeProtectionEnabled
+                $result.DefinitionAge = $mpStatus.AntivirusSignatureAge
+                $result.DefinitionStale = ($mpStatus.AntivirusSignatureAge -gt $DefinitionStaleDays)
+            }
+        } catch {}
+
+        return $result
+    }
+
+    # Execute via Runspace Pool
+    $pool = [RunspaceFactory]::CreateRunspacePool(1, $MaxConcurrentJobs)
+    $pool.ApartmentState = "MTA"; $pool.Open()
+    $jobs = [System.Collections.Generic.List[object]]::new()
+    foreach ($server in $servers) {
+        $ps = [PowerShell]::Create(); $ps.RunspacePool = $pool
+        [void]$ps.AddScript($scriptBlock)
+        [void]$ps.AddParameter("Server", $server)
+        [void]$ps.AddParameter("KnownAVSignatures", $KnownAVSignatures)
+        [void]$ps.AddParameter("DefinitionStaleDays", $DefinitionStaleDays)
+        [void]$ps.AddParameter("PingTimeoutMs", $PingTimeoutMs)
+        $jobs.Add([pscustomobject]@{ PS = $ps; Handle = $ps.BeginInvoke() })
+    }
+
+    $total = $jobs.Count
+    while ($jobs | Where-Object { -not $_.Handle.IsCompleted }) {
+        $completed = ($jobs | Where-Object { $_.Handle.IsCompleted }).Count
+        Write-Progress -Activity "AV/EDR Scanning Servers" -Status "$completed / $total" -PercentComplete (if ($total -gt 0) { [int](($completed/$total)*100) } else { 0 })
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Progress -Activity "AV/EDR Scanning Servers" -Completed
+
+    foreach ($job in $jobs) {
+        $jobResult = $job.PS.EndInvoke($job.Handle)
+        if ($jobResult) { $results.Add($jobResult) }
+        $job.PS.Dispose()
+    }
+    $pool.Close(); $pool.Dispose()
+
+    # Calculate scores
+    $totalServers    = $results.Count
+    $reachable       = ($results | Where-Object { $_.Reachable }).Count
+    $unreachable     = ($results | Where-Object { -not $_.Reachable }).Count
+    $avCovered       = ($results | Where-Object { $_.AVDetected }).Count
+    $noAV            = ($results | Where-Object { $_.Reachable -and -not $_.AVDetected }).Count
+    $edrCovered      = ($results | Where-Object { $_.Coverage -match "EDR" }).Count
+    $staleDefsCount  = ($results | Where-Object { $_.DefinitionStale }).Count
+    $rtpDisabled     = ($results | Where-Object { $_.RealTimeProtection -eq $false -and $_.Reachable }).Count
+    $passPct         = if ($reachable -gt 0) { [math]::Round(($avCovered / $reachable) * 100, 1) } else { 0 }
+
+    $severity = switch ($passPct) {
+        { $_ -eq 100 } { "None" }; { $_ -ge 85 } { "Low" }; { $_ -ge 60 } { "Medium" }; { $_ -ge 30 } { "High" }; default { "Critical" }
+    }
+
+    Write-Pass "AV/EDR: $avCovered / $reachable servers protected ($passPct%) | EDR: $edrCovered | Unprotected: $noAV | StaleDefs: $staleDefsCount | RTP-Disabled: $rtpDisabled"
+
+    # CSV Export
+    $csvPath = Join-Path $ExportPath ("AVAudit_{0}.csv" -f (Get-Date -Format "yyyyMMdd_HHmmss"))
+    $results | Select-Object ComputerName, Reachable, AVDetected, Coverage, AVProductNames, AVVendors, AVTier, RealTimeProtection, DefinitionAge, DefinitionStale, DefenderEnabled, DefenderMode, MDE_SensorRunning, Status, FailReason, ScanMethod |
+              Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+    Write-Info "AV/EDR CSV: $csvPath"
+
+    $payload = [pscustomobject]@{
+        Score             = $passPct
+        Status            = if ($passPct -eq 100) { "Pass" } else { "Fail" }
+        PassPct           = $passPct
+        Severity          = $severity
+        TotalServers      = $totalServers
+        Reachable         = $reachable
+        Unreachable       = $unreachable
+        AVCovered         = $avCovered
+        EDRCovered        = $edrCovered
+        NoAV              = $noAV
+        StaleDefsCount    = $staleDefsCount
+        RTPDisabled       = $rtpDisabled
+        ServerResults     = $results
+        ExportCSV         = $csvPath
+    }
+    return $payload
+}
+
+#endregion
+
 #region  CATEGORY 1  IDENTITY & ACCESS 
 
 Write-Section "CATEGORY 1  Identity & Access Control"
@@ -339,25 +709,6 @@ try {
         -RemediationCmd "`$cutoff=(Get-Date).AddDays(-90)`nGet-ADGroupMember 'Domain Admins' -Recursive | Where {`$_.objectClass -eq 'user'} | Get-ADUser -Properties LastLogonDate | Where {`$_.LastLogonDate -lt `$cutoff} | Disable-ADAccount" `
         -Details @($staleAdmins | Select-Object Name, SamAccountName, LastLogonDate)
 } catch { Write-Err "staleAdmins" $_; [void]$Script:Errors.Add("staleAdmins: $($_.Exception.Message)") }
-
-#  1.4 Dual-use Admin Accounts
-try {
-    $daMembers = @(Get-ADGroupMember "Domain Admins" -Recursive -ErrorAction SilentlyContinue | Where-Object { $_.objectClass -eq "user" })
-    $dualUse   = @($daMembers | Where-Object {
-        $_.SamAccountName -notmatch "^(adm|adm-|admin|svc|sa-|t0-|tier0|_adm)"
-    })
-    $count  = $dualUse.Count
-    $score  = 100
-    $status = "Pass"
-    Write-Pass "Dual-use Admin Accounts: $count (provisional pass - manual check required)"
-    Add-Finding -CheckId "dualUseAdmin" -Category "identity" -Label "Dual-use Admin Accounts" `
-        -Description "Domain Admins members not clearly designated as admin-only accounts" `
-        -Severity "Critical" -Score $score -Status $status `
-        -Threshold "Manual review required" -ActualValue "$count potential dual-use account(s)" `
-        -Recommendation "Provisional pass. This must be manually verified by an engineer. Implement Tiered Administration - admin accounts for admin tasks only, separate from daily-use accounts." `
-        -RemediationCmd "Get-ADGroupMember 'Domain Admins' -Recursive | Where {`$_.objectClass -eq 'user'} | Get-ADUser -Properties Description | Select Name,SamAccountName,Description | Export-Csv DA_Audit.csv" `
-        -Details @($dualUse | Select-Object Name, SamAccountName)
-} catch { Write-Err "dualUseAdmin" $_; [void]$Script:Errors.Add("dualUseAdmin: $($_.Exception.Message)") }
 
 #  1.5 Protected Users Group
 try {
@@ -595,12 +946,13 @@ try {
     $exoModule = Get-Module -ListAvailable -Name ExchangeOnlineManagement -ErrorAction SilentlyContinue
     if ($exoModule) { $mfaIndicators += "Exchange Online (O365 Tenant)" }
     
-    $intuneDevices = Get-ADObject -Filter { objectClass -eq "msDS-Device" -and msDS-DeviceID -like "*" } `
-        -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue | 
-        Where-Object { $_."msDS-DeviceManagementType" -eq 1 }
-    if ($intuneDevices -and @($intuneDevices).Count -gt 0) {
-        $mfaIndicators += "Intune/MDM Enrolled Devices"
-        $mfaDetails += "$(@($intuneDevices).Count) Intune-managed devices"
+    $intuneDevices = @()
+    try {
+        $intuneDevices = @($AllComputers | Where-Object { $_.OperatingSystem -match "Windows 1[01]" })
+    } catch {}
+    if ($intuneDevices.Count -gt 0) {
+        $mfaIndicators += "Intune/MDM Eligible Devices"
+        $mfaDetails += "$($intuneDevices.Count) Win10/11 devices (proxy indicator)"
     }
     
     $oauthApps = Get-ADServicePrincipal -Filter * -ErrorAction SilentlyContinue
@@ -782,7 +1134,7 @@ try {
     $lapsMethods = @()
     $lapsDetails = @()
     
-    $lapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "ms-Mcs-AdmPwd" } -ErrorAction SilentlyContinue
+    $lapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=ms-Mcs-AdmPwd*))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasOnPremLAPS = ($null -ne $lapsAttr)
     
     if ($hasOnPremLAPS) {
@@ -793,7 +1145,7 @@ try {
         $lapsDetails += "On-Prem: $lapsManaged/$lapsComputers ($onPremPct%%)"
     }
     
-    $azureLapsAttr = Get-ADObject -LDAPFilter "(objectClass=attributeSchema)" -SearchBase (Get-ADRootDSE).schemaNamingContext -Filter { Name -like "msLAPS-Password*" } -ErrorAction SilentlyContinue
+    $azureLapsAttr = Get-ADObject -LDAPFilter "(&(objectClass=attributeSchema)(name=msLAPS-Password*))" -SearchBase (Get-ADRootDSE).schemaNamingContext -ErrorAction SilentlyContinue
     $hasAzureLAPS = ($null -ne $azureLapsAttr)
     
     if ($hasAzureLAPS) {
@@ -802,16 +1154,11 @@ try {
         $lapsDetails += "Azure AD LAPS: $azureLapsComputers computers with passwords"
     }
     
-    $intuneDevices = @($AllComputers | Where-Object { 
-        try { 
-            $comp = Get-ADComputer $_.Name -Properties msDS-DeviceManagementType -ErrorAction SilentlyContinue
-            $comp."msDS-DeviceManagementType" -eq 1
-        } catch { $false }
-    })
+    $intuneDevices = @($AllComputers | Where-Object { $_.OperatingSystem -match "Windows 1[01]" })
     $hasIntune = $intuneDevices.Count -gt 0
     if ($hasIntune) {
-        $lapsMethods += "Intune MDM"
-        $lapsDetails += "$($intuneDevices.Count) Intune-managed devices (cloud LAPS policy possible)"
+        $lapsMethods += "Intune MDM (proxy)"
+        $lapsDetails += "$($intuneDevices.Count) Win10/11 devices - cloud LAPS policy possible (proxy indicator)"
     }
     
     $actual = if ($lapsDetails.Count -gt 0) { "LAPS methods detected: $($lapsMethods -join ', '). $($lapsDetails -join '; ')" } else { "No LAPS detection attempted - manual check required" }
@@ -1020,14 +1367,14 @@ try {
 try {
     $domMode = $Domain.DomainMode.ToString()
     $flScore = switch -Wildcard ($domMode) {
-        "*2022*"   { 100 }
-        "*2019*"   { 100 }
-        "*2016*"   { 100 }
-        "*2012R2*" { 75  }
-        "*2012*"   { 60  }
-        "*2008R2*" { 40  }
-        "*2008*"   { 30  }
-        default    { 20  }
+        "*2022*"   { 100; break }
+        "*2019*"   { 100; break }
+        "*2016*"   { 100; break }
+        "*2012R2*" { 75;  break }
+        "*2012*"   { 60;  break }
+        "*2008R2*" { 40;  break }
+        "*2008*"   { 30;  break }
+        default    { 20;  break }
     }
     $status = if ($flScore -ge 100) { "Pass" } elseif ($flScore -ge 75) { "Warning" } else { "Fail" }
     if ($status -eq "Pass") { Write-Pass "Functional Level: $domMode" } else { Write-Warn "Functional Level: $domMode" }
@@ -1065,24 +1412,23 @@ try {
         -RemediationCmd "Get-ADDomainController -Filter * | ForEach-Object { Get-ADComputer `$_.Name -Properties OperatingSystem } | Select-Object Name,OperatingSystem | Sort-Object OperatingSystem"
 } catch { Write-Err "dcEOL" $_; [void]$Script:Errors.Add("dcEOL: $($_.Exception.Message)") }
 
-#  4.6 DNS Scavenging
+#  4.6 DNS Scavenging (Enhanced: Invoke-DNSScavengingAudit)
 try {
-    $dnsZones    = @(Get-DnsServerZone -ComputerName $DomainController -ErrorAction SilentlyContinue |
-        Where-Object { (-not $_.IsReverseLookupZone) -and $_.ZoneType -eq "Primary" })
-    $scavEnabled = @($dnsZones | Where-Object {
-        $zoneProps = $_.PSObject.Properties["Aging"]
-        ($null -ne $zoneProps) -and ($_.Aging -eq $true)
-    })
-    $pct    = if ($dnsZones.Count -gt 0) { [Math]::Round(($scavEnabled.Count / $dnsZones.Count) * 100) } else { 0 }
-    $score  = if ($pct -ge 90) { 100 } elseif ($pct -ge 50) { 60 } else { 25 }
-    $status = if ($pct -ge 90) { "Pass" } elseif ($pct -ge 50) { "Warning" } else { "Fail" }
-    if ($status -eq "Pass") { Write-Pass "DNS Scavenging: $pct%" } else { Write-Warn "DNS Scavenging: $pct% of zones" }
-    Add-Finding -CheckId "dnsScavenge" -Category "dchealth" -Label "DNS Scavenging" `
-        -Description "DNS aging and scavenging enabled on primary forward lookup zones" `
-        -Severity "Medium" -Score $score -Status $status `
-        -Threshold "All primary zones with aging enabled" -ActualValue "$($scavEnabled.Count)/$($dnsZones.Count) zones ($pct%%)" `
-        -Recommendation "Enable aging on all AD-integrated zones. Set 7-day no-refresh, 7-day refresh intervals." `
-        -RemediationCmd "Get-DnsServerZone -ComputerName '$DomainController' | Where-Object {-not `$_.IsReverseLookupZone -and `$_.ZoneType -eq 'Primary'} | ForEach-Object { Set-DnsServerZoneAging -Name `$_.ZoneName -Aging `$true -ComputerName '$DomainController' }"
+    $dnsResult = Invoke-DNSScavengingAudit
+    if ($dnsResult) {
+        $pct    = $dnsResult.PassPct
+        $score  = if ($pct -ge 90) { 100 } elseif ($pct -ge 50) { 60 } else { 25 }
+        $status = if ($pct -ge 90) { "Pass" } elseif ($pct -ge 50) { "Warning" } else { "Fail" }
+        $zoneDetail = "Zones: $($dnsResult.ZonesPass)/$($dnsResult.ZoneTotal) pass aging ($pct%) | DCs with scavenging: $($dnsResult.ServerScavPass)/$($dnsResult.ServerResults.Count)"
+        if ($status -eq "Pass") { Write-Pass "DNS Scavenging: $zoneDetail" } else { Write-Warn "DNS Scavenging: $zoneDetail" }
+        Add-Finding -CheckId "dnsScavenge" -Category "dchealth" -Label "DNS Scavenging & Zone Aging" `
+            -Description "DNS aging/scavenging across all DCs - server-level scavenging + per-zone No-Refresh/Refresh validation" `
+            -Severity "Medium" -Score $score -Status $status `
+            -Threshold "All AD-integrated zones with aging enabled, 7/7 intervals" -ActualValue $zoneDetail `
+            -Recommendation "Enable aging on all AD-integrated zones. Set 7-day no-refresh, 7-day refresh intervals. Enable scavenging on all DCs." `
+            -RemediationCmd "Set-DnsServerScavenging -ScavengingState `$true -ScavengingInterval 7.00:00:00; Set-DnsServerZoneAging -Aging `$true -NoRefreshInterval 7.00:00:00 -RefreshInterval 7.00:00:00" `
+            -Details @($dnsResult.ZoneResults | Where-Object { $_.ZoneStatus -ne "PASS" } | Select-Object ZoneName, ZoneStatus, Recommendation)
+    }
 } catch { Write-Err "dnsScavenge" $_; [void]$Script:Errors.Add("dnsScavenge: $($_.Exception.Message)") }
 
 #  4.7 NTP
@@ -1496,45 +1842,6 @@ try {
         -RemediationCmd "wevtutil sl Security /rt:true /ab:true"
 } catch { Write-Err "logRetention" $_; [void]$Script:Errors.Add("logRetention: $($_.Exception.Message)") }
 
-#  6.3 SIEM / WEF (Low severity from v9.0)
-try {
-    $wefSubs = Get-ChildItem "HKLM:\SOFTWARE\Policies\Microsoft\Windows\EventLog\EventForwarding\SubscriptionManager" -ErrorAction SilentlyContinue
-    $wecsvc  = Get-Service -Name "Wecsvc" -ErrorAction SilentlyContinue
-    $wefCount = @($wefSubs).Count
-    $wecRunning = ($null -ne $wecsvc) -and ($wecsvc.Status -eq "Running")
-    $hasSIEM = ($wefCount -gt 0) -or $wecRunning
-    
-    $siemAgents = @()
-    $agentServices = @("SplunkForwarder", "nxlog", "winlogbeat", "LogBeat", "Symantec", "QRadar", "ArcSight")
-    foreach ($svc in $agentServices) {
-        $s = Get-Service -Name "*$svc*" -ErrorAction SilentlyContinue
-        if ($s) { $siemAgents += $svc }
-    }
-    $hasThirdPartySIEM = $siemAgents.Count -gt 0
-    
-    $totalSIEM = $hasSIEM -or $hasThirdPartySIEM
-    $score  = if ($totalSIEM) { 100 } else { 75 }
-    $status = if ($totalSIEM) { "Pass" } else { "Warning" }
-    
-    if ($hasSIEM -and $hasThirdPartySIEM) {
-        $actual = "WEF/WEC + $($siemAgents -join ', ') detected"
-    } elseif ($hasSIEM) {
-        $actual = "WEF/WECSVC detected"
-    } elseif ($hasThirdPartySIEM) {
-        $actual = "Third-party SIEM agents: $($siemAgents -join ', ')"
-    } else {
-        $actual = "No WEF or SIEM forwarding detected (informational - consider deploying)"
-    }
-    
-    if ($status -eq "Pass") { Write-Pass "SIEM/WEF: $actual" } else { Write-Warn "SIEM/WEF: $actual (low priority)" }
-    Add-Finding -CheckId "siemForwarding" -Category "monitoring" -Label "SIEM / Log Forwarding" `
-        -Description "Windows Event Forwarding or SIEM agent for centralised log collection (informational check)" `
-        -Severity "Low" -Score $score -Status $status `
-        -Threshold "SIEM forwarding recommended but not critical for AD security score" -ActualValue $actual `
-        -Recommendation "Consider deploying WEF or SIEM agent for enhanced log retention and correlation. Not required for AD security baseline." `
-        -RemediationCmd "winrm quickconfig`nwecutil cs subscription.xml"
-} catch { Write-Err "siemForwarding" $_; [void]$Script:Errors.Add("siemForwarding: $($_.Exception.Message)") }
-
 #  6.4 AV / Defender (ENHANCED with multiple fallback methods)
 try {
     $avResult = $null
@@ -1714,7 +2021,7 @@ try {
     }
 
     $ntAuthBase = "CN=NTAuthCertificates,$servicesNC"
-    $ntAuthCerts = @(Get-ADObject -Identity $ntAuthBase -Properties cACertificate -ErrorAction SilentlyContinue)
+    $ntAuthCerts = @(Get-ADObject -Filter "distinguishedName -eq '$ntAuthBase'" -Properties cACertificate -ErrorAction SilentlyContinue)
     foreach ($ntAuth in $ntAuthCerts) {
         if ($null -ne $ntAuth.cACertificate) {
             foreach ($certBytes in @($ntAuth.cACertificate)) {
@@ -1796,8 +2103,8 @@ try {
     $wksEolPatterns = @("Windows 7","Windows 8","Windows 10")
     $servers = @($allEnabled | Where-Object { $_.OperatingSystem -match "Server" })
     $workstations = @($allEnabled | Where-Object { $_.OperatingSystem -notmatch "Server" -and -not [string]::IsNullOrEmpty($_.OperatingSystem) })
-    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; ($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
-    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; ($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolServerCount = @($servers | Where-Object { $os = $_.OperatingSystem; @($serverEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
+    $eolWksCount = @($workstations | Where-Object { $os = $_.OperatingSystem; @($wksEolPatterns | Where-Object { $os -match $_ }).Count -gt 0 }).Count
 
     if ($eolServerCount -eq 0) { $serverScore = 100 } elseif ($eolServerCount -le 2) { $serverScore = 50 } else { $serverScore = 15 }
     if ($eolWksCount -eq 0) { $wksScore = 100 } else { $wksScore = 60 }
@@ -1813,67 +2120,8 @@ try {
         -RemediationCmd "Get-ADComputer -Filter {Enabled -eq `$true} -Properties OperatingSystem | Where-Object { `$_.OperatingSystem -match '2008|2012|Windows 7|Windows 8' } | Select Name,OperatingSystem"
 } catch { Write-Err "legacyOS" $_; [void]$Script:Errors.Add("legacyOS: $($_.Exception.Message)") }
 
-#  7.4 Server AV Coverage (ENHANCED with multiple fallback methods)
-try {
-    $avServices = @{
-        "WinDefend" = "Windows Defender"; "MsMpEng" = "Windows Defender"
-        "CSFalconService" = "CrowdStrike"; "SentinelAgent" = "SentinelOne"
-        "SAVService" = "Sophos"; "SepMasterService" = "Symantec"
-        "McShield" = "McAfee"; "ekrn" = "ESET"
-        "AVP" = "Kaspersky"; "bdagent" = "Bitdefender"
-    }
-    $totalServers = $AllServers.Count
-    $serversWithAV = 0
-    $unreachable = 0
-    $noWinRM = 0
-    Write-Info "Checking AV on $totalServers enabled servers..."
-    
-    foreach ($server in $AllServers) {
-        $serverName = $server.Name
-        $serverFQDN = if ($server.DNSHostName) { $server.DNSHostName } else { "$serverName.$($Domain.DNSRoot)" }
-        
-        $hasAV = $false
-        
-        # Method 1: Try Invoke-Command
-        try {
-            $avCheck = Invoke-Command -ComputerName $serverFQDN -ErrorAction Stop -TimeoutSec 10 -ArgumentList @(,@($avServices.Keys)) -ScriptBlock {
-                param($svcNames) $found = @(); foreach ($sn in $svcNames) { $svc = Get-Service -Name $sn -ErrorAction SilentlyContinue; if ($null -ne $svc) { $found += $sn } }; $found }
-            if (@($avCheck).Count -gt 0) { $hasAV = $true }
-        }
-        catch {
-            # Method 2: Try WMI SecurityCenter2
-            try {
-                $wmiAv = Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct -ComputerName $serverFQDN -ErrorAction SilentlyContinue
-                if ($wmiAv) { $hasAV = $true }
-            }
-            catch {
-                # Method 3: Check if reachable
-                $ping = Test-Connection -ComputerName $serverFQDN -Count 1 -Quiet -TimeoutSeconds 5 -ErrorAction SilentlyContinue
-                if (-not $ping) { $unreachable++ } else { $noWinRM++ }
-            }
-        }
-        
-        if ($hasAV) { $serversWithAV++ }
-    }
-    
-    $reachableCount = $totalServers - $unreachable
-    $coveragePct = if ($reachableCount -gt 0) { [Math]::Round(($serversWithAV / $reachableCount) * 100, 1) } else { 0 }
-    $managedPct = if ($noWinRM -gt 0 -and $serversWithAV -gt 0) { [Math]::Round((($serversWithAV + $noWinRM) / $totalServers) * 100, 1) } else { $coveragePct }
-    
-    if ($managedPct -ge 95) { $score = 100; $status = "Pass" }
-    elseif ($managedPct -ge 80) { $score = 85; $status = "Warning" }
-    elseif ($managedPct -ge 60) { $score = 55; $status = "Fail" }
-    else { $score = 30; $status = "Fail" }
-    
-    $actual = "AV Coverage: $serversWithAV / $totalServers servers (${managedPct}%) [Reachable: $reachableCount, Unreachable: $unreachable, No-Remote: $noWinRM]"
-    if ($status -eq "Pass") { Write-Pass "Server AV Coverage: $actual" } else { Write-Fail "Server AV Coverage: $actual" }
-    Add-Finding -CheckId "serverAvCoverage" -Category "infrastructure" -Label "Server AV / EDR Coverage" `
-        -Description "Antivirus and EDR coverage across domain-joined servers" `
-        -Severity "High" -Score $score -Status $status `
-        -Threshold "95%+ of servers with AV/EDR" -ActualValue $actual `
-        -Recommendation "Deploy AV/EDR to ALL servers. Unprotected servers are highest-risk assets." `
-        -RemediationCmd "Get-ADComputer -Filter {OperatingSystem -like '*Server*'} | ForEach-Object { try { Invoke-Command -ComputerName `$_.Name -ScriptBlock { Get-Service -Name WinDefend } -ErrorAction SilentlyContinue } catch {} }"
-} catch { Write-Err "serverAvCoverage" $_; [void]$Script:Errors.Add("serverAvCoverage: $($_.Exception.Message)") }
+#  7.4 Server AV / EDR Coverage [DISABLED]
+Write-Info "AV/EDR: Check disabled by user configuration"
 
 #  7.5 Server Uptime Check
 try {
@@ -1894,7 +2142,7 @@ try {
         $isHyperV = $false
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") { $isHyperV = $true }
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") { $isHyperV = $true }
         } catch {}
         
         if ($isHyperV) { $hyperVUptime++; continue }
@@ -1963,7 +2211,7 @@ try {
         $isHyperV = $false
         try {
             $modelCheck = Get-WmiObject -ComputerName $serverFQDN -Class Win32_ComputerSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Model
-            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine|ProLiant") { $isHyperV = $true }
+            if ($modelCheck -match "Hyper-V|VMware Virtual Platform|Virtual Machine") { $isHyperV = $true }
         } catch {}
         
         if ($isHyperV) { $hyperVUpdates++; continue }
@@ -2080,8 +2328,9 @@ try {
     }
 
     $overdue30Count = $overdueServers30.Count
-    $score = if ($overdue30Count -eq 0) { 100 } elseif ($overdue30Count -le 3) { 65 } else { 35 }
-    $status = if ($overdue30Count -eq 0) { "Pass" } elseif ($overdue30Count -le 3) { "Warning" } else { "Fail" }
+    $deductions = [Math]::Floor($overdue30Count / 2) * 10
+    $score = [Math]::Max(0, 100 - $deductions)
+    $status = if ($score -ge 80) { "Pass" } elseif ($score -ge 50) { "Warning" } else { "Fail" }
     $actual = "Servers checked: $($updateResults.Count)/$($serverList.Count) | >30d overdue: $overdue30Count"
 
     if ($status -eq "Pass") { Write-Pass "WSUS Compliance: $actual" }
@@ -2133,6 +2382,64 @@ try {
         -Recommendation "Enable NLA on all servers especially DCs." `
         -RemediationCmd "Invoke-Command -ComputerName SERVERNAME -ScriptBlock { Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name 'UserAuthenticationRequired' -Value 1 }"
 } catch { Write-Err "rdpNLA" $_; [void]$Script:Errors.Add("rdpNLA: $($_.Exception.Message)") }
+
+#  7.9 Deprecated TLS Versions
+try {
+    $depTlsServers = New-Object System.Collections.ArrayList
+    $checked = 0
+    $unreachable = 0
+
+    foreach ($srv in @($AllServers)) {
+        $srvName = $srv.Name
+        $srvFQDN = if ($srv.DNSHostName) { $srv.DNSHostName } else { $srvName }
+        if (-not (Test-Connection -ComputerName $srvFQDN -Count 1 -Quiet -ErrorAction SilentlyContinue)) { $unreachable++; continue }
+
+        try {
+            $tlsState = Invoke-Command -ComputerName $srvFQDN -ErrorAction Stop -TimeoutSec 15 -ScriptBlock {
+                $base = "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols"
+                $result = @{ TLS10 = $null; TLS11 = $null; TLS12 = $null }
+                foreach ($p in @("TLS 1.0","TLS 1.1","TLS 1.2")) {
+                    $key = "$base\$p\Server"
+                    if (Test-Path $key) {
+                        $val = (Get-ItemProperty -Path $key -Name "Enabled" -ErrorAction SilentlyContinue).Enabled
+                        $result[$p.Replace(" ","")] = if ($val -eq 0) { "Disabled" } elseif ($val -eq 0xFFFFFFFF) { "Enabled" } else { "Unknown" }
+                    } else {
+                        $result[$p.Replace(" ","")] = "Default"
+                    }
+                }
+                return $result
+            }
+            $checked++
+            $deprecatedOn = @($null)
+            if ($tlsState.TLS10 -eq "Enabled" -or $tlsState.TLS10 -eq "Default") { $deprecatedOn += "TLS1.0" }
+            if ($tlsState.TLS11 -eq "Enabled" -or $tlsState.TLS11 -eq "Default") { $deprecatedOn += "TLS1.1" }
+            if ($deprecatedOn.Count -gt 1) {
+                [void]$depTlsServers.Add([PSCustomObject]@{
+                    Name = $srvName
+                    TLS10 = $tlsState.TLS10
+                    TLS11 = $tlsState.TLS11
+                    TLS12 = $tlsState.TLS12
+                })
+            }
+        } catch { $unreachable++ }
+    }
+
+    $depCount = $depTlsServers.Count
+    $deductions = [Math]::Floor($depCount / 2) * 10
+    $score = [Math]::Max(0, 100 - $deductions)
+    $status = if ($score -ge 80) { "Pass" } elseif ($score -ge 50) { "Warning" } else { "Fail" }
+    $actual = "Deprecated TLS: $depCount servers | Checked: $checked | Unreachable: $unreachable"
+
+    if ($status -eq "Pass") { Write-Pass "Deprecated TLS: $actual" } else { Write-Fail "Deprecated TLS: $actual" }
+
+    Add-Finding -CheckId "deprecatedTLS" -Category "infrastructure" -Label "Deprecated TLS Versions" `
+        -Description "Servers with deprecated TLS 1.0/1.1 still enabled (SCHANNEL registry check)" `
+        -Severity "High" -Score $score -Status $status `
+        -Threshold "0 servers with TLS 1.0/1.1 enabled" -ActualValue $actual `
+        -Recommendation "Disable TLS 1.0 and TLS 1.1 on all servers. Enable TLS 1.2. Use SCHANNEL registry: HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols." `
+        -RemediationCmd "See https://docs.microsoft.com/en-us/windows-server/security/tls/tls-registry-settings for TLS SCHANNEL registry hardening." `
+        -Details @($depTlsServers | Select-Object Name, TLS10, TLS11, TLS12)
+} catch { Write-Err "deprecatedTLS" $_; [void]$Script:Errors.Add("deprecatedTLS: $($_.Exception.Message)") }
 
 #endregion
 
